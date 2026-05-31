@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import Link from "next/link";
 import { useStore, useCurrentPlan } from "@/lib/store";
 import { STOCKS, getStock } from "@/lib/stocks";
@@ -81,12 +81,18 @@ export default function Dashboard() {
     ? `สวัสดี${user ? `, ${user.name}` : " นักลงทุน"} 👋`
     : `Hello${user ? `, ${user.name}` : ", Investor"} 👋`;
 
-  const currentDate = new Date().toLocaleDateString(lang === "th" ? "th-TH" : "en-US", {
-    weekday: "long",
-    year: "numeric",
-    month: "long",
-    day: "numeric",
-  });
+  const [currentDate, setCurrentDate] = useState<string>("");
+
+  useEffect(() => {
+    setCurrentDate(
+      new Date().toLocaleDateString(lang === "th" ? "th-TH" : "en-US", {
+        weekday: "long",
+        year: "numeric",
+        month: "long",
+        day: "numeric",
+      })
+    );
+  }, [lang]);
 
   const formatPrice = (s: any, p: number) => {
     if (s.assetType === "US_FUND") {

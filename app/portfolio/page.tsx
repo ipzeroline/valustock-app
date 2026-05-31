@@ -293,18 +293,18 @@ export default function PortfolioPage() {
   };
 
   return (
-    <div className="mx-auto max-w-7xl space-y-6 px-4 py-2 animate-fade-up">
+    <div className="mx-auto w-full max-w-[calc(100vw-24px)] space-y-5 overflow-x-hidden pb-24 pt-1 animate-fade-up sm:max-w-full sm:space-y-6 lg:max-w-7xl lg:pb-2">
       {/* 🚨 SIMULATED LIVE NOTIFICATION TOAST POPUP */}
       {simulatedToast && (
-        <div className="fixed top-5 right-5 z-50 max-w-md bg-surface/95 border-2 border-brand text-ink rounded-2xl p-4.5 shadow-glow-brand animate-fade-up flex items-start gap-3 backdrop-blur-md">
+        <div className="fixed left-3 right-3 top-5 z-50 flex max-w-md items-start gap-3 rounded-2xl border-2 border-brand bg-surface/95 p-4 text-ink shadow-glow-brand backdrop-blur-md animate-fade-up sm:left-auto sm:right-5 sm:p-4.5">
           <span className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-brand/15 text-brand">
             <Bell className="h-5 w-5 animate-bounce" />
           </span>
-          <div className="space-y-1">
+          <div className="min-w-0 space-y-1">
             <div className="text-[10px] font-bold text-brand uppercase tracking-widest leading-none">
               Valustock Live Alert Trigger
             </div>
-            <p className="text-xs font-semibold leading-relaxed mt-1">{simulatedToast}</p>
+            <p className="mt-1 text-xs font-semibold leading-relaxed [overflow-wrap:anywhere]">{simulatedToast}</p>
           </div>
           <button
             onClick={() => setSimulatedToast(null)}
@@ -316,19 +316,21 @@ export default function PortfolioPage() {
       )}
 
       {/* 🚀 A. TITLE HEADER */}
-      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-        <div className="flex items-center gap-2.5">
-          <span className="inline-flex h-9 w-9 items-center justify-center rounded-xl bg-brand/10 text-brand">
+      <div className="flex min-w-0 flex-col gap-4 md:flex-row md:items-center md:justify-between">
+        <div className="flex min-w-0 items-start gap-2.5 sm:items-center">
+          <span className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-brand/10 text-brand">
             <Wallet className="h-5 w-5" />
           </span>
-          <div>
-            <h1 className="font-display text-2xl font-bold md:text-3xl tracking-tight text-ink flex items-center gap-2">
-              {lang === "th" ? "พอร์ตและการทดสอบย้อนหลัง" : "Portfolio & Backtest Terminal"}
+          <div className="min-w-0 flex-1">
+            <h1 className="flex flex-wrap items-center gap-2 font-display text-xl font-bold leading-tight text-ink sm:text-2xl md:text-3xl">
+              <span className="min-w-0 [overflow-wrap:anywhere]">
+                {lang === "th" ? "พอร์ตและการทดสอบย้อนหลัง" : "Portfolio & Backtest Terminal"}
+              </span>
               <span className="text-[9px] bg-gold/15 border border-gold/30 text-gold px-2 py-0.5 rounded-full font-sans uppercase font-bold animate-pulse">
                 Pro
               </span>
             </h1>
-            <p className="text-xs text-muted mt-0.5">
+            <p className="mt-1 max-w-full whitespace-normal text-xs leading-relaxed text-muted [overflow-wrap:anywhere] sm:max-w-2xl">
               {lang === "th"
                 ? "บันทึกงบพอร์ตลงทุนจำลอง ตรวจวัดมูลค่าเฉลี่ยของราคาสด และทดสอบย้อนหลังโมเดลประเมินราคาอัจฉริยะ"
                 : "Manage transaction ledgers, audit net returns, and backtest DCF accuracy scores."}
@@ -337,30 +339,30 @@ export default function PortfolioPage() {
         </div>
 
         {/* Tab Selector */}
-        <div className="flex bg-elevate p-0.5 rounded-xl text-xs font-bold text-center shrink-0 self-start md:self-auto">
+        <div className="grid w-full grid-cols-1 gap-1 rounded-xl bg-elevate p-0.5 text-center text-xs font-bold sm:grid-cols-3 md:w-auto md:shrink-0 md:self-auto">
           <button
             onClick={() => setActiveTab("ledger")}
-            className={`px-4 py-2 rounded-lg transition ${
+            className={`min-w-0 px-3 py-2 rounded-lg transition ${
               activeTab === "ledger" ? "bg-surface text-brand shadow-sm" : "text-muted hover:text-ink"
             }`}
           >
-            💼 {lang === "th" ? "บันทึกการลงทุน" : "Ledger Portfolio"}
+            <span className="truncate">💼 {lang === "th" ? "บันทึกการลงทุน" : "Ledger Portfolio"}</span>
           </button>
           <button
             onClick={() => setActiveTab("backtest")}
-            className={`px-4 py-2 rounded-lg transition ${
+            className={`min-w-0 px-3 py-2 rounded-lg transition ${
               activeTab === "backtest" ? "bg-surface text-brand shadow-sm" : "text-muted hover:text-ink"
             }`}
           >
-            📊 {lang === "th" ? "ทดสอบย้อนหลังมูลค่า" : "Valuation Backtest"}
+            <span className="truncate">📊 {lang === "th" ? "ทดสอบย้อนหลัง" : "Backtest"}</span>
           </button>
           <button
             onClick={() => setActiveTab("alerts")}
-            className={`px-4 py-2 rounded-lg transition ${
+            className={`min-w-0 px-3 py-2 rounded-lg transition ${
               activeTab === "alerts" ? "bg-surface text-brand shadow-sm" : "text-muted hover:text-ink"
             }`}
           >
-            🔔 {lang === "th" ? "แจ้งเตือน & ความจำ" : "Alert Center"}
+            <span className="truncate">🔔 {lang === "th" ? "แจ้งเตือน" : "Alert Center"}</span>
           </button>
         </div>
       </div>
@@ -371,7 +373,7 @@ export default function PortfolioPage() {
           {/* Portfolio Net worth summary & Add Tx form */}
           <div className="lg:col-span-4 space-y-4">
             {/* Networth card */}
-            <Card className="border border-line p-5 bg-surface/30">
+            <Card className="w-full max-w-full border border-line p-4 bg-surface/30 sm:p-5">
               <div className="space-y-4">
                 <div>
                   <span className="text-[10px] uppercase font-bold text-muted tracking-wider block">
@@ -382,7 +384,7 @@ export default function PortfolioPage() {
                   </div>
                 </div>
 
-                <div className="grid grid-cols-2 gap-3 border-t border-line/50 pt-3">
+                <div className="grid grid-cols-1 gap-3 border-t border-line/50 pt-3 sm:grid-cols-2">
                   <div>
                     <span className="text-[9px] uppercase font-bold text-muted">{lang === "th" ? "เงินต้นสะสม" : "Net Principal"}</span>
                     <span className="font-mono font-bold text-ink block mt-1">
@@ -405,7 +407,7 @@ export default function PortfolioPage() {
             </Card>
 
             {/* Add Transaction Form */}
-            <Card className="border border-line p-5">
+            <Card className="w-full max-w-full border border-line p-4 sm:p-5">
               <h3 className="font-display font-extrabold text-xs text-ink uppercase tracking-wider mb-4 flex items-center gap-1">
                 <Plus className="h-4 w-4 text-brand" />
                 {lang === "th" ? "บันทึกการทำธุรกรรมใหม่" : "Add Buy / Sell Record"}
@@ -434,7 +436,7 @@ export default function PortfolioPage() {
                 </div>
 
                 {/* Buy vs Sell */}
-                <div className="grid grid-cols-2 gap-2 text-center text-xs font-bold">
+                <div className="grid grid-cols-1 gap-2 text-center text-xs font-bold sm:grid-cols-2">
                   <button
                     type="button"
                     onClick={() => setTxAction("BUY")}
@@ -460,7 +462,7 @@ export default function PortfolioPage() {
                 </div>
 
                 {/* Price and Shares input */}
-                <div className="grid grid-cols-2 gap-3">
+                <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                   <div className="space-y-1">
                     <label className="text-[10px] font-bold text-muted uppercase">
                       {lang === "th" ? "ราคาต่อหุ้น" : "Price/Share"}
@@ -509,13 +511,44 @@ export default function PortfolioPage() {
           {/* Holdings summary list and transactions table */}
           <div className="lg:col-span-8 space-y-4">
             {/* Holdings Summary Grid */}
-            <Card className="border border-line overflow-hidden">
+            <Card className="w-full max-w-full overflow-hidden border border-line">
               <CardHeader
                 title={lang === "th" ? "สินทรัพย์คงเหลือในพอร์ต (Holdings Summary)" : "Active Holdings Summary"}
                 subtitle={lang === "th" ? "คำนวณต้นทุนถอนรากและกำไร/ขาดทุนสะสมอ้างอิงราคาตลาดสด" : "Dynamic averages and yields based on live market pricing"}
                 icon={<Wallet className="h-4.5 w-4.5 text-brand" />}
               />
-              <div className="overflow-x-auto">
+              <div className="space-y-3 p-4 md:hidden">
+                {portfolioSummary.holdingsList.length === 0 ? (
+                  <div className="rounded-xl border border-line bg-bg/40 p-5 text-center text-xs text-muted">
+                    {lang === "th" ? "ยังไม่มีหุ้นถือครองในพอร์ต" : "No active holdings in your ledger portfolio."}
+                  </div>
+                ) : (
+                  portfolioSummary.holdingsList.map((h) => {
+                    const hIsUp = h.profit >= 0;
+                    return (
+                      <div key={`mobile-holding-${h.symbol}`} className="rounded-2xl border border-line bg-bg/45 p-4">
+                        <div className="flex min-w-0 items-start gap-2.5">
+                          <AssetLogo symbol={h.symbol} color={h.stock.color} size="sm" />
+                          <div className="min-w-0">
+                            <span className="block font-display text-sm font-bold text-ink">{h.symbol}</span>
+                            <span className="mt-0.5 block text-[10px] leading-snug text-muted [overflow-wrap:anywhere]">
+                              {lang === "th" ? h.stock.name : h.stock.enName}
+                            </span>
+                          </div>
+                        </div>
+                        <div className="mt-4 grid grid-cols-1 gap-2">
+                          <MobileMetric label={lang === "th" ? "จำนวนหุ้น" : "Shares"} value={h.shares.toLocaleString()} />
+                          <MobileMetric label={lang === "th" ? "ต้นทุนเฉลี่ย" : "Cost Basis"} value={formatPrice(h.stock, h.costBasis)} />
+                          <MobileMetric label={lang === "th" ? "ราคาตลาด" : "Market Price"} value={formatPrice(h.stock, h.currentPrice)} />
+                          <MobileMetric label={lang === "th" ? "มูลค่าปัจจุบัน" : "Market Value"} value={formatPrice(h.stock, h.value)} accent />
+                          <MobileMetric label={lang === "th" ? "กำไร / ขาดทุน" : "Net Return"} value={`${hIsUp ? "+" : ""}${h.profit.toFixed(0)} (${h.profitPct.toFixed(1)}%)`} up={hIsUp} />
+                        </div>
+                      </div>
+                    );
+                  })
+                )}
+              </div>
+              <div className="hidden overflow-x-auto md:block">
                 <table className="w-full text-left text-xs border-collapse">
                   <thead>
                     <tr className="border-b border-line bg-elevate/45 text-muted font-bold tracking-wider">
@@ -570,7 +603,7 @@ export default function PortfolioPage() {
             </Card>
 
             {/* Transactions Audit Ledger Log */}
-            <Card className="border border-line overflow-hidden">
+            <Card className="w-full max-w-full overflow-hidden border border-line">
               <CardHeader
                 title={lang === "th" ? "สมุดจดบันทึกการทำรายการ (Transaction Ledger Log)" : "Transaction History Log"}
                 subtitle={lang === "th" ? "รายการจดบันทึกซื้อ/ขายตามลำดับเวลา" : "Chronological ledger transactions log"}
@@ -578,14 +611,52 @@ export default function PortfolioPage() {
                   <Button
                     size="sm"
                     variant="outline"
-                    className="flex items-center gap-1.5 text-xs"
+                    className="flex w-full items-center justify-center gap-1.5 text-xs sm:w-auto"
                     onClick={handleExportFlatFile}
                   >
                     📥 {lang === "th" ? "ส่งออกสมุดบัญชี (CSV)" : "Export Ledger CSV"}
                   </Button>
                 }
               />
-              <div className="overflow-x-auto">
+              <div className="space-y-3 p-4 md:hidden">
+                {transactions.length === 0 ? (
+                  <div className="rounded-xl border border-line bg-bg/40 p-5 text-center text-xs text-muted">
+                    {lang === "th" ? "ไม่มีประวัติการทำธุรกรรม" : "No transaction logs recorded."}
+                  </div>
+                ) : (
+                  transactions.map((tx) => {
+                    const s = getStock(tx.symbol)!;
+                    const isBuy = tx.action === "BUY";
+                    const total = tx.shares * tx.price;
+                    return (
+                      <div key={`mobile-tx-${tx.id}`} className="rounded-2xl border border-line bg-bg/45 p-4">
+                        <div className="flex items-start justify-between gap-3">
+                          <div>
+                            <span className="block font-display text-sm font-bold text-ink">{tx.symbol}</span>
+                            <span className="mt-0.5 block font-mono text-[10px] text-muted">{tx.date}</span>
+                          </div>
+                          <span className={`chip w-fit font-bold py-0.5 leading-none ${isBuy ? "border-up/30 bg-up/10 text-up" : "border-down/30 bg-down/10 text-down"}`}>
+                            {tx.action}
+                          </span>
+                        </div>
+                        <div className="mt-4 grid grid-cols-1 gap-2">
+                          <MobileMetric label={lang === "th" ? "ราคาหุ้น" : "Price"} value={formatPrice(s, tx.price)} />
+                          <MobileMetric label={lang === "th" ? "จำนวนหุ้น" : "Shares"} value={tx.shares.toLocaleString()} />
+                          <MobileMetric label={lang === "th" ? "รวมทำรายการ" : "Total"} value={formatPrice(s, total)} accent />
+                        </div>
+                        <button
+                          onClick={() => handleRemoveTransaction(tx.id)}
+                          className="mt-3 flex w-full items-center justify-center gap-1.5 rounded-xl border border-line bg-surface py-2 text-[10px] font-bold text-muted hover:text-down"
+                        >
+                          <Trash2 className="h-3.5 w-3.5" />
+                          {lang === "th" ? "ลบรายการ" : "Delete"}
+                        </button>
+                      </div>
+                    );
+                  })
+                )}
+              </div>
+              <div className="hidden overflow-x-auto md:block">
                 <table className="w-full text-left text-xs border-collapse">
                   <thead>
                     <tr className="border-b border-line bg-elevate/45 text-muted font-bold">
@@ -652,7 +723,7 @@ export default function PortfolioPage() {
         <div className="grid gap-6 lg:grid-cols-12">
           {/* Backtest controls and scorecards */}
           <div className="lg:col-span-4 space-y-4">
-            <Card className="border border-line p-5">
+            <Card className="w-full max-w-full border border-line p-4 sm:p-5">
               <h3 className="font-display font-extrabold text-xs text-ink uppercase tracking-wider mb-4 flex items-center gap-1.5">
                 <Calculator className="h-4.5 w-4.5 text-brand" />
                 {lang === "th" ? "ตั้งค่าระบบจำลองแบ็กเทส" : "Backtest Setup Console"}
@@ -703,12 +774,12 @@ export default function PortfolioPage() {
             </Card>
 
             {/* Scorecard index */}
-            <Card className="border border-line p-5 space-y-4 bg-surface/30">
+            <Card className="w-full max-w-full space-y-4 border border-line bg-surface/30 p-4 sm:p-5">
               <div>
                 <span className="text-[10px] uppercase font-bold text-muted tracking-wider block">
                   {lang === "th" ? "คะแนนความแม่นยำของโมเดลประเมิน" : "Model Prediction Accuracy"}
                 </span>
-                <div className="flex items-baseline gap-1.5 mt-2">
+                <div className="mt-2 flex flex-wrap items-baseline gap-1.5">
                   <span className="text-3xl font-display font-black text-up">
                     {backtestResult.accuracy}%
                   </span>
@@ -717,15 +788,15 @@ export default function PortfolioPage() {
               </div>
 
               <div className="border-t border-line/45 pt-3.5 space-y-2">
-                <div className="flex justify-between text-xs py-1">
+                <div className="flex flex-col gap-1 text-xs py-1 sm:flex-row sm:justify-between">
                   <span className="text-muted">{lang === "th" ? "สัญญานซื้อราคาถูกที่เกิดขึ้น" : "Undervalued Triggers"}</span>
                   <span className="font-bold font-mono text-ink">{backtestResult.triggerCount} {lang === "th" ? "ครั้ง" : "times"}</span>
                 </div>
-                <div className="flex justify-between text-xs py-1">
+                <div className="flex flex-col gap-1 text-xs py-1 sm:flex-row sm:justify-between">
                   <span className="text-muted">{lang === "th" ? "ผลตอบแทนฟื้นตัวเฉลี่ย" : "Avg Recovery Yield"}</span>
                   <span className="font-bold font-mono text-up">+{backtestResult.avgRecovery.toFixed(1)}%</span>
                 </div>
-                <div className="flex justify-between text-xs py-1">
+                <div className="flex flex-col gap-1 text-xs py-1 sm:flex-row sm:justify-between">
                   <span className="text-muted">{lang === "th" ? "เวลาฟื้นตัวถึงมูลค่าจริงเฉลี่ย" : "Avg Days to Recovery"}</span>
                   <span className="font-bold font-mono text-ink">{backtestResult.daysToRecovery} {lang === "th" ? "วัน" : "days"}</span>
                 </div>
@@ -735,16 +806,16 @@ export default function PortfolioPage() {
 
           {/* SVG Reversion Chart and detail explanation */}
           <div className="lg:col-span-8 space-y-4">
-            <Card className="border border-line p-5">
+            <Card className="w-full max-w-full border border-line p-4 sm:p-5">
               <h3 className="font-display font-extrabold text-xs text-ink uppercase tracking-wider mb-4 flex items-center gap-1.5">
                 <Sparkles className="h-4.5 w-4.5 text-brand" />
                 {lang === "th" ? "กราฟจำลองการกลับคืนสู่ราคาดุลยภาพ (Valuation Bands Reversion)" : "Valuation Bands Reversion Chart"}
               </h3>
 
               {/* Rendering SVG Comparison Chart */}
-              <div className="relative bg-surface p-4 rounded-xl border border-line flex flex-col justify-between items-center h-[260px]">
+              <div className="relative flex h-[260px] flex-col items-center justify-between overflow-hidden rounded-xl border border-line bg-surface p-3 sm:p-4">
                 {/* SVG Visualizer */}
-                <svg width="100%" height="200" className="overflow-visible select-none pointer-events-none mt-2">
+                <svg width="100%" height="200" viewBox="0 0 500 200" preserveAspectRatio="none" className="mt-2 select-none pointer-events-none">
                   <defs>
                     <linearGradient id="fair-area" x1="0" y1="0" x2="0" y2="1">
                       <stop offset="0%" stopColor="#d97706" stopOpacity="0.12" />
@@ -795,7 +866,7 @@ export default function PortfolioPage() {
                 </svg>
 
                 {/* Legend labels */}
-                <div className="flex gap-4 text-[9px] font-bold mt-2">
+                <div className="mt-2 flex flex-wrap justify-center gap-3 text-[9px] font-bold">
                   <div className="flex items-center gap-1">
                     <span className="h-1.5 w-4 rounded-full bg-up" />
                     <span className="text-ink">{lang === "th" ? "ราคาตลาดจริง (Market Price)" : "Market Price"}</span>
@@ -808,7 +879,7 @@ export default function PortfolioPage() {
               </div>
 
               {/* Explanatory text */}
-              <div className="text-xs text-muted leading-relaxed space-y-2 mt-4 bg-elevate/45 border border-line p-4.5 rounded-xl">
+              <div className="mt-4 space-y-2 rounded-xl border border-line bg-elevate/45 p-4 text-xs leading-relaxed text-muted [overflow-wrap:anywhere] sm:p-4.5">
                 <span className="font-extrabold text-ink block">📋 {lang === "th" ? "สรุปผลการประเมินประวัติศาสตร์" : "Historical Reversion Commentary"}</span>
                 <p>
                   {lang === "th"
@@ -826,7 +897,7 @@ export default function PortfolioPage() {
         <div className="grid gap-6 lg:grid-cols-12">
           {/* Add custom Alert form */}
           <div className="lg:col-span-4 space-y-4">
-            <Card className="border border-line p-5">
+            <Card className="w-full max-w-full border border-line p-4 sm:p-5">
               <h3 className="font-display font-extrabold text-xs text-ink uppercase tracking-wider mb-4 flex items-center gap-1.5">
                 <Bell className="h-4.5 w-4.5 text-brand" />
                 {lang === "th" ? "สร้างการแจ้งเตือนพอร์ตของคุณ" : "Setup Custom Target Alert"}
@@ -888,7 +959,7 @@ export default function PortfolioPage() {
             </Card>
 
             {/* Test Trigger Card */}
-            <Card className="border border-gold/40 bg-gold/5 p-5 text-center space-y-3">
+            <Card className="w-full max-w-full space-y-3 border border-gold/40 bg-gold/5 p-4 text-center sm:p-5">
               <span className="inline-flex h-9 w-9 items-center justify-center rounded-xl bg-gold/15 text-gold shrink-0">
                 <Bell className="h-5 w-5 animate-pulse" />
               </span>
@@ -910,13 +981,54 @@ export default function PortfolioPage() {
 
           {/* Active Alerts Table */}
           <div className="lg:col-span-8 space-y-4">
-            <Card className="border border-line overflow-hidden">
+            <Card className="w-full max-w-full overflow-hidden border border-line">
               <CardHeader
                 title={lang === "th" ? "รายการแจ้งเตือนที่เปิดทำงานอยู่ (Active Price Targets)" : "Active Target Price Alerting"}
                 subtitle={lang === "th" ? "ตรวจสอบระบบพุชส่งสัญญานทางหน้าจอและอีเมลของท่าน" : "Real-time pushes matching your active target thresholds"}
                 icon={<Bell className="h-4.5 w-4.5 text-brand" />}
               />
-              <div className="overflow-x-auto">
+              <div className="space-y-3 p-4 md:hidden">
+                {alerts.length === 0 ? (
+                  <div className="rounded-xl border border-line bg-bg/40 p-5 text-center text-xs text-muted">
+                    {lang === "th" ? "ไม่มีสัญญานราคาทำงานในขณะนี้" : "No active pricing alert setups."}
+                  </div>
+                ) : (
+                  alerts.map((al) => {
+                    const s = getStock(al.symbol)!;
+                    return (
+                      <div key={`mobile-alert-${al.id}`} className="rounded-2xl border border-line bg-bg/45 p-4">
+                        <div className="flex items-start justify-between gap-3">
+                          <span className="font-display text-sm font-bold text-ink">{al.symbol}</span>
+                          <span className="chip w-fit border-up/30 bg-up/10 py-0.5 font-bold leading-none text-up">
+                            ACTIVE
+                          </span>
+                        </div>
+                        <div className="mt-4 grid grid-cols-1 gap-2">
+                          <MobileMetric
+                            label={lang === "th" ? "เงื่อนไข" : "Trigger"}
+                            value={
+                              al.type === "price_below"
+                                ? lang === "th" ? "ราคาต่ำกว่าเป้า" : "Price below"
+                                : al.type === "price_above"
+                                ? lang === "th" ? "ราคาสูงกว่าเป้า" : "Price above"
+                                : lang === "th" ? "ส่วนลด MOS สูงกว่า" : "Safety MOS above"
+                            }
+                          />
+                          <MobileMetric label={lang === "th" ? "ค่าเป้าหมาย" : "Target"} value={al.type === "mos_above" ? `${al.value}%` : formatPrice(s, al.value)} accent />
+                        </div>
+                        <button
+                          onClick={() => handleRemoveAlert(al.id)}
+                          className="mt-3 flex w-full items-center justify-center gap-1.5 rounded-xl border border-line bg-surface py-2 text-[10px] font-bold text-muted hover:text-down"
+                        >
+                          <Trash2 className="h-3.5 w-3.5" />
+                          {lang === "th" ? "ลบแจ้งเตือน" : "Delete"}
+                        </button>
+                      </div>
+                    );
+                  })
+                )}
+              </div>
+              <div className="hidden overflow-x-auto md:block">
                 <table className="w-full text-left text-xs border-collapse">
                   <thead>
                     <tr className="border-b border-line bg-elevate/45 text-muted font-bold">
@@ -975,9 +1087,9 @@ export default function PortfolioPage() {
       )}
 
       {/* 🚀 F. SYSTEM FOOTER */}
-      <div className="bg-elevate/45 border border-line rounded-xl p-3.5 text-[10px] text-muted flex items-start gap-2 max-w-4xl">
+      <div className="flex max-w-4xl items-start gap-2 rounded-xl border border-line bg-elevate/45 p-3.5 text-[10px] text-muted">
         <Info className="h-4 w-4 text-brand shrink-0 mt-0.5" />
-        <p className="leading-relaxed">
+        <p className="leading-relaxed [overflow-wrap:anywhere]">
           {lang === "th"
             ? "⚠️ คำแจ้งเตือนความปลอดภัย: บัญชีซื้อขายจำลองและเครื่องวิเคราะห์สมมติฐานประวัติศาสตร์ (Backtesting Sandbox) ทำงานโดยอ้างอิงชุดข้อมูลราคาสูญเสียย้อนหลังเพื่อจุดประสงค์สาธิตโปรแกรมเท่านั้น ผลงานทดสอบในอดีต (Backtest) ไม่ใช่การรับประกันผลตอบแทนที่จะได้รับจริงในอนาคต โปรดบริหารจัดการความผันผวนของพอร์ตการลงทุนอย่างรอบคอบ"
             : "⚠️ Security Disclaimer: Portfolio ledger logs and comparative backtesting models computed using historical price points. Intended for software presentation only. Past modeling outcomes do not guarantee future returns. Manage capital allocation risk with caution."}
@@ -1000,6 +1112,34 @@ export default function PortfolioPage() {
           }
         />
       </Modal>
+    </div>
+  );
+}
+
+function MobileMetric({
+  label,
+  value,
+  accent,
+  up,
+}: {
+  label: string;
+  value: string;
+  accent?: boolean;
+  up?: boolean;
+}) {
+  return (
+    <div className="min-w-0 rounded-xl border border-line bg-bg/55 px-3 py-2.5">
+      <span className="block text-[10px] font-bold leading-snug text-muted [overflow-wrap:anywhere]">
+        {label}
+      </span>
+      <span
+        className={`mt-1 block font-mono text-xs font-bold [overflow-wrap:anywhere] ${
+          accent ? "text-gold" : up === false ? "text-down" : up ? "text-up" : "text-ink"
+        }`}
+        title={value}
+      >
+        {value}
+      </span>
     </div>
   );
 }

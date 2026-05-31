@@ -31,13 +31,17 @@
   --down: 220 64 64;
 }
 
-* {
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
   border-color: rgb(var(--line));
 }
 
 html {
   font-size: 16px;
   scroll-behavior: smooth;
+  overflow-x: hidden;
 }
 
 @media (min-width: 640px) {
@@ -55,9 +59,18 @@ html {
 body {
   background-color: rgb(var(--bg));
   color: rgb(var(--ink));
+  width: 100%;
+  overflow-x: hidden;
   -webkit-font-smoothing: antialiased;
   text-rendering: optimizeLegibility;
   line-height: 1.625;
+}
+
+@media (max-width: 639px) {
+  header.sticky > div > a[href="/"] > span:nth-child(2),
+  header.sticky > div > div > a[href="/pricing"] {
+    display: none;
+  }
 }
 
 @layer components {

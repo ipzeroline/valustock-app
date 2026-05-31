@@ -15,79 +15,178 @@ export interface FlatArticle {
 
 const FILE_PATH = path.join(process.cwd(), "lib", "flatdb_articles.json");
 
-// Default initial articles
+// Centralized high-performance, traffic-pulling financial knowledge articles
 const SEED_ARTICLES: FlatArticle[] = [
+  // ==== BEGINNER ARTICLES ====
   {
-    slug: "tech-vs-dividend",
-    title: "US Technology vs. Thai Dividend Stocks: How to Allocate in 2H2026?",
-    category: "Asset Allocation",
-    read_time: "5 mins",
-    summary: "A deep dive into industrial structures of the US Tech and Thai Dividend sectors, detailing global growth strategies alongside inbound personal tax updates for Thai citizens.",
-    content: `In global asset allocation, Thai investors often face a key dilemma: Global Growth vs. Local Yield.
-
-**1. US Technology (US Tech)**
-Features future-oriented tech industries driven by AI, cloud computing, and semiconductors (e.g., NVDA, MSFT, AAPL) yielding massive capital gains but minimal yields and high volatility.
-
-**2. Thai Dividend Equities**
-Blue chips like PTT, ADVANC, and CPALL offer stable earnings, steady defensive cash flows, and attractive dividend yields of 4-7% which anchor portfolios during down cycles.
-
-**Portfolio Advice for Thai Investors:**
-- Working Professionals (Ages 25-45): Maintain a Core Portfolio with 60% in US Tech/Global stocks for compounding growth, alongside a Satellite Portfolio with 30% in high-yielding Thai equities, and 10% in liquid instruments.
-- International Tax Management: Plan personal inbound earnings transfers meticulously or defer offshore earnings across calendar years to leverage lower brackets.`,
-    tag: "Portfolio Tips",
-    lang: "en",
-    created_at: new Date("2026-05-30T12:00:00Z").toISOString(),
-  },
-  {
-    slug: "feeder-funds-guide",
-    title: "Thai Feeder Funds Handbook: Avoid Double-Layer Management Fees",
-    category: "Offshore Mutual Funds",
-    read_time: "4 mins",
-    summary: "Understand the mechanics connecting Thai local Feeder Funds to global Master Funds. Discover hidden expense ratios to keep your compounding yields intact.",
-    content: `Feeder funds provide Thai investors with direct cross-border market access without opening foreign accounts. However, double-layer fee structures must be carefully reviewed.
-
-**Understanding Double-Layer Fees:**
-1. Local Management Fee (Thai Feeder): Charged by local asset managers, typically ranging from 0.5% to 1.5% annually.
-2. Global Management Fee (Master Fund): Charged by institutional global managers (e.g., Morgan Stanley, BlackRock), typically ranging from 0.7% to 1.8% annually.
-
-**Feeder Fund Selection Tips:**
-- Always analyze the Total Expense Ratio (TER) in the fund's official prospectus.
-- Review the tracking error and historical correlation against its underlying Master Fund.
-- Prefer institutional or accumulation units to minimize double-dipping fees.`,
-    tag: "Fund Analysis",
-    lang: "en",
-    created_at: new Date("2026-05-29T12:00:00Z").toISOString(),
-  },
-  {
-    slug: "w-8ben-tax-tips",
-    title: "เจาะลึกวิธียื่นแบบฟอร์ม W-8BEN เพื่อลดภาษีปันผลหุ้นสหรัฐฯ เหลือ 15%",
-    category: "ภาษี & กฎหมาย",
-    read_time: "6 นาที",
-    summary: "ขั้นตอนละเอียดสำหรับนักลงทุนที่เปิดพอร์ตนอกประเทศ เพื่อรับสิทธิ์ลดหย่อนภาษีหัก ณ ที่จ่ายจากปันผลสหรัฐฯ จากปกติ 30% ให้เหลือเพียง 15% ตามอนุสัญญาภาษีซ้อน",
-    content: `สำหรับนักลงทุนไทยที่เน้นเก็บหุ้นปันผลในฝั่งอเมริกา (เช่น Coca-Cola, Realty Income หรือ Microsoft) ภาษีปันผลหัก ณ ที่จ่ายถือเป็นปัจจัยสำคัญที่ห้ามมองข้าม...
-
-**แบบฟอร์ม W-8BEN คืออะไร?**
-W-8BEN (Certificate of Foreign Status of Beneficial Owner for United States Tax Withholding and Reporting) เป็นแบบฟอร์มที่พิสูจน์ว่าคุณเป็นคนไทย (บุคคลธรรมดาต่างชาติที่ไม่ได้พำนักในสหรัฐฯ) เพื่อขอใช้สิทธิ์ภายใต้อนุสัญญาภาษีซ้อน (Double Taxation Treaty - DTA) ระหว่างไทยและสหรัฐฯ
-
-**ประโยชน์สูงสุด:**
-- ลดอัตราภาษีปันผลจาก 30% เหลือเพียง 15% ทันที
-- แบบฟอร์มมีอายุ 3 ปีปฏิทิน (ต้องกรอกใหม่เมื่อครบกำหนด)
-
-**ขั้นตอนยื่นผ่านโบรกเกอร์ไทยหรือโบรกเกอร์นอก:**
-1. โบรกเกอร์ส่วนใหญ่ในไทย (เช่น InnovestX, Dime) และโบรกเกอร์นอก (เช่น Interactive Brokers) จะมีระบบกรอก W-8BEN อิเล็กทรอนิกส์ให้คุณทันทีก่อนเริ่มซื้อขายหุ้นต่างประเทศ
-2. ตรวจสอบข้อมูลชื่อ-ที่อยู่ให้ตรงกับพาสปอร์ตไทย
-3. กรอกหมายเลขบัตรประชาชนไทยในช่อง Foreign Tax Identifying Number (TIN)`,
-    tag: "ความรู้ภาษี",
+    slug: "what-is-intrinsic-value",
+    title: "Intrinsic Value คืออะไร? คู่มือประเมินมูลค่าหุ้นที่แท้จริงสำหรับมือใหม่",
+    category: "Beginner (ความรู้เริ่มต้น)",
+    read_time: "5 นาที",
+    summary: "เจาะลึกความหมายของ Intrinsic Value หรือมูลค่าที่แท้จริงของหุ้น หัวใจสำคัญของการลงทุนแบบเน้นคุณค่า VI ที่ช่วยบอกว่าราคาปัจจุบันในตลาดต่ำหรือสูงกว่ามูลค่าที่แท้จริง",
+    tag: "Beginner",
     lang: "th",
-    created_at: new Date("2026-05-28T12:00:00Z").toISOString(),
+    created_at: new Date("2026-05-31T09:00:00Z").toISOString(),
+    content: `ในการลงทุนหุ้น หลายครั้งราคาตลาด (Market Price) ของหุ้นขยับขึ้นลงตามอารมณ์ของฝูงชนในตลาด แต่อารมณ์เหล่านั้นไม่ใช่ "มูลค่าที่แท้จริง" ของบริษัท นี่คือจุดเริ่มต้นของทฤษฎี **Intrinsic Value**
+
+**1. Intrinsic Value คืออะไร?**
+Intrinsic Value หรือ "มูลค่าที่แท้จริง" คือมูลค่าเชิงปัจจัยพื้นฐานที่คำนวณจากความสามารถในการทำกำไร โครงสร้างสินทรัพย์ และกระแสเงินสดที่ธุรกิจนั้นจะสร้างได้ตลอดช่วงอายุขัยของกิจการ โดยตัดอารมณ์ความกลัวและความโลภของตลาดออกไปโดยสิ้นเชิง
+
+**2. ราคาตลาด vs มูลค่าที่เหมาะสม**
+- **ราคาตลาด (Market Price):** ราคาที่ซื้อขายกันในพอร์ต ณ วินาทีนี้ (สะท้อนความต้องการซื้อ-ขายชั่วคราว)
+- **มูลค่าเหมาะสม (Intrinsic Value):** ราคาเป้าหมายที่ควรจะเป็นจากการประเมินปัจจัยทางบัญชีและการเติบโต (วิเคราะห์โดยนักลงทุนเน้นคุณค่า VI)
+
+**3. การวิเคราะห์มูลค่าที่แท้จริงช่วยคุณได้อย่างไร?**
+- หาก **ราคาตลาด < Intrinsic Value** -> หุ้นราคาถูกต่ำกว่ามูลค่า (Undervalued) เป็นจังหวะดีในการซื้อสะสม
+- หาก **ราคาตลาด > Intrinsic Value** -> หุ้นราคาแพงเกินจริง (Overvalued) แนะนำให้รอราคาปรับฐานหรือพิจารณาหลีกเลี่ยง`
+  },
+  {
+    slug: "what-is-dcf",
+    title: "DCF คืออะไร? วิธีคำนวณราคาเหมาะสมหุ้นด้วยกระแสเงินสดคิดลด (Discounted Cash Flow)",
+    category: "Beginner (ความรู้เริ่มต้น)",
+    read_time: "5 นาที",
+    summary: "ทำความเข้าใจแบบจำลอง DCF เครื่องมือประเมินมูลค่าหุ้นระดับสากลที่ใช้กระแสเงินสดที่คาดหวังในอนาคตคิดลดกลับมาเป็นมูลค่าในปัจจุบันด้วยต้นทุนทางการเงิน",
+    tag: "Beginner",
+    lang: "th",
+    created_at: new Date("2026-05-31T08:30:00Z").toISOString(),
+    content: `**Discounted Cash Flow (DCF)** เป็นหนึ่งในวิธีการประเมินมูลค่ากิจการที่เป็นมาตรฐานสากลและได้รับการยอมรับสูงที่สุดในสถาบันการเงินการลงทุนระดับโลก
+
+**1. หลักการคิดค่าตามกาลเวลาของเงิน (Time Value of Money)**
+เงิน 100 บาทในวันนี้ มีมูลค่ามากกว่าเงิน 100 บาทในอีก 5 ปีข้างหน้า เพราะวันนี้เราสามารถนำเงินไปสร้างผลตอบแทนทบต้นได้ วิธีการ DCF จึงใช้หลักการ "คิดลด" กระแสเงินสดที่เราจะได้รับในอนาคตกลับมาเป็นมูลค่าปัจจุบัน
+
+**2. 3 เสาหลักของการประเมินมูลค่าแบบ DCF**
+- **กระแสเงินสดอิสระ (Free Cash Flow - FCF):** กระแสเงินสดจริงที่ธุรกิจเหลือจากการจ่ายภาษีและลงทุนบำรุงรักษาแล้ว
+- **อัตราการเติบโตคาดการณ์ (Growth Rate):** ความสามารถในการโตของกระแสเงินสดอิสระในระยะเวลาประมาณการ (ปกติประมาณ 5-10 ปี)
+- **อัตราคิดลด (Discount Rate หรือ WACC):** เปรียบเสมือนต้นทุนทางการเงินเฉลี่ยหรืออัตราผลตอบแทนขั้นต่ำที่นักลงทุนยอมรับได้ เพื่อใช้คิดลดกระแสเงินสดในอนาคตกลับมา
+
+**สรุปวิธีใช้:**
+แบบจำลอง DCF จะบวกมูลค่าปัจจุบันของกระแสเงินสดทุกปีในอนาคต รวมกับมูลค่าสุดท้ายปลายงวด (Terminal Value) แล้วหารด้วยจำนวนหุ้นทั้งหมด เพื่อหาออกเป็น **ราคาเหมาะสมสมเหตุสมผลต่อหุ้น** สำหรับใช้ตรวจสอบแต้มต่อการลงทุน`
+  },
+  {
+    slug: "what-is-margin-of-safety",
+    title: "Margin of Safety คืออะไร? เกราะป้องกันพอร์ตขาดทุนของนักลงทุนเน้นคุณค่า VI",
+    category: "Beginner (ความรู้เริ่มต้น)",
+    read_time: "4 นาที",
+    summary: "เรียนรู้แนวคิด 'ส่วนเผื่อความปลอดภัย' หรือ Margin of Safety (MOS) กฎเหล็กควบคุมความเสี่ยงของ Benjamin Graham ที่นักลงทุนเน้นคุณค่าทุกคนต้องยึดมั่น",
+    tag: "Beginner",
+    lang: "th",
+    created_at: new Date("2026-05-31T08:00:00Z").toISOString(),
+    content: `ในการประเมินมูลค่าหุ้น ไม่ว่าแบบจำลองจะอัจฉริยะเพียงใด ก็ยังมีโอกาสคลาดเคลื่อนได้เสมอจากปัจจัยทางเศรษฐกิจภายนอก นี่คือเหตุผลที่บิดาแห่งการลงทุน VI อย่าง **Benjamin Graham** ได้สร้างแนวคิด **Margin of Safety (MOS)** ขึ้นมา
+
+**1. Margin of Safety (ส่วนเผื่อความปลอดภัย) คืออะไร?**
+Margin of Safety คือ ส่วนต่างราคาที่เป็นส่วนลดระหว่าง "ราคาเหมาะสมที่แท้จริง (Intrinsic Value)" กับ "ราคาซื้อขายล่าสุดในตลาด (Market Price)"
+*ตัวอย่าง:* หากคุณคำนวณ Fair Value ของหุ้นปันผลดีได้ที่ 100 บาท แต่ราคาตลาดเสนอขายอยู่ที่ 70 บาท แปลว่าหุ้นนี้มี **Margin of Safety เท่ากับ 30%**
+
+**2. ทำไมส่วนเผื่อความปลอดภัยถึงเป็นเกราะป้องกันความเสี่ยง?**
+- **ป้องกันการคำนวณพลาด:** หากสมมติฐานการโตของบริษัทลดลง มูลค่าของหุ้นอาจจะลดลงเหลือ 80 บาท แต่เนื่องจากคุณซื้อไว้ที่ 70 บาท คุณก็ยังรอดพ้นจากการขาดทุนเงินต้น
+- **รองรับความผันผวนภายนอก:** วิกฤตเศรษฐกิจ โรคระบาด หรือสงครามการค้าอาจสั่นคลอนตลาดชั่วคราว การซื้อที่มี MOS สูงจะช่วยให้พอร์ตมีกันชนรับแรงกระแทกได้อย่างยอดเยี่ยม
+
+**สรุปการนำไปใช้:**
+นักลงทุนเน้นคุณค่าควรระบุเกณฑ์คัดกรองขั้นต่ำ เช่น เลือกสะสมเฉพาะสินทรัพย์ที่มี **Margin of Safety >= 15-30% ขึ้นไปเท่านั้น** เพื่อรับแต้มต่อความปลอดภัยสูงสุด`
+  },
+
+  // ==== INTERMEDIATE ARTICLES ====
+  {
+    slug: "how-to-find-undervalued-stocks",
+    title: "วิธีหาหุ้น Undervalued: เจาะลึกวิธีคัดกรองหุ้นราคาถูก ปัจจัยพื้นฐานแกร่ง",
+    category: "Intermediate (ความรู้ระดับกลาง)",
+    read_time: "6 นาที",
+    summary: "คู่มือแนะนำวิถีคัดกรองเสาะหาหุ้น undervalue ราคาต่ำกว่ามูลค่าที่สมควรจะเป็น ผ่านการแกะงบแสดงฐานะการเงินและงบกระแสเงินสดย้อนหลังอย่างเป็นระบบ",
+    tag: "Intermediate",
+    lang: "th",
+    created_at: new Date("2026-05-31T07:30:00Z").toISOString(),
+    content: `การหาหุ้นราคาถูกปัจจัยพื้นฐานดี (Undervalued Stocks) ไม่ใช่เรื่องของโชคชะตา แต่เป็นเรื่องของการใช้ระบบคัดกรอง (Screening) และข้อมูลการเงินที่ถูกต้อง นี่คือ 4 ขั้นตอนสแกนหาหุ้นสะสมพอร์ตที่ทำตามได้จริง:
+
+**ขั้นตอนที่ 1: ค้นหากลุ่มหุ้นที่มี Margin of Safety (MOS) สูง**
+ใช้โปรแกรมสกรีนเนอร์ (เช่นสกรีนเนอร์ ValuStock) กรองหาหุ้นที่มีความเห็นเป็น "ราคาต่ำกว่ามูลค่า (Undervalued)" โดยระบุ MOS ขั้นต่ำไว้ที่ 15-20%
+
+**ขั้นตอนที่ 2: ตรวจสอบความปลอดภัยด้านหนี้สิน (Debt Solvency)**
+หุ้นราคาถูกจะไม่มีความหมายเลยถ้าบริษัทกำลังจะล้มละลาย ให้ดูค่า **อัตราหนี้สินต่อทุน (D/E Ratio)** เสมอ โดยค่าที่ปลอดภัยควรมีระดับต่ำกว่า 1.2 เท่า เพื่อป้องกันผลกระทบจากดอกเบี้ยกู้ยืมช่วงดอกเบี้ยขาขึ้น
+
+**ขั้นตอนที่ 3: วิเคราะห์ความคุ้มค่าของการทำกำไร (ROE & Margin)**
+คัดกรองหาหุ้นที่มีค่า **ผลตอบแทนต่อส่วนของผู้ถือหุ้น (ROE) มากกว่า 12-15%** ควบคู่กับอัตรากำไรสุทธิ (Net Profit Margin) ที่ทรงตัวหรือเพิ่มขึ้นต่อเนื่อง สะท้อนถึงการเป็นบริษัทที่มีอำนาจการต่อรองราคาสูงและมีคูเมืองแกร่ง
+
+**ขั้นตอนที่ 4: ความเสถียรของกระแสเงินสดอิสระ (Free Cash Flow)**
+แกะดูงบกระแสเงินสดเพื่อยืนยันว่าบริษัทมี FCF เป็นบวกต่อเนื่องอย่างน้อย 3-5 ปีย้อนหลัง เพราะกระแสเงินสดจริงคือแหล่งจ่ายเงินปันผลและรากฐานการคิดมูลค่าเป้าหมายแบบปลอดภัย`
+  },
+  {
+    slug: "what-pe-ratio-is-cheap",
+    title: "P/E Ratio เท่าไรถึงถูก? วิธีประเมินความคุ้มค่าราคาหุ้นแบบไม่ตกหลุมพราง",
+    category: "Intermediate (ความรู้ระดับกลาง)",
+    read_time: "5 นาที",
+    summary: "ตอบคำถามยอดนิยม 'ค่า P/E เท่าไหร่ถึงจัดว่าถูก?' เจาะลึกวิธีการวิเคราะห์ค่า P/E เปรียบเทียบ และระวังหลุมพรางกับดักหุ้น PE ต่ำ (Value Trap)",
+    tag: "Intermediate",
+    lang: "th",
+    created_at: new Date("2026-05-31T07:00:00Z").toISOString(),
+    content: `**Price-to-Earnings (P/E) Ratio** เป็นอัตราส่วนราคาต่อกำไรยอดนิยมที่คุ้นเคยกันดี แต่คำถามสำคัญคือ "P/E เท่าไหร่ถึงเรียกว่าถูกและคุ้มค่าอย่างแท้จริง?"
+
+**1. หลีกเลี่ยงเกณฑ์ตายตัว (ดักจับตัวเลขลอยๆ)**
+นักลงทุนหน้าใหม่มักเข้าใจผิดว่า P/E ต่ำกว่า 10 เท่าแปลว่าถูกเสมอ และ P/E สูงกว่า 20 เท่าแปลว่าแพง แต่วิธีนี้ผิดพลาดร้ายแรงเพราะแต่ละธุรกิจมีลักษณะต่างกัน:
+- **หุ้นปันผลดีหรืออุตสาหกรรมดั้งเดิม (เช่น พลังงาน ธนาคาร ค้าปลีก):** P/E ที่เหมาะสมควรต่ำ อยู่ที่ประมาณ 8-15 เท่า
+- **หุ้นเทคโนโลยีเติบโตสูง (เช่น หุ้นอเมริกาเติบโตเร็ว):** P/E อาจอยู่ที่ 25-45 เท่าก็ยังถือว่าคุ้มค่าหากบริษัทรักษาสปีดการโตของกำไร (Earnings Growth) ได้รวดเร็ว
+
+**2. วิธีประเมินความถูกแพงอย่างปลอดภัย**
+- **เทียบกับคู่แข่งในกลุ่มอุตสาหกรรมเดียวกัน:** ตัวอย่างเช่น หุ้นธนาคาร KBANK ควรอัตราส่วนเทียบกับ BBL หรือ KTB ไม่ใช่เทียบกับกลุ่มเทคโนโลยี
+- **เทียบกับประวัติ P/E ย้อนหลังของตัวเอง 5 ปี:** ตรวจสอบว่าปัจจุบันต่ำกว่าเฉลี่ยย้อนหลังหรือไม่
+- **ใช้ PEG Ratio ช่วยคิด:** อัตราส่วน PE หารด้วยอัตราการเติบโตของกำไร (G) หากค่า **PEG < 1.0** จัดว่าเป็นราคาถูกมีส่วนลดที่น่าสนใจมาก
+
+**3. ระวังกับดักหุ้น PE ต่ำ (PE Value Trap)**
+ระวังหุ้นที่ P/E ต่ำลงเนื่องจากบริษัทได้กำไรพิเศษชั่วคราวก้อนโต หรือกำลังเจอปัญหากลุ่มอุตสาหกรรมถดถอยถาวร แนะนำให้นำมาประกอบกับงบกระแสเงินสดอิสระ FCF เพื่อวิเคราะห์คู่เคียงเสมอ`
+  },
+
+  // ==== ADVANCED ARTICLES ====
+  {
+    slug: "warren-buffett-dcf-model",
+    title: "เจาะลึกสูตรคำนวณ DCF Model แบบ Warren Buffett: นักลงทุนระดับโลกประเมินอย่างไร?",
+    category: "Advanced (ความรู้ระดับสูง)",
+    read_time: "7 นาที",
+    summary: "เปิดเผยโครงสร้างจำลองราคาเหมาะสมสไตล์ Warren Buffett ประยุกต์ใช้พันธบัตรรัฐบาลสหรัฐฯ แทนอัตรา WACC ทั่วไป และการคัดกรองกิจการผูกขาด",
+    tag: "Advanced",
+    lang: "th",
+    created_at: new Date("2026-05-31T06:30:00Z").toISOString(),
+    content: `แบบจำลองการคิดลดกระแสเงินสด (Discounted Cash Flow Model) สไตล์นักลงทุนระดับตำนาน **Warren Buffett** มีความแตกต่างที่ทรงคุณค่าและตัดความซับซ้อนของทฤษฎีการเงินเชิงวิชาการออกไปอย่างสิ้นเชิง นี่คือหัวใจสำคัญ 3 ด้านที่ Buffett ใช้จริง:
+
+**1. ปัดทิ้งทฤษฎี WACC: เลือกใช้ผลตอบแทนพันธบัตรรัฐบาลแทน**
+ในขณะที่นักการเงินทั่วไปเสียเวลาประเมินค่าความผันผวน Beta และความเสี่ยงผู้ใช้เพื่อหาค่า WACC แต่ Warren Buffett เลือกใช้แนวทางที่เฉียบขาด:
+- Buffett ใช้ **อัตราผลตอบแทนพันธบัตรรัฐบาลระยะยาว (Risk-Free Rate)** เป็นอัตราคิดลดฐานหลักโดยตรงในการประเมินธุรกิจที่มีสภาวะกำไรสม่ำเสมอพยากรณ์ง่าย
+- เหตุผลคือ พันธบัตรรัฐบาลเป็นหลักอ้างอิงไร้ความเสี่ยงที่น่าเชื่อถือที่สุด และหากเป็นกิจการที่ Buffett สนใจ ก็ย่อมมีฐานะมั่นคงใกล้เคียงเกณฑ์นี้อยู่แล้ว
+
+**2. เน้นการทำนายล่วงหน้าที่มีความแม่นยำสูง (Predictable Monopolies)**
+Buffett จะหลีกเลี่ยงการประเมิน DCF กับกลุ่มธุรกิจเทคโนโลยีหน้าใหม่ที่มีโอกาสผันผวนหนัก แต่จะคำนวณเฉพาะกับบริษัทที่มี **คูเมืองทางธุรกิจที่กว้าง (Economic Moat)** โครงสร้างลูกค้ายึดติดแบรนด์ มีอำนาจขึ้นราคาสินค้าตามเงินเฟ้อ ทำให้คาดการณ์ FCF ย้อนหลังและไปข้างหน้าได้แทบจะ 100%
+
+**3. การปรับบวก Margin of Safety สูงพิเศษ**
+เนื่องจากใช้อัตราคิดลดพันธบัตรรัฐบาลซึ่งต่ำกว่าอัตรา WACC ทั่วไป Buffett จึงปรับเพิ่มความปลอดภัยโดยเพิ่มเงื่อนไขส่วนลดราคาตลาด **Margin of Safety สูงถึง 25-35%** เพื่อจำกัดความเสี่ยงพอร์ต`
+  },
+  {
+    slug: "owner-earnings-valuation",
+    title: "คู่มือคำนวณ Owner Earnings: สูตรประเมินมูลค่ากิจการสไตล์การเงินระดับสูง",
+    category: "Advanced (ความรู้ระดับสูง)",
+    read_time: "6 นาที",
+    summary: "เจาะลึกกระแสเงินสดที่แท้จริงของผู้ถือหุ้น หรือ Owner Earnings สูตรลับการประเมินราคาเหมาะสมโดยหักค่าใช้จ่ายซ่อมแซมสินทรัพย์ที่แท้จริงแทนค่าเสื่อมบัญชี",
+    tag: "Advanced",
+    lang: "th",
+    created_at: new Date("2026-05-31T06:00:00Z").toISOString(),
+    content: `หนึ่งในการปรับปรุงสูตรบัญชีที่ยิ่งใหญ่ที่สุดของ Warren Buffett ซึ่งเคยเขียนอธิบายไว้ในจดหมายผู้ถือหุ้น Berkshire Hathaway ปี 1986 คือแนวคิด **Owner Earnings** (กำไรของเจ้าของกิจการ) ซึ่งมีความละเอียดเหนือกว่าค่า EBITDA หรือ Net Income ทั่วไป
+
+**1. สูตรคำนวณ Owner Earnings:**
+$$Owner\\ Earnings = Net\\ Income + D&A - Maintenance\\ CapEx$$
+*คำอธิบายตัวแปร:*
+- **Net Income (กำไรสุทธิ):** บรรทัดสุดท้ายของงบกำไรขาดทุน
+- **D&A (Depreciation & Amortization):** ค่าเสื่อมราคาและค่าตัดจำหน่าย (บวกกลับเข้ามาเพราะไม่ใช่เงินสดจ่ายจริง)
+- **Maintenance CapEx (ค่าใช้จ่ายทุนเพื่อการบำรุงรักษา):** เงินสดจ่ายจริงเพื่อซื้อสินทรัพย์เพื่อรักษาสภาพกำลังการผลิตเดิมให้อยู่รอด (หักออกเพื่อความปลอดภัย)
+
+**2. ทำไมถึงเหนือชั้นกว่า EBITDA ทั่วไป?**
+นักวิเคราะห์ทั่วไปชอบใช้ EBITDA เพราะตัวเลขกำไรดูแกร่งปัดเป่าหนี้สินและค่าเสื่อมทิ้งไป แต่การไม่หักค่าใช้จ่ายซ่อมบำรุงโรงงานหรือเครื่องจักร (Maintenance CapEx) ถือเป็นการปกปิดรายจ่ายจ่ายเงินสดที่จำเป็นอย่างยิ่ง ซึ่งสูตร Owner Earnings ของ Buffett ป้องกันจุดนี้โดยเฉพาะ
+
+**สรุปการนำไปใช้ประเมินมูลค่า:**
+หากต้องการประเมินมูลค่ากลุ่มโรงงานอุตสาหกรรม หรือธุรกิจโรงไฟฟ้าที่มีสินทรัพย์หนัก ให้ประเมินโดยเปลี่ยนมาใช้กระแสเงินสดจาก **Owner Earnings** แทนกระแสเงินสดอิสระแบบทั่วไป จะช่วยให้เห็นราคา Intrinsic Value ที่มีความปลอดภัยและตรงสัจจะตามงบกระแสเงินสดจริงสูงสุดครับ`
   }
 ];
 
-// Helper to read articles from flat file
+// Read flat DB
 export function readFlatArticles(): FlatArticle[] {
   try {
     if (!fs.existsSync(FILE_PATH)) {
-      // Initialize with seed data
       fs.writeFileSync(FILE_PATH, JSON.stringify(SEED_ARTICLES, null, 2), "utf-8");
       return SEED_ARTICLES;
     }
@@ -99,7 +198,7 @@ export function readFlatArticles(): FlatArticle[] {
   }
 }
 
-// Helper to save/upsert article in flat file
+// Save flat DB
 export function saveFlatArticle(art: FlatArticle): boolean {
   try {
     const list = readFlatArticles();
@@ -113,18 +212,18 @@ export function saveFlatArticle(art: FlatArticle): boolean {
     if (existingIndex >= 0) {
       list[existingIndex] = articleToSave;
     } else {
-      list.unshift(articleToSave); // Add to the top
+      list.unshift(articleToSave);
     }
 
     fs.writeFileSync(FILE_PATH, JSON.stringify(list, null, 2), "utf-8");
     return true;
   } catch (err) {
-    console.error("Error saving to flat database file:", err);
+    console.error("Error saving to flat database:", err);
     return false;
   }
 }
 
-// Helper to delete article from flat file
+// Delete flat DB
 export function deleteFlatArticle(slug: string): boolean {
   try {
     const list = readFlatArticles();
@@ -132,7 +231,7 @@ export function deleteFlatArticle(slug: string): boolean {
     fs.writeFileSync(FILE_PATH, JSON.stringify(filtered, null, 2), "utf-8");
     return true;
   } catch (err) {
-    console.error("Error deleting from flat database file:", err);
+    console.error("Error deleting from flat database:", err);
     return false;
   }
 }

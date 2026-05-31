@@ -216,9 +216,11 @@ export default function StocksPage() {
   const sectorStats = useMemo(() => {
     return SECTORS.map((sec) => {
       const matching = allStocks.filter((s) => s.sector === sec);
-      const vals = matching.map((s) => computeValuation(s, defaultDCFParams(s)));
+      const vals = matching
+        .map((s) => computeValuation(s, defaultDCFParams(s)).marginOfSafety)
+        .filter((mos) => Number.isFinite(mos));
       const avgMos =
-        vals.length > 0 ? vals.reduce((sum, v) => sum + v.marginOfSafety, 0) / vals.length : 0;
+        vals.length > 0 ? vals.reduce((sum, mos) => sum + mos, 0) / vals.length : 0;
       return {
         name: sec,
         count: matching.length,
@@ -416,7 +418,7 @@ export default function StocksPage() {
   };
 
   return (
-    <div className="mx-auto max-w-7xl space-y-6 px-4 py-2 animate-fade-up">
+    <div className="mx-auto max-w-7xl space-y-5 overflow-hidden px-3 pb-24 pt-2 animate-fade-up sm:space-y-6 sm:px-4 lg:pb-2">
       {/* 🚀 A. LIVE GLOBAL TICKER MARQUEE */}
       <div className="w-full overflow-hidden border border-line/60 bg-elevate/45 rounded-xl py-2">
         <div className="flex whitespace-nowrap animate-marquee gap-8 text-[11px] font-mono font-bold select-none">
@@ -454,20 +456,22 @@ export default function StocksPage() {
       </div>
 
       {/* 🚀 B. TERMINAL TITLE HEADER */}
-      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-        <div>
-          <div className="flex items-center gap-2">
-            <span className="inline-flex h-9 w-9 items-center justify-center rounded-xl bg-brand/10 text-brand">
+      <div className="flex min-w-0 flex-col gap-4 md:flex-row md:items-center md:justify-between">
+        <div className="min-w-0">
+          <div className="flex min-w-0 items-start gap-2 sm:items-center">
+            <span className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-brand/10 text-brand">
               <Layers className="h-5 w-5" />
             </span>
-            <div>
-              <h1 className="font-display text-2xl font-bold md:text-3xl tracking-tight text-ink flex items-center gap-2">
-                {lang === "th" ? "สถานีสกรีนเนอร์หุ้นคุณค่า" : "Valustock Value Terminal"}
-                <span className="text-xs bg-brand-soft border border-brand/20 text-brand px-2 py-0.5 rounded-full font-sans uppercase font-bold animate-pulse">
+            <div className="min-w-0">
+              <h1 className="flex flex-wrap items-center gap-2 font-display text-xl font-bold leading-tight text-ink sm:text-2xl md:text-3xl">
+                <span className="min-w-0 [overflow-wrap:anywhere]">
+                  {lang === "th" ? "สถานีสกรีนเนอร์หุ้นคุณค่า" : "Valustock Value Terminal"}
+                </span>
+                <span className="rounded-full border border-brand/20 bg-brand-soft px-2 py-0.5 font-sans text-[10px] font-bold uppercase text-brand animate-pulse sm:text-xs">
                   Live
                 </span>
               </h1>
-              <p className="text-xs text-muted mt-0.5">
+              <p className="mt-1 max-w-2xl text-xs leading-relaxed text-muted [overflow-wrap:anywhere]">
                 {lang === "th"
                   ? "เครื่องมือคำนวณมูลค่าเหมาะควร DCF & Graham แบบเวลาจริง พร้อมวิเคราะห์เชิงเปรียบเทียบเชิงลึกอย่างนักลงทุนสถาบัน"
                   : "Institutional-grade screening terminal featuring live reactive DCF & Graham models."}
@@ -477,36 +481,39 @@ export default function StocksPage() {
         </div>
 
         {/* Action Presets */}
-        <div className="flex flex-wrap gap-2 items-center text-xs">
-          <span className="text-muted font-bold uppercase tracking-wider text-[10px] mr-1">
+        <div className="grid grid-cols-2 gap-2 text-xs sm:flex sm:flex-wrap sm:items-center">
+          <span className="col-span-2 text-[10px] font-bold uppercase tracking-wider text-muted sm:mr-1">
             {lang === "th" ? "สูตรสกรีนด่วน:" : "Quick Formulas:"}
           </span>
           <button
             onClick={() => applyPreset("buffett")}
             disabled={!canScreen}
-            className="px-2.5 py-1.5 border border-gold/30 bg-gold/5 text-gold rounded-xl hover:bg-gold/15 transition disabled:opacity-50 flex items-center gap-1 font-semibold"
+            className="inline-flex min-w-0 items-center justify-center gap-1 overflow-hidden rounded-xl border border-gold/30 bg-gold/5 px-2.5 py-1.5 text-[11px] font-semibold text-gold transition hover:bg-gold/15 disabled:opacity-50 sm:text-xs"
           >
-            👑 Buffett Core
+            <span className="sm:hidden">👑 Buffett</span>
+            <span className="hidden sm:inline">👑 Buffett Core</span>
           </button>
           <button
             onClick={() => applyPreset("dividend")}
             disabled={!canScreen}
-            className="px-2.5 py-1.5 border border-brand/30 bg-brand/5 text-brand rounded-xl hover:bg-brand/15 transition disabled:opacity-50 flex items-center gap-1 font-semibold"
+            className="inline-flex min-w-0 items-center justify-center gap-1 overflow-hidden rounded-xl border border-brand/30 bg-brand/5 px-2.5 py-1.5 text-[11px] font-semibold text-brand transition hover:bg-brand/15 disabled:opacity-50 sm:text-xs"
           >
-            💵 Dividend Rich
+            <span className="sm:hidden">💵 Dividend</span>
+            <span className="hidden sm:inline">💵 Dividend Rich</span>
           </button>
           <button
             onClick={() => applyPreset("growth")}
             disabled={!canScreen}
-            className="px-2.5 py-1.5 border border-up/30 bg-up/5 text-up rounded-xl hover:bg-up/15 transition disabled:opacity-50 flex items-center gap-1 font-semibold"
+            className="inline-flex min-w-0 items-center justify-center gap-1 overflow-hidden rounded-xl border border-up/30 bg-up/5 px-2.5 py-1.5 text-[11px] font-semibold text-up transition hover:bg-up/15 disabled:opacity-50 sm:text-xs"
           >
-            🚀 Tech Growth
+            <span className="sm:hidden">🚀 Growth</span>
+            <span className="hidden sm:inline">🚀 Tech Growth</span>
           </button>
           <button
             onClick={() => applyPreset("reset")}
-            className="px-2.5 py-1.5 border border-line bg-surface hover:bg-elevate text-ink rounded-xl transition font-semibold"
+            className="inline-flex min-w-0 items-center justify-center overflow-hidden rounded-xl border border-line bg-surface px-2.5 py-1.5 text-[11px] font-semibold text-ink transition hover:bg-elevate sm:text-xs"
           >
-            {lang === "th" ? "ล้างฟิลเตอร์" : "Reset Terminal"}
+            <span className="truncate">{lang === "th" ? "ล้างฟิลเตอร์" : "Reset Terminal"}</span>
           </button>
         </div>
       </div>
@@ -514,11 +521,11 @@ export default function StocksPage() {
       {/* 🚀 C. HIGH-DENSITY MARKET STATS CARD GRID */}
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         {/* KPI 1 */}
-        <Card className="border border-line/60 p-4 bg-surface/30 flex items-center gap-3.5 relative overflow-hidden group hover:border-brand/40 transition">
+          <Card className="border border-line/60 p-4 bg-surface/30 flex items-center gap-3.5 relative overflow-hidden group hover:border-brand/40 transition min-w-0">
           <div className="h-10 w-10 rounded-xl bg-brand/10 text-brand flex items-center justify-center shrink-0">
             <BarChart3 className="h-5 w-5" />
           </div>
-          <div>
+          <div className="min-w-0">
             <div className="text-[10px] font-bold text-muted uppercase tracking-wider leading-none">
               {lang === "th" ? "ความครอบคลุมระบบ" : "Terminal Coverage"}
             </div>
@@ -532,11 +539,11 @@ export default function StocksPage() {
         </Card>
 
         {/* KPI 2 */}
-        <Card className="border border-line/60 p-4 bg-surface/30 flex items-center gap-3.5 relative overflow-hidden group hover:border-up/40 transition">
+          <Card className="border border-line/60 p-4 bg-surface/30 flex items-center gap-3.5 relative overflow-hidden group hover:border-up/40 transition min-w-0">
           <div className="h-10 w-10 rounded-xl bg-up/10 text-up flex items-center justify-center shrink-0">
             <Target className="h-5 w-5" />
           </div>
-          <div>
+          <div className="min-w-0">
             <div className="text-[10px] font-bold text-muted uppercase tracking-wider leading-none">
               {lang === "th" ? "ดัชนีโอกาสซื้อ (Bargain Rate)" : "Bargain Index"}
             </div>
@@ -550,11 +557,11 @@ export default function StocksPage() {
         </Card>
 
         {/* KPI 3 */}
-        <Card className="border border-line/60 p-4 bg-surface/30 flex items-center gap-3.5 relative overflow-hidden group hover:border-gold/40 transition">
+          <Card className="border border-line/60 p-4 bg-surface/30 flex items-center gap-3.5 relative overflow-hidden group hover:border-gold/40 transition min-w-0">
           <div className="h-10 w-10 rounded-xl bg-gold/10 text-gold flex items-center justify-center shrink-0">
             <CircleDollarSign className="h-5 w-5" />
           </div>
-          <div>
+          <div className="min-w-0">
             <div className="text-[10px] font-bold text-muted uppercase tracking-wider leading-none">
               {lang === "th" ? "อัตราปันผลตลาดเฉลี่ย" : "Equities Avg Yield"}
             </div>
@@ -568,7 +575,7 @@ export default function StocksPage() {
         </Card>
 
         {/* KPI 4 */}
-        <Card className="border border-line/60 p-4 bg-surface/30 flex items-center gap-3.5 relative overflow-hidden group hover:border-brand/40 transition">
+          <Card className="border border-line/60 p-4 bg-surface/30 flex items-center gap-3.5 relative overflow-hidden group hover:border-brand/40 transition min-w-0">
           <div className="h-10 w-10 rounded-xl bg-brand/15 text-brand flex items-center justify-center shrink-0">
             <Crown className="h-5 w-5 text-gold animate-bounce" />
           </div>
@@ -597,7 +604,7 @@ export default function StocksPage() {
         <label className="text-[10px] uppercase font-bold text-muted tracking-widest block">
           {lang === "th" ? "หมวดธุรกิจเฉลี่ยส่วนเผื่อความปลอดภัย (Sector MOS Health)" : "Industry Heatmap (Avg Margin of Safety)"}
         </label>
-        <div className="flex gap-2.5 overflow-x-auto pb-2 scrollbar-none select-none">
+        <div className="flex flex-wrap gap-2.5 pb-2 select-none">
           {sectorStats.map((sec) => {
             const isActive = sector === sec.name;
             const isGood = sec.avgMos >= 10;
@@ -606,7 +613,7 @@ export default function StocksPage() {
               <button
                 key={sec.name}
                 onClick={() => setSector(sector === sec.name ? null : sec.name)}
-                className={`flex flex-col items-start p-2.5 rounded-xl border transition-all text-left shrink-0 min-w-[140px] ${
+                className={`min-w-0 flex-1 basis-[calc(50%-0.375rem)] flex flex-col items-start p-2.5 rounded-xl border transition-all text-left sm:shrink-0 sm:basis-auto sm:min-w-[140px] ${
                   isActive
                     ? "border-brand bg-brand/5 shadow-glow"
                     : "border-line bg-surface/30 hover:border-line/85 hover:bg-elevate/40"
@@ -641,7 +648,7 @@ export default function StocksPage() {
           <Card className="border border-line bg-surface/40 backdrop-blur-md p-4">
             <div className="space-y-4">
               {/* 🌍 PROFESSIONAL MARKET SEGMENTED TABS */}
-              <div className="flex border-b border-line pb-3 mb-4 gap-2 overflow-x-auto scrollbar-none select-none">
+              <div className="grid grid-cols-2 gap-2 border-b border-line pb-3 mb-4 select-none sm:flex sm:overflow-x-auto sm:scrollbar-none">
                 {[
                   { value: "ALL", label: lang === "th" ? "🌍 สินทรัพย์ทั้งหมด" : "🌍 All Assets", count: allStocks.length },
                   { value: "TH_STOCK", label: lang === "th" ? "🇹🇭 หุ้นไทย" : "🇹🇭 Thai Equities", count: allStocks.filter(s => s.assetType === "TH_STOCK").length },
@@ -659,13 +666,13 @@ export default function StocksPage() {
                         setSelectedAssetType(mkt.value);
                         setSector(null); // Clean sector selection for context consistency
                       }}
-                      className={`px-4 py-2.5 text-xs font-bold rounded-xl border flex items-center gap-2 transition-all duration-200 shrink-0 ${
+                      className={`min-w-0 justify-between px-3 py-2.5 text-xs font-bold rounded-xl border flex items-center gap-2 transition-all duration-200 sm:shrink-0 sm:px-4 ${
                         isActive
                           ? "bg-brand/10 text-brand border-brand/40 shadow-glow-brand font-extrabold"
                           : "bg-surface/30 text-muted border-line hover:border-line/80 hover:text-ink"
                       }`}
                     >
-                      <span>{mkt.label}</span>
+                      <span className="min-w-0 truncate">{mkt.label}</span>
                       <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-mono font-bold leading-none ${
                         isActive 
                           ? "bg-brand/20 text-brand" 
@@ -744,23 +751,23 @@ export default function StocksPage() {
               {/* Slider screeners - Enabled for Pro/Premium */}
               {!canScreen ? (
                 <div className="rounded-xl border border-line bg-elevate/45 p-3.5 text-center flex flex-col items-center sm:flex-row sm:items-center sm:justify-between gap-4">
-                  <div className="flex items-center gap-3 text-left">
+                  <div className="flex min-w-0 items-center gap-3 text-left">
                     <span className="inline-flex h-8 w-8 items-center justify-center rounded-xl bg-gold/10 text-gold shrink-0">
                       <Lock className="h-4 w-4" />
                     </span>
-                    <div>
-                      <h4 className="text-xs font-bold text-ink">
+                    <div className="min-w-0">
+                      <h4 className="text-xs font-bold text-ink [overflow-wrap:anywhere]">
                         {lang === "th" ? "ต้องการคัดกรองส่วนต่าง MOS & P/E ละเอียด?" : "Unlock Advanced Screen Sliders?"}
                       </h4>
-                      <p className="text-[10px] text-muted leading-relaxed">
+                      <p className="text-[10px] text-muted leading-relaxed [overflow-wrap:anywhere]">
                         {lang === "th"
-                          ? "อัปเกรดแผนสมาชิกพรีเมียม เพื่อปลดล็อกตัวคัดกรองแถบเลื่อน MOS, P/E, Div % แบบเวลาจริง"
-                          : "Upgrade to Premium to drag safety margin and PE threshold sliders."}
+                          ? "ปลดล็อกตัวคัดกรอง MOS, P/E และ Div % แบบละเอียด"
+                          : "Unlock MOS, P/E and dividend yield sliders."}
                       </p>
                     </div>
                   </div>
-                  <Link href="/pricing">
-                    <Button size="sm" variant="gold" className="shrink-0 flex items-center gap-1">
+                  <Link href="/pricing" className="w-full sm:w-auto">
+                    <Button size="sm" variant="gold" className="flex w-full shrink-0 items-center gap-1 sm:w-auto">
                       <Crown className="h-3.5 w-3.5" />
                       {lang === "th" ? "อัปเกรดโปร" : "Upgrade to Pro"}
                     </Button>
@@ -824,83 +831,202 @@ export default function StocksPage() {
 
           {/* TABLE TAB SYSTEM */}
           <div className="flex flex-col space-y-2">
-            <div className="flex border-b border-line gap-2 overflow-x-auto scrollbar-none text-xs">
-              <button
-                onClick={() => setActiveTab("valuation")}
-                className={`px-4 py-2 font-bold transition-all border-b-2 flex items-center gap-1.5 shrink-0 ${
-                  activeTab === "valuation"
-                    ? "border-brand text-brand"
-                    : "border-transparent text-muted hover:text-ink"
-                }`}
-              >
-                <Calculator className="h-3.5 w-3.5" />
-                {lang === "th" ? "โมเดลประเมินราคา" : "Valuation Hub"}
-              </button>
-              <button
-                onClick={() => setActiveTab("performance")}
-                className={`px-4 py-2 font-bold transition-all border-b-2 flex items-center gap-1.5 shrink-0 ${
-                  activeTab === "performance"
-                    ? "border-brand text-brand"
-                    : "border-transparent text-muted hover:text-ink"
-                }`}
-              >
-                <TrendingUp className="h-3.5 w-3.5" />
-                {lang === "th" ? "ฐานะและงบการเงิน" : "Financial Audits"}
-              </button>
-              <button
-                onClick={() => setActiveTab("dividends")}
-                className={`px-4 py-2 font-bold transition-all border-b-2 flex items-center gap-1.5 shrink-0 ${
-                  activeTab === "dividends"
-                    ? "border-brand text-brand"
-                    : "border-transparent text-muted hover:text-ink"
-                }`}
-              >
-                <CircleDollarSign className="h-3.5 w-3.5" />
-                {lang === "th" ? "เงินปันผล & เงินสด" : "Dividends & Cash"}
-              </button>
-              <button
-                onClick={() => setActiveTab("funds")}
-                className={`px-4 py-2 font-bold transition-all border-b-2 flex items-center gap-1.5 shrink-0 ${
-                  activeTab === "funds"
-                    ? "border-brand text-brand"
-                    : "border-transparent text-muted hover:text-ink"
-                }`}
-              >
-                <PieChart className="h-3.5 w-3.5" />
-                {lang === "th" ? "ข้อมูลกองทุน & ETF" : "Funds / ETFs Explorer"}
-              </button>
-
-              <div className="flex-1" />
-
-              {/* 📥 CSV Screener Export Button */}
-              <Button
-                size="sm"
-                variant="outline"
-                className="flex items-center gap-1.5 text-[10px] px-2.5 h-7.5 mr-2"
-                onClick={handleExportScreenerCSV}
-              >
-                📥 {lang === "th" ? "ส่งออกสกรีนเนอร์ (CSV)" : "Export Screener CSV"}
-              </Button>
-
-              {/* Table Sorting Trigger */}
-              <div className="flex items-center gap-1.5 py-1 px-2 mb-1.5 bg-surface/30 border border-line rounded-lg text-[10px]">
-                <span className="text-muted font-bold uppercase tracking-wider">{lang === "th" ? "เรียงตาม:" : "Sort:"}</span>
-                <select
-                  value={sort}
-                  onChange={(e) => setSort(e.target.value as SortKey)}
-                  className="bg-transparent text-ink focus:outline-none border-none font-bold font-mono cursor-pointer"
+            <div className="space-y-2 border-b border-line pb-2">
+              <div className="grid grid-cols-2 gap-2 text-xs sm:flex sm:overflow-x-auto sm:scrollbar-none">
+                <button
+                  onClick={() => setActiveTab("valuation")}
+                  className={`flex min-w-0 items-center justify-center gap-1.5 rounded-lg border px-3 py-2 font-bold transition-all sm:shrink-0 sm:justify-start sm:border-x-0 sm:border-t-0 sm:rounded-none sm:border-b-2 sm:px-4 ${
+                    activeTab === "valuation"
+                      ? "border-brand text-brand"
+                      : "border-transparent text-muted hover:text-ink"
+                  }`}
                 >
-                  <option value="mos">MOS %</option>
-                  <option value="pe">P/E Ratio</option>
-                  <option value="growth">FCF Growth</option>
-                  <option value="yield">Dividend Yield</option>
-                  <option value="symbol">A-Z Ticker</option>
-                </select>
+                  <Calculator className="h-3.5 w-3.5" />
+                  {lang === "th" ? "ประเมินราคา" : "Valuation"}
+                </button>
+                <button
+                  onClick={() => setActiveTab("performance")}
+                  className={`flex min-w-0 items-center justify-center gap-1.5 rounded-lg border px-3 py-2 font-bold transition-all sm:shrink-0 sm:justify-start sm:border-x-0 sm:border-t-0 sm:rounded-none sm:border-b-2 sm:px-4 ${
+                    activeTab === "performance"
+                      ? "border-brand text-brand"
+                      : "border-transparent text-muted hover:text-ink"
+                  }`}
+                >
+                  <TrendingUp className="h-3.5 w-3.5" />
+                  {lang === "th" ? "งบการเงิน" : "Financials"}
+                </button>
+                <button
+                  onClick={() => setActiveTab("dividends")}
+                  className={`flex min-w-0 items-center justify-center gap-1.5 rounded-lg border px-3 py-2 font-bold transition-all sm:shrink-0 sm:justify-start sm:border-x-0 sm:border-t-0 sm:rounded-none sm:border-b-2 sm:px-4 ${
+                    activeTab === "dividends"
+                      ? "border-brand text-brand"
+                      : "border-transparent text-muted hover:text-ink"
+                  }`}
+                >
+                  <CircleDollarSign className="h-3.5 w-3.5" />
+                  {lang === "th" ? "ปันผล" : "Dividends"}
+                </button>
+                <button
+                  onClick={() => setActiveTab("funds")}
+                  className={`flex min-w-0 items-center justify-center gap-1.5 rounded-lg border px-3 py-2 font-bold transition-all sm:shrink-0 sm:justify-start sm:border-x-0 sm:border-t-0 sm:rounded-none sm:border-b-2 sm:px-4 ${
+                    activeTab === "funds"
+                      ? "border-brand text-brand"
+                      : "border-transparent text-muted hover:text-ink"
+                  }`}
+                >
+                  <PieChart className="h-3.5 w-3.5" />
+                  {lang === "th" ? "กองทุน/ETF" : "Funds / ETFs"}
+                </button>
+              </div>
+
+              <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                {/* Table Sorting Trigger */}
+                <div className="flex items-center justify-between gap-1.5 rounded-lg border border-line bg-surface/30 px-2 py-1 text-[10px] sm:justify-start">
+                  <span className="font-bold uppercase tracking-wider text-muted">{lang === "th" ? "เรียงตาม:" : "Sort:"}</span>
+                  <select
+                    value={sort}
+                    onChange={(e) => setSort(e.target.value as SortKey)}
+                    className="min-w-0 bg-transparent font-mono font-bold text-ink focus:outline-none"
+                  >
+                    <option value="mos">MOS %</option>
+                    <option value="pe">P/E Ratio</option>
+                    <option value="growth">FCF Growth</option>
+                    <option value="yield">Dividend Yield</option>
+                    <option value="symbol">A-Z Ticker</option>
+                  </select>
+                </div>
+
+                {/* 📥 CSV Screener Export Button */}
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="flex h-8 w-full items-center gap-1.5 overflow-hidden px-2.5 text-[10px] sm:w-auto"
+                  onClick={handleExportScreenerCSV}
+                >
+                  <span className="truncate">📥 {lang === "th" ? "ส่งออก CSV" : "Export CSV"}</span>
+                </Button>
               </div>
             </div>
 
+            {/* MOBILE SCREENER CARDS */}
+            <div className="space-y-3 md:hidden">
+              {visibleRows.length === 0 ? (
+                <Card className="border border-line p-5 text-center">
+                  <span className="text-xl">🔍</span>
+                  <h3 className="mt-3 text-sm font-bold text-ink">
+                    {lang === "th" ? "ไม่พบหลักทรัพย์ที่ค้นหา" : "No matching assets"}
+                  </h3>
+                  <p className="mt-1 text-xs leading-relaxed text-muted">
+                    {lang === "th" ? "ลองล้างฟิลเตอร์ หรือค้นหาด้วยสัญลักษณ์หุ้นอีกครั้ง" : "Try clearing filters or searching by ticker symbol."}
+                  </p>
+                  {q.trim() && (
+                    <Button size="sm" className="mt-4 w-full text-xs" onClick={handleDeepSearch} disabled={isSearchingApi}>
+                      {isSearchingApi ? (lang === "th" ? "กำลังดึงข้อมูล..." : "Fetching...") : (lang === "th" ? `ดึง ${q.toUpperCase().trim()} จาก API` : `Pull ${q.toUpperCase().trim()} from API`)}
+                    </Button>
+                  )}
+                </Card>
+              ) : (
+                visibleRows.map(({ s, v }) => {
+                  const displayName = lang === "th" ? s.name : s.enName || s.name;
+                  const isFund = s.assetType === "FUND" || s.assetType === "US_FUND";
+                  const isNonStock = isFund || s.assetType === "CRYPTO" || s.assetType === "FUTURES";
+                  const netMargin = s.financials.revenue > 0 ? (s.financials.netIncome / s.financials.revenue) * 100 : 0;
+                  const payoutRatio =
+                    s.financials.eps > 0 && s.financials.dividendPerShare > 0
+                      ? (s.financials.dividendPerShare / s.financials.eps) * 100
+                      : 0;
+                  const verdictColor = {
+                    undervalued: "up",
+                    fair: "muted",
+                    overvalued: "down",
+                  }[v.verdict] as "up" | "muted" | "down";
+
+                  return (
+                    <Card key={`mobile-${s.symbol}`} className="w-full max-w-full overflow-hidden border border-line/80 bg-surface/35 p-4">
+                      <div className="flex min-w-0 flex-col items-start gap-3 sm:flex-row sm:justify-between">
+                        <button
+                          onClick={() => handleSelectStockForSandbox(s.symbol)}
+                          className="flex min-w-0 max-w-full items-center gap-2 text-left"
+                        >
+                          <AssetLogo symbol={s.symbol} color={s.color} size="sm" />
+                          <div className="min-w-0">
+                            <div className="flex min-w-0 flex-wrap items-center gap-1.5">
+                              <span className="font-display text-sm font-bold text-ink">{s.symbol}</span>
+                              <span className="rounded border border-line bg-elevate px-1.5 py-0.5 text-[8px] font-bold text-muted">
+                                {s.assetType || "STOCK"}
+                              </span>
+                            </div>
+                            <span className="mt-0.5 block max-w-[260px] text-[10px] leading-snug text-muted [overflow-wrap:anywhere]">
+                              {displayName}
+                            </span>
+                          </div>
+                        </button>
+                        <Badge tone={verdictColor} className="w-fit max-w-full shrink-0 px-1.5 py-0.5 text-[9px] font-bold">
+                          {t(`verdict.${v.verdict}`)}
+                        </Badge>
+                      </div>
+
+                      {activeTab === "valuation" && (
+                        <div className="mt-4 grid grid-cols-1 gap-2 text-xs sm:grid-cols-2">
+                          <MobileMetric label={lang === "th" ? "ราคา" : "Price"} value={formatPrice(s, s.price)} />
+                          <MobileMetric label={lang === "th" ? "มูลค่า" : "Fair Value"} value={isNonStock ? "—" : formatPrice(s, v.fairValue)} accent />
+                          <MobileMetric label="MOS" value={isFund ? "NAV" : s.assetType === "CRYPTO" || s.assetType === "FUTURES" ? "Market" : `${v.marginOfSafety >= 0 ? "+" : ""}${v.marginOfSafety.toFixed(0)}%`} up={v.marginOfSafety >= 0} />
+                          <MobileMetric label="P/E" value={isFinite(v.ratios.pe) ? num(v.ratios.pe, 1) : "—"} />
+                        </div>
+                      )}
+
+                      {activeTab === "performance" && (
+                        <div className="mt-4 grid grid-cols-1 gap-2 text-xs sm:grid-cols-2">
+                          <MobileMetric label={lang === "th" ? "รายได้" : "Revenue"} value={isNonStock ? "—" : formatPrice(s, s.financials.revenue)} />
+                          <MobileMetric label={lang === "th" ? "กำไรสุทธิ" : "Net Income"} value={isNonStock ? "—" : formatPrice(s, s.financials.netIncome)} />
+                          <MobileMetric label={lang === "th" ? "อัตรากำไร" : "Margin"} value={isNonStock ? "—" : pct(netMargin)} />
+                          <MobileMetric label={lang === "th" ? "เติบโต" : "Growth"} value={isNonStock ? "—" : pct(s.financials.growthRate * 100)} accent />
+                        </div>
+                      )}
+
+                      {activeTab === "dividends" && (
+                        <div className="mt-4 grid grid-cols-1 gap-2 text-xs sm:grid-cols-2">
+                          <MobileMetric label={lang === "th" ? "ปันผล/หุ้น" : "DPS"} value={s.financials.dividendPerShare > 0 ? formatPrice(s, s.financials.dividendPerShare) : "0.00"} accent />
+                          <MobileMetric label={lang === "th" ? "Yield" : "Yield"} value={`${num(v.ratios.dividendYield, 2)}%`} accent />
+                          <MobileMetric label={lang === "th" ? "Payout" : "Payout"} value={payoutRatio > 0 ? pct(payoutRatio) : "0%"} />
+                          <MobileMetric label={lang === "th" ? "เงินสด" : "Cash"} value={isNonStock ? "—" : formatPrice(s, s.financials.cash)} />
+                        </div>
+                      )}
+
+                      {activeTab === "funds" && (
+                        <div className="mt-4 grid grid-cols-1 gap-2 text-xs sm:grid-cols-2">
+                          <MobileMetric label={lang === "th" ? "ประเภท" : "Type"} value={s.fundType || s.assetType || "—"} />
+                          <MobileMetric label={lang === "th" ? "ค่าธรรมเนียม" : "Fee"} value={s.expenseRatio ? `${s.expenseRatio.toFixed(2)}%` : "—"} />
+                          <MobileMetric label="AUM" value={s.aum ? (s.currency === "USD" ? dollar(s.aum) : baht(s.aum)) : "—"} accent />
+                          <MobileMetric label={lang === "th" ? "ความเสี่ยง" : "Risk"} value={s.riskLevel ? String(s.riskLevel) : "—"} />
+                        </div>
+                      )}
+
+                      <div className="mt-4 flex flex-col gap-2 border-t border-line/50 pt-3 sm:flex-row">
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="w-full text-[10px] sm:flex-1"
+                          onClick={() => handleSelectStockForSandbox(s.symbol)}
+                        >
+                          <Calculator className="h-3.5 w-3.5" />
+                          {lang === "th" ? "จำลอง" : "Sandbox"}
+                        </Button>
+                        <Link href={`/stocks/${s.symbol}`} className="block w-full sm:flex-1">
+                          <Button size="sm" className="w-full text-[10px]">
+                            {lang === "th" ? "วิเคราะห์" : "Open"}
+                            <ChevronRight className="h-3.5 w-3.5" />
+                          </Button>
+                        </Link>
+                      </div>
+                    </Card>
+                  );
+                })
+              )}
+            </div>
+
             {/* DENSE INSTITUTIONAL TABLE */}
-            <Card className="border border-line/80 overflow-hidden">
+            <Card className="hidden border border-line/80 overflow-hidden md:block">
               <div className="overflow-x-auto">
                 <table className="w-full text-left text-xs border-collapse">
                   <thead>
@@ -1646,5 +1772,33 @@ function Sparkline({ history, symbol }: { history: number[]; symbol: string }) {
         fill={strokeColor}
       />
     </svg>
+  );
+}
+
+function MobileMetric({
+  label,
+  value,
+  accent,
+  up,
+}: {
+  label: string;
+  value: string;
+  accent?: boolean;
+  up?: boolean;
+}) {
+  return (
+    <div className="min-w-0 rounded-xl border border-line bg-bg/55 px-3 py-2.5">
+      <span className="block text-[10px] font-bold leading-snug text-muted [overflow-wrap:anywhere]">
+        {label}
+      </span>
+      <span
+        className={`mt-1 block font-mono text-xs font-bold [overflow-wrap:anywhere] ${
+          accent ? "text-gold" : up === false ? "text-down" : up ? "text-up" : "text-ink"
+        }`}
+        title={value}
+      >
+        {value}
+      </span>
+    </div>
   );
 }

@@ -679,6 +679,9 @@ export default function InsightsPage() {
                 {activeArticle.content}
               </div>
 
+              {/* 📚 Topic Cluster Navigator for Deep Internal Link Equity */}
+              <TopicClusterNavigator currentSlug={activeArticle.id} setActiveArticle={setActiveArticle} articles={ARTICLES} />
+
               <div className="pt-6 border-t border-line flex justify-end">
                 <Button variant="outline" onClick={() => setActiveArticle(null)}>
                   {lang === "th" ? "ปิดบทความนี้" : "Close Article"}
@@ -687,6 +690,9 @@ export default function InsightsPage() {
             </Card>
           ) : (
             <div className="space-y-6">
+              {/* 📚 Topic Cluster Pillar Hub for Main Topic: Stock Valuation */}
+              <TopicClusterPillarHub setActiveArticle={setActiveArticle} articles={ARTICLES} />
+
               <h3 className="font-display text-lg font-bold flex items-center gap-2 text-ink">
                 <Target className="h-4.5 w-4.5 text-brand" /> {t("insights.knowledgeHub")}
               </h3>
@@ -1226,5 +1232,536 @@ export default function InsightsPage() {
         </div>
       )}
     </div>
+  );
+}
+
+
+// ================== SEO TOPIC CLUSTER NAVIGATOR & PILLAR SYSTEM ==================
+
+function TopicClusterPillarHub({
+  setActiveArticle,
+  articles = []
+}: {
+  setActiveArticle: (art: any) => void;
+  articles?: any[];
+}) {
+  const { lang } = useTranslation();
+  const [activeNodeIndex, setActiveNodeIndex] = useState(0);
+
+  // Nodes for radial mind map
+  const nodes = [
+    {
+      label: "Intrinsic Value",
+      slug: "what-is-intrinsic-value",
+      icon: Target,
+      title: lang === "th" ? "Intrinsic Value (มูลค่าที่แท้จริง)" : "Intrinsic Value Principles",
+      desc: lang === "th"
+        ? "ทฤษฎีประเมินมูลค่าหุ้นตามปัจจัยพื้นฐานที่แท้จริง โดยตัดอารมณ์ความผันผวนของตลาดออกไป เพื่อค้นหาจังหวะซื้อที่ได้เปรียบสูงเมื่อราคาตลาดต่ำกว่ามูลค่าประเมิน"
+        : "Core Value Investing anchor. Determines the true fundamental worth of a business based on earnings power and assets, independent of market emotional noise.",
+      eeatReason: lang === "th"
+        ? "แกนหลักด้านการวิเคราะห์มูลค่าที่แท้จริง (Pillar Core E-E-A-T)"
+        : "Google EEAT Core Pillar Anchor: Essential search authority verification for structural valuation metrics.",
+      metrics: lang === "th" 
+        ? ["ราคาตลาด vs ราคาเหมาะสม", "มูลค่าชำระบัญชี", "สินทรัพย์หมุนเวียนสุทธิ"]
+        : ["Market Price vs. Fair Value", "Liquidation Asset Values", "Net Current Asset Value (NCAV)"],
+      keywords: ["Intrinsic Value คืออะไร", "สูตรหามูลค่าที่แท้จริง", "ราคาเหมาะสมหุ้น"],
+      score: "99.8%",
+      color: "border-amber-500/30 text-amber-400 bg-amber-500/5 hover:border-amber-400",
+      glowColor: "rgba(245, 158, 11, 0.4)",
+      x: 405,
+      y: 250,
+      left: "81%",
+      top: "50%"
+    },
+    {
+      label: "DCF Model",
+      slug: "what-is-dcf",
+      icon: Calculator,
+      title: lang === "th" ? "DCF Model (กระแสเงินสดคิดลด)" : "Discounted Cash Flow Model",
+      desc: lang === "th"
+        ? "แบบจำลองกระแสเงินสดคิดลด (Discounted Cash Flow) มาตรฐานสากล คาดการณ์กระแสเงินสดอิสระของบริษัทในอนาคต N ปี แล้วคิดลดกลับมาด้วยต้นทุนทางการเงินเฉลี่ย"
+        : "The gold standard of quantitative finance. Projects future free cash flows and discounts them back to present value using a customized cost of capital (WACC).",
+      eeatReason: lang === "th"
+        ? "แสดงความเชี่ยวชาญทางการเงินระดับสถาบัน (Advanced Financial Modeling)"
+        : "Demonstrates high topical authority in quantitative corporate finance and absolute pricing algorithms.",
+      metrics: lang === "th"
+        ? ["กระแสเงินสดอิสระ (FCF)", "อัตราคิดลด (WACC)", "มูลค่าสุดท้าย (Terminal Value)"]
+        : ["Free Cash Flow to Firm (FCFF)", "Weighted Average Cost (WACC)", "Terminal Growth Rate (g)"],
+      keywords: ["DCF คืออะไร", "สูตรคำนวณ DCF", "กระแสเงินสดคิดลด"],
+      score: "99.6%",
+      color: "border-blue-500/30 text-blue-400 bg-blue-500/5 hover:border-blue-400",
+      glowColor: "rgba(59, 130, 246, 0.4)",
+      x: 347,
+      y: 371,
+      left: "69.4%",
+      top: "74.2%"
+    },
+    {
+      label: "PE Ratio",
+      slug: "what-pe-ratio-is-cheap",
+      icon: CircleDollarSign,
+      title: lang === "th" ? "P/E Ratio (ราคาต่อกำไรสุทธิ)" : "Price-to-Earnings Ratio",
+      desc: lang === "th"
+        ? "อัตราส่วนทางการเงินยอดนิยมสำหรับวัดความคุ้มค่าราคาหุ้นเทียบกับกำไรสุทธิ พร้อมวิธีวิเคราะห์ค่า PE รายกลุ่มอุตสาหกรรม และวิธีหลีกเลี่ยงกับดักหุ้น PE ต่ำ"
+        : "Most widely used relative valuation multiple. Compares the stock price to its earnings per share, with strategic guidelines to sidestep dangerous low-PE value traps.",
+      eeatReason: lang === "th"
+        ? "ความเข้าใจเชิงสัมพัทธ์ในตัวคูณมูลค่าตลาด (Relative Multiples Authority)"
+        : "Covers key comparative financial ratios to verify comprehensive understanding of market multiple valuations.",
+      metrics: lang === "th"
+        ? ["Trailing P/E vs. Forward P/E", "PEG Ratio ปรับตามการโต", "ดัชนีกับดักมูลค่า PE ต่ำ"]
+        : ["Trailing vs. Forward P/E", "PEG Ratio (Growth Adjusted)", "Low PE Value Trap Flags"],
+      keywords: ["PE Ratio เท่าไหร่ดี", "ค่า PE หุ้นคืออะไร", "หุ้นราคาถูกดูยังไง"],
+      score: "99.2%",
+      color: "border-purple-500/30 text-purple-400 bg-purple-500/5 hover:border-purple-400",
+      glowColor: "rgba(168, 85, 247, 0.4)",
+      x: 216,
+      y: 401,
+      left: "43.2%",
+      top: "80.2%"
+    },
+    {
+      label: "PBV Ratio",
+      slug: "how-to-find-undervalued-stocks",
+      icon: BarChart3,
+      title: lang === "th" ? "P/BV Ratio (ราคาต่อสินทรัพย์สุทธิ)" : "Price-to-Book Value Ratio",
+      desc: lang === "th"
+        ? "การประเมินมูลค่าหุ้นโดยเปรียบเทียบกับส่วนของผู้ถือหุ้นทางบัญชี เหมาะสำหรับคัดสรรหุ้นก้นบุหรี่ที่มีมูลค่าสินทรัพย์แข็งแกร่งคอยหนุนหลัง เช่น กลุ่มธนาคาร"
+        : "Compares current stock price to net asset book value per share. Essential tool for screening asset-heavy stocks and protective net-net cash bargains.",
+      eeatReason: lang === "th"
+        ? "การวิเคราะห์โครงสร้างความปลอดภัยของสินทรัพย์ (Balance Sheet Integrity)"
+        : "Validates deep comprehension of balance sheet security, book reserves, and structural margins.",
+      metrics: lang === "th"
+        ? ["มูลค่าทางบัญชีต่อหุ้น (BVPS)", "สินทรัพย์สุทธิที่จับต้องได้", "ตัวคูณ PBV ย้อนหลัง"]
+        : ["Book Value Per Share (BVPS)", "Net Tangible Assets", "Historical PBV Bands"],
+      keywords: ["PBV คืออะไร", "หุ้นปันผลดีราคาถูก", "วิธีการสแกนหาหุ้น VI"],
+      score: "98.9%",
+      color: "border-teal-500/30 text-teal-400 bg-teal-500/5 hover:border-teal-400",
+      glowColor: "rgba(20, 184, 166, 0.4)",
+      x: 22,
+      y: 317,
+      left: "22%",
+      top: "63.4%"
+    },
+    {
+      label: "ROE Metrics",
+      slug: "how-to-find-undervalued-stocks",
+      icon: TrendingUp,
+      title: lang === "th" ? "ROE (ผลตอบแทนต่อส่วนของเจ้าของ)" : "Return on Equity Metrics",
+      desc: lang === "th"
+        ? "อัตราผลตอบแทนต่อส่วนของผู้ถือหุ้น ตัวชี้วัดประสิทธิภาพของคณะผู้บริหารในการหมุนเงินทุนเพื่อสร้างกำไร หุ้นปันผลแกร่งควรมี ROE > 12-15% อย่างยั่งยืน"
+        : "Key efficiency multiple. Tracks how effectively corporate management reinvests retained earnings. Authoritative compounding indicator for business moats.",
+      eeatReason: lang === "th"
+        ? "การวิเคราะห์ประสิทธิภาพการบริหารทุนหมุนเวียน (Capital Allocation Authority)"
+        : "Demonstrates sophisticated competency in structural returns and management capital stewardship.",
+      metrics: lang === "th"
+        ? ["สมการย่อย DuPont 3 ขั้น", "อัตราหมุนเวียนทรัพย์สิน", "ความคุ้มค่ากำไรสุทธิ"]
+        : ["DuPont Analysis (3-Step)", "Asset Turnover Ratio", "Financial Leverage Impact"],
+      keywords: ["ROE คืออะไร", "วิธีคำนวณ ROE", "หุ้นเติบโตคูเมืองกว้าง"],
+      score: "99.4%",
+      color: "border-cyan-500/30 text-cyan-400 bg-cyan-500/5 hover:border-cyan-400",
+      glowColor: "rgba(6, 182, 212, 0.4)",
+      x: 22,
+      y: 183,
+      left: "22%",
+      top: "36.6%"
+    },
+    {
+      label: "Dividend Yield",
+      slug: "tech-vs-dividend",
+      icon: Wallet,
+      title: lang === "th" ? "Dividend Yield (อัตราปันผลตอบแทน)" : "Dividend Yield Safety",
+      desc: lang === "th"
+        ? "อัตราผลตอบแทนปันผลในรูปเปอร์เซ็นต์ ตัวชี้วัดหลักสำหรับพอร์ตเกษียณสำราญ คัดเลือกเฉพาะหุ้นปันผลปลอดภัยที่มีกระแสเงินสด FCF แกร่งและหนี้ต่ำ"
+        : "Measures annual dividend cash distribution relative to the share price. Focuses on safe, defensive cash yield compounding while dodging yield traps.",
+      eeatReason: lang === "th"
+        ? "ความเชี่ยวชาญด้านพอร์ตสร้างกระแสเงินสดเชิงรับ (Yield & Portfolio Stewardship)"
+        : "Directly matches high-intent investor search traffic looking for retirement cash flow and safety buffers.",
+      metrics: lang === "th"
+        ? ["สัดส่วนจ่ายเงินปันผลต่อกำไร", "อัตราเติบโตปันผลสม่ำเสมอ", "การสกัดกั้นกับดักปันผลลวง"]
+        : ["Dividend Payout Ratio", "Dividend Aristocrats Growth", "Yield Trap Mitigation"],
+      keywords: ["หุ้นปันผลสูง", "Dividend Yield คืออะไร", "พอร์ตปันผลปลอดภัย"],
+      score: "99.5%",
+      color: "border-rose-500/30 text-rose-400 bg-rose-500/5 hover:border-rose-400",
+      glowColor: "rgba(244, 63, 94, 0.4)",
+      x: 216,
+      y: 99,
+      left: "43.2%",
+      top: "19.8%"
+    },
+    {
+      label: "Margin of Safety",
+      slug: "what-is-margin-of-safety",
+      icon: Shield,
+      title: lang === "th" ? "Margin of Safety (ส่วนเผื่อความปลอดภัย)" : "Margin of Safety (MOS)",
+      desc: lang === "th"
+        ? "กฎเหล็กประวัติศาสตร์ของบิดา VI Benjamin Graham ที่สอนให้ซื้อสินทรัพย์เฉพาะเมื่อราคาตลาดมีส่วนลดหักออก 15-30% จากมูลค่า Intrinsic Value เพื่อลดความเสี่ยง"
+        : "Benjamin Graham’s cornerstone risk management rule. Mandates investing only when prices offer a 15-30% discount under intrinsic worth to buffer forecasting errors.",
+      eeatReason: lang === "th"
+        ? "การรักษาเสถียรภาพและบริหารความเสี่ยงระดับสูง (Professional Risk Management)"
+        : "Demonstrates structural authority in proactive wealth protection and systemic risk containment.",
+      metrics: lang === "th"
+        ? ["อัตราส่วนลดเปอร์เซ็นต์ MOS", "ส่วนเผื่อความคลาดเคลื่อนประมาณการ", "เกราะป้องกันเงินต้น"]
+        : ["MOS Discount Percentages", "Estimates Error Buffer Range", "Principal Protection Shields"],
+      keywords: ["Margin of Safety คืออะไร", "Benjamin Graham กฎเหล็ก", "ส่วนต่างราคาที่ปลอดภัย"],
+      score: "99.7%",
+      color: "border-amber-500/30 text-amber-400 bg-amber-500/5 hover:border-amber-400",
+      glowColor: "rgba(245, 158, 11, 0.4)",
+      x: 347,
+      y: 129,
+      left: "69.4%",
+      top: "25.8%"
+    }
+  ];
+
+  const activeNode = nodes[activeNodeIndex];
+
+  return (
+    <Card className="p-6 md:p-8 border border-line bg-surface/30 backdrop-blur-md relative overflow-hidden rounded-3xl">
+      <style dangerouslySetInnerHTML={{ __html: `
+        @keyframes pulse-gold {
+          0% { transform: translate(-50%, -50%) scale(0.96); opacity: 0.95; box-shadow: 0 0 15px rgba(217, 119, 6, 0.4); }
+          50% { transform: translate(-50%, -50%) scale(1.04); opacity: 1; box-shadow: 0 0 35px rgba(217, 119, 6, 0.8); }
+          100% { transform: translate(-50%, -50%) scale(0.96); opacity: 0.95; box-shadow: 0 0 15px rgba(217, 119, 6, 0.4); }
+        }
+        @keyframes orbit-flow {
+          to { stroke-dashoffset: -20; }
+        }
+        .animate-center-pulse {
+          animation: pulse-gold 3s ease-in-out infinite;
+        }
+        .animate-orbit-flow-line {
+          stroke-dasharray: 6, 6;
+          animation: orbit-flow 3s linear infinite;
+        }
+      `}} />
+      <div className="aurora absolute inset-0 -z-10 opacity-30" />
+      
+      {/* Pillar Intro and E-E-A-T badges */}
+      <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 border-b border-line/45 pb-6 mb-6">
+        <div>
+          <span className="chip border-brand/30 bg-brand/10 text-brand text-xs font-bold mb-2 inline-flex items-center gap-1.5 px-3 py-1 rounded-full">
+            <Sparkles className="h-3.5 w-3.5 text-brand" /> E-E-A-T AUTHORITATIVE TOPIC CLUSTER
+          </span>
+          <h2 className="font-display text-xl sm:text-2xl md:text-3xl font-black text-ink leading-tight">
+            {lang === "th" ? "Main Topic: แผนผังความเชี่ยวชาญการประเมินมูลค่าหุ้น" : "Main Topic: Stock Valuation Pillar & Cluster Hub"}
+          </h2>
+          <p className="text-xs sm:text-sm text-muted mt-2 font-medium leading-relaxed max-w-3xl">
+            {lang === "th"
+              ? "โครงข่ายหัวข้อการเงินที่เชื่อมโยงถึงกันอย่างสมบูรณ์แบบตามเกณฑ์ Google Search Core Algorithm เพื่อแสดงความเชี่ยวชาญสูงสุดและสร้างความเข้าใจในการวิเคราะห์หุ้นของนักลงทุนระยะยาว"
+              : "Google E-E-A-T compliant circular semantic node graph. Explores highly linked subtopic domains supporting absolute valuation and wealth protection structures."}
+          </p>
+        </div>
+      </div>
+
+      {/* Main Cluster Area */}
+      <div className="grid gap-8 lg:grid-cols-12 items-center">
+        
+        {/* Left Side: SVG Radial Visual Mind Map */}
+        <div className="lg:col-span-6 flex flex-col items-center justify-center p-2 relative">
+          
+          <div className="relative w-full aspect-square max-w-[400px] sm:max-w-[420px] md:max-w-[450px] mx-auto overflow-visible rounded-full bg-surface/5 border border-line/20 backdrop-blur-sm p-4">
+            
+            {/* SVG Connecting Lines Graph */}
+            <svg
+              viewBox="0 0 500 500"
+              className="absolute inset-0 w-full h-full pointer-events-none select-none overflow-visible"
+            >
+              <defs>
+                <radialGradient id="centerGlow" cx="50%" cy="50%" r="50%">
+                  <stop offset="0%" stopColor="#d97706" stopOpacity="0.4" />
+                  <stop offset="100%" stopColor="#d97706" stopOpacity="0" />
+                </radialGradient>
+                {nodes.map((node, i) => (
+                  <linearGradient key={i} id={`gradient-${i}`} x1="50%" y1="50%" x2={node.x} y2={node.y} gradientUnits="userSpaceOnUse">
+                    <stop offset="0%" stopColor="#d97706" stopOpacity="0.75" />
+                    <stop offset="100%" stopColor={node.glowColor.includes("59, 130") ? "#3b82f6" : node.glowColor.includes("168, 85") ? "#a855f7" : "#14b8a6"} stopOpacity="0.4" />
+                  </linearGradient>
+                ))}
+              </defs>
+
+              {/* Orbital circle paths guides */}
+              <circle cx="250" cy="250" r="155" fill="none" stroke="rgba(255, 255, 255, 0.04)" strokeWidth="1" strokeDasharray="4, 4" />
+              <circle cx="250" cy="250" r="215" fill="none" stroke="rgba(255, 255, 255, 0.02)" strokeWidth="1" />
+
+              {/* Connecting paths with flowing animation */}
+              {nodes.map((node, i) => {
+                const isActive = activeNodeIndex === i;
+                return (
+                  <g key={i}>
+                    {/* Background line */}
+                    <line
+                      x1="250"
+                      y1="250"
+                      x2={node.x}
+                      y2={node.y}
+                      stroke={isActive ? `url(#gradient-${i})` : "rgba(255, 255, 255, 0.07)"}
+                      strokeWidth={isActive ? "2.5" : "1"}
+                      className="transition-all duration-300"
+                    />
+                    {/* Glowing flow dots line */}
+                    {isActive && (
+                      <line
+                        x1="250"
+                        y1="250"
+                        x2={node.x}
+                        y2={node.y}
+                        stroke="#fbbf24"
+                        strokeWidth="2.5"
+                        className="animate-orbit-flow-line opacity-85"
+                      />
+                    )}
+                  </g>
+                );
+              })}
+            </svg>
+
+            {/* PULSING PILLAR CORE CENTER NODE */}
+            <div
+              className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-20 w-24 h-24 sm:w-28 sm:h-28 rounded-full flex flex-col items-center justify-center border-2 border-amber-500 bg-bg/95 text-center p-3 animate-center-pulse cursor-pointer select-none group"
+              onClick={() => setActiveNodeIndex(0)}
+            >
+              <div className="absolute inset-0 rounded-full bg-amber-500/10 pointer-events-none group-hover:bg-amber-500/25 transition duration-300" />
+              <Target className="h-5 w-5 text-amber-500 mb-1 group-hover:scale-110 transition duration-300" />
+              <span className="text-[9px] text-amber-500 uppercase tracking-widest font-black leading-none">{lang === "th" ? "เสาหลักความรู้" : "Pillar Page"}</span>
+              <span className="font-display text-[10px] sm:text-xs font-black text-ink block mt-1 leading-tight">{lang === "th" ? "การประเมิน มูลค่าหุ้น" : "Stock Valuation"}</span>
+            </div>
+
+            {/* 7 RADIAL SUBTOPICS ORBITAL NODES */}
+            {nodes.map((node, i) => {
+              const IconComponent = node.icon;
+              const isActive = activeNodeIndex === i;
+              return (
+                <div
+                  key={i}
+                  className="absolute -translate-x-1/2 -translate-y-1/2 flex flex-col items-center z-10"
+                  style={{ left: node.left, top: node.top }}
+                >
+                  {/* Interactive Button */}
+                  <button
+                    onMouseEnter={() => setActiveNodeIndex(i)}
+                    onClick={() => setActiveNodeIndex(i)}
+                    className={`w-11 h-11 sm:w-13 sm:h-13 rounded-full flex items-center justify-center border transition-all duration-300 relative group shadow-lg ${
+                      isActive
+                        ? `${node.color.split(" ")[2]} ${node.color.split(" ")[1]} scale-110 shadow-xl ring-4 ring-brand/10`
+                        : "border-line bg-bg/90 hover:bg-brand-soft/20 hover:border-brand/40 text-muted hover:text-brand"
+                    }`}
+                  >
+                    <IconComponent className={`h-4.5 w-4.5 sm:h-5 sm:w-5 ${isActive ? "" : "group-hover:scale-110"} transition-all`} />
+                    
+                    {/* Ring highlight element */}
+                    {isActive && (
+                      <span className="absolute inset-0 rounded-full border-2 border-brand/50 scale-105 pointer-events-none animate-ping opacity-45" />
+                    )}
+                  </button>
+
+                  {/* Legible text label floating below/above */}
+                  <span
+                    className={`text-[9px] sm:text-[10px] font-black mt-2 text-center whitespace-nowrap px-2 py-0.5 rounded-md border backdrop-blur-sm shadow-sm transition-all duration-200 pointer-events-none ${
+                      isActive
+                        ? "border-brand/35 text-ink bg-brand-soft/85 scale-105"
+                        : "border-line/30 text-muted bg-bg/85 group-hover:text-ink"
+                    }`}
+                  >
+                    {node.label}
+                  </span>
+                </div>
+              );
+            })}
+
+          </div>
+          
+          <span className="text-[10px] text-muted/65 italic text-center mt-3 block">
+            {lang === "th" ? "💡 วางเมาส์หรือแตะที่วงโคจรย่อยเพื่อวิเคราะห์เจาะลึก" : "💡 Hover or tap orbital nodes to inspect subtopic E-E-A-T credentials."}
+          </span>
+        </div>
+
+        {/* Right Side: E-E-A-T Inspector Panel */}
+        <div className="lg:col-span-6">
+          <Card className="p-5 md:p-6 border border-line bg-bg/40 rounded-2xl relative overflow-hidden flex flex-col justify-between h-full min-h-[360px] shadow-inner">
+            <div className="space-y-4">
+              
+              {/* Header info */}
+              <div className="flex items-center justify-between border-b border-line/30 pb-3">
+                <div className="flex items-center gap-2">
+                  <div className={`p-2 rounded-lg border ${activeNode.color.split(" ")[0]} ${activeNode.color.split(" ")[2]}`}>
+                    <activeNode.icon className="h-5 w-5" />
+                  </div>
+                  <div>
+                    <span className="text-[9px] text-brand font-bold uppercase tracking-wider block">{lang === "th" ? "การวิเคราะห์กลุ่มหัวข้อย่อย" : "SUBTOPIC METRIC NODE"}</span>
+                    <h3 className="font-display text-sm sm:text-base font-black text-ink leading-none mt-0.5">
+                      {activeNode.title}
+                    </h3>
+                  </div>
+                </div>
+                
+                {/* Authority Match Rate */}
+                <div className="text-right">
+                  <span className="text-[9px] text-muted font-bold block">{lang === "th" ? "ความเชี่ยวชาญ E-E-A-T" : "Semantic Authority"}</span>
+                  <span className="text-xs font-mono font-extrabold text-brand block mt-0.5">{activeNode.score} Match</span>
+                </div>
+              </div>
+
+              {/* Description */}
+              <p className="text-xs sm:text-sm text-ink leading-relaxed font-semibold">
+                {activeNode.desc}
+              </p>
+
+              {/* Core metrics covered */}
+              <div className="p-3.5 bg-surface/20 rounded-xl border border-line/35 space-y-2">
+                <span className="text-[10px] text-muted block font-extrabold uppercase tracking-wide">
+                  📈 {lang === "th" ? "ตัวแปรประเมินมูลค่าหลักในเครื่องมือ:" : "Underlying Valuation Metrics:"}
+                </span>
+                <div className="flex flex-wrap gap-1.5">
+                  {activeNode.metrics.map((m, idx) => (
+                    <span key={idx} className="text-[9px] sm:text-[10px] font-bold text-ink px-2.5 py-1 bg-surface/50 border border-line/30 rounded-lg">
+                      🔹 {m}
+                    </span>
+                  ))}
+                </div>
+              </div>
+
+              {/* Target search queries / keywords */}
+              <div className="space-y-1.5">
+                <span className="text-[10px] text-muted block font-extrabold uppercase tracking-wide">
+                  🔍 {lang === "th" ? "คีย์เวิร์ดดึง Traffic (High Intent Keywords):" : "High Volume Target Keywords:"}
+                </span>
+                <div className="flex flex-wrap gap-1">
+                  {activeNode.keywords.map((k, idx) => (
+                    <span key={idx} className="text-[9px] font-mono text-muted bg-surface/10 px-2 py-0.5 rounded border border-line/10">
+                      #{k}
+                    </span>
+                  ))}
+                </div>
+              </div>
+
+              {/* E-E-A-T Authority Note */}
+              <div className="text-[9px] text-muted leading-relaxed flex gap-1.5 items-start mt-2">
+                <Info className="h-3.5 w-3.5 text-brand shrink-0 mt-0.5" />
+                <span>
+                  <strong>Topical Authority Note:</strong> {activeNode.eeatReason}
+                </span>
+              </div>
+
+            </div>
+
+            {/* Read Article CTA Button */}
+            <div className="pt-5 border-t border-line/45 mt-4 flex items-center justify-end">
+              <Button
+                onClick={() => {
+                  const targetSlug = activeNode.slug;
+                  // Look inside articles prop directly
+                  const found = articles.find((a: any) => a.id === targetSlug) || {
+                    id: targetSlug,
+                    title: activeNode.title,
+                    category: "Academy",
+                    date: "Today",
+                    readTime: "5 mins",
+                    summary: activeNode.desc,
+                    content: activeNode.desc,
+                    gradient: "from-amber-600/20 to-red-600/20 text-amber-400 border-red-500/20",
+                    tag: "SEO"
+                  };
+                  setActiveArticle(found);
+                  window.scrollTo({ top: 0, behavior: "smooth" });
+                }}
+                className="w-full sm:w-auto font-bold text-xs bg-brand hover:bg-brand/90 text-bg border-none flex items-center justify-center gap-1.5 py-2 px-5 group shadow-lg shadow-brand/10 transition duration-300"
+              >
+                {lang === "th" ? "เปิดอ่านเจาะลึกทฤษฎีนี้" : "Read Authoritative Guide"} 
+                <ArrowRight className="h-3.5 w-3.5 group-hover:translate-x-1 transition-transform" />
+              </Button>
+            </div>
+
+          </Card>
+        </div>
+
+      </div>
+    </Card>
+  );
+}
+
+function TopicClusterNavigator({
+  currentSlug,
+  setActiveArticle,
+  articles = []
+}: {
+  currentSlug: string;
+  setActiveArticle: (art: any) => void;
+  articles?: any[];
+}) {
+  const { lang } = useTranslation();
+
+  const clusterItems = [
+    { label: "Intrinsic Value", slug: "what-is-intrinsic-value", desc: lang === "th" ? "ทฤษฎีมูลค่าที่แท้จริง" : "Intrinsic Value" },
+    { label: "DCF Model", slug: "what-is-dcf", desc: lang === "th" ? "กระแสเงินสดคิดลด" : "DCF" },
+    { label: "PE Ratio", slug: "what-pe-ratio-is-cheap", desc: lang === "th" ? "ราคาต่อกำไร PE" : "PE Ratio" },
+    { label: "PBV Ratio", slug: "how-to-find-undervalued-stocks", desc: lang === "th" ? "ราคาต่อสมุดบัญชี PBV" : "PBV Ratio" },
+    { label: "ROE", slug: "how-to-find-undervalued-stocks", desc: lang === "th" ? "ผลตอบแทนต่อทุน ROE" : "ROE Metrics" },
+    { label: "Dividend Yield", slug: "tech-vs-dividend", desc: lang === "th" ? "ปันผลตอบแทน" : "Dividend Yield" },
+    { label: "Margin of Safety", slug: "what-is-margin-of-safety", desc: lang === "th" ? "ส่วนเผื่อความปลอดภัย MOS" : "Margin of Safety" }
+  ];
+
+  return (
+    <Card className="mt-8 p-5 border border-line bg-surface/20 rounded-2xl space-y-4">
+      <div className="flex items-center gap-2 border-b border-line/30 pb-3">
+        <span className="grid h-7 w-7 place-items-center rounded-lg bg-brand/15 text-brand">
+          <FileText className="h-4 w-4" />
+        </span>
+        <div>
+          <h4 className="text-xs sm:text-sm font-bold text-ink leading-none">
+            {lang === "th" ? "📚 สารบัญเชื่อมโยงกลุ่มความรู้: การประเมินมูลค่าหุ้น (Stock Valuation)" : "📚 Stock Valuation Cluster Hub"}
+          </h4>
+          <span className="text-[10px] text-muted mt-1 block">
+            {lang === "th" ? "เพิ่มความเชี่ยวชาญ ค้นหาคำตอบของแต่ละตัวแปรทางการเงินแบบเชื่อมโยง" : "Explore supporting valuation models to build a professional foundation."}
+          </span>
+        </div>
+      </div>
+
+      <div className="grid gap-2 grid-cols-2 sm:grid-cols-4">
+        {/* Back to Pillar Hub */}
+        <button
+          onClick={() => {
+            setActiveArticle(null);
+            window.scrollTo({ top: 0, behavior: "smooth" });
+          }}
+          className="p-2.5 rounded-xl border border-dashed border-brand/50 bg-brand-soft/20 text-left hover:bg-brand/10 transition"
+        >
+          <span className="text-[9px] text-brand font-bold uppercase block">Pillar Page</span>
+          <span className="text-xs font-black text-ink block mt-0.5 leading-none">🏠 {lang === "th" ? "กลับไปหน้าหลัก" : "Main Hub"}</span>
+        </button>
+
+        {clusterItems.map((item) => {
+          const isActive = item.slug === currentSlug;
+          return (
+            <button
+              key={item.label}
+              disabled={isActive}
+              onClick={() => {
+                const found = articles.find((a: any) => a.id === item.slug) || {
+                  id: item.slug,
+                  title: item.desc,
+                  category: "Academy",
+                  date: "Today",
+                  readTime: "5 mins",
+                  summary: "",
+                  content: "",
+                  gradient: "from-amber-600/20 to-red-600/20 text-amber-400 border-red-500/20",
+                  tag: "SEO"
+                };
+                setActiveArticle(found);
+                window.scrollTo({ top: 0, behavior: "smooth" });
+              }}
+              className={`p-2.5 rounded-xl text-left border transition ${
+                isActive 
+                  ? "border-brand/40 bg-brand/5 cursor-not-allowed opacity-80" 
+                  : "border-line bg-bg/50 hover:bg-brand/5 hover:border-brand/35"
+              }`}
+            >
+              <span className="text-[9px] text-muted font-bold block">{item.label}</span>
+              <span className="text-xs font-black text-ink block mt-0.5 leading-none truncate">{item.desc}</span>
+            </button>
+          );
+        })}
+      </div>
+    </Card>
   );
 }

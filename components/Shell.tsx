@@ -25,7 +25,6 @@ import {
 import { Button } from "./ui/Button";
 
 const MARKETING = ["/", "/pricing", "/login"];
-
 function Logo({ compact = false }: { compact?: boolean }) {
   return (
     <Link href="/" className="flex items-center gap-2.5">
@@ -138,7 +137,7 @@ const NAV = [
 
 function AppSidebar({ pathname }: { pathname: string }) {
   const plan = useCurrentPlan();
-  const { t } = useTranslation();
+  const { t, lang } = useTranslation();
   return (
     <aside className="sticky top-0 hidden h-screen w-60 shrink-0 flex-col border-r border-line bg-surface px-3 py-5 lg:flex">
       <div className="px-2">
@@ -177,6 +176,15 @@ function AppSidebar({ pathname }: { pathname: string }) {
             </Button>
           </Link>
         )}
+      </div>
+      <div className="mt-4 px-2 flex flex-wrap gap-x-2 gap-y-1 text-[10px] text-muted font-bold tracking-tight">
+        <Link href="/methodology" className="hover:text-brand transition">{lang === "th" ? "สูตรคำนวณ" : "Methodology"}</Link>
+        <span>•</span>
+        <Link href="/disclaimer" className="hover:text-brand transition">{lang === "th" ? "ข้อชี้แจง" : "Disclaimer"}</Link>
+        <span>•</span>
+        <Link href="/privacy" className="hover:text-brand transition">{lang === "th" ? "ส่วนตัว" : "Privacy"}</Link>
+        <span>•</span>
+        <Link href="/terms" className="hover:text-brand transition">{lang === "th" ? "เงื่อนไข" : "Terms"}</Link>
       </div>
     </aside>
   );
@@ -276,7 +284,7 @@ export function Shell({ children }: { children: React.ReactNode }) {
       <AppSidebar pathname={pathname} />
       <div className="flex min-w-0 flex-1 flex-col">
         <AppTopbar />
-        <main className="flex-1 px-5 pb-24 pt-6 lg:px-8 lg:pb-10">
+        <main className="min-w-0 max-w-full flex-1 overflow-x-hidden px-3 pb-24 pt-5 sm:px-5 sm:pt-6 lg:px-8 lg:pb-10">
           {children}
         </main>
         <AppMobileNav pathname={pathname} />

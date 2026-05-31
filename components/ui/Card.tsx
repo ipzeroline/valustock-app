@@ -30,23 +30,23 @@ export function CardHeader({
   icon?: React.ReactNode;
 }) {
   return (
-    <div className="flex items-start justify-between gap-3 border-b border-line px-5 py-4">
-      <div className="flex items-center gap-3">
+    <div className="flex min-w-0 flex-col gap-3 border-b border-line px-4 py-4 sm:flex-row sm:items-start sm:justify-between sm:px-5">
+      <div className="flex min-w-0 items-start gap-3">
         {icon && (
-          <span className="grid h-9 w-9 place-items-center rounded-xl bg-brand-soft text-brand">
+          <span className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-brand-soft text-brand">
             {icon}
           </span>
         )}
-        <div>
-          <h3 className="font-display text-base font-semibold leading-tight text-ink">
+        <div className="min-w-0 flex-1">
+          <h3 className="max-w-full whitespace-normal font-display text-sm font-semibold leading-tight text-ink [overflow-wrap:anywhere] sm:text-base">
             {title}
           </h3>
           {subtitle && (
-            <p className="mt-0.5 text-xs text-muted">{subtitle}</p>
+            <p className="mt-0.5 max-w-full whitespace-normal text-xs leading-relaxed text-muted [overflow-wrap:anywhere]">{subtitle}</p>
           )}
         </div>
       </div>
-      {right}
+      {right && <div className="min-w-0 w-full shrink-0 sm:w-auto">{right}</div>}
     </div>
   );
 }
