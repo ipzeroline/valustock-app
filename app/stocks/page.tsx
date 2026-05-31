@@ -1,0 +1,1650 @@
+"use client";
+
+import { useState, useMemo, useEffect } from "react";
+import Link from "next/link";
+import { STOCKS, SECTORS } from "@/lib/stocks";
+import { Stock } from "@/lib/types";
+import { computeValuation, defaultDCFParams } from "@/lib/valuation";
+import { useCurrentPlan } from "@/lib/store";
+import { AssetLogo } from "@/components/AssetLogo";
+import { Button } from "@/components/ui/Button";
+import { Card, CardHeader, Badge } from "@/components/ui/Card";
+import { Modal } from "@/components/ui/Modal";
+import { LockedCard } from "@/components/Paywall";
+import { useTranslation, SECTOR_TRANS } from "@/lib/translations";
+import { baht, num, pct, dollar, nav } from "@/lib/format";
+import {
+  Search,
+  Filter,
+  Lock,
+  Sparkles,
+  Target,
+  CircleDollarSign,
+  TrendingUp,
+  Layers,
+  ChevronRight,
+  Calculator,
+  BarChart3,
+  PieChart,
+  ArrowUpRight,
+  Crown,
+  RefreshCw,
+  Info,
+} from "@/lib/icons";
+
+type SortKey = "mos" | "pe" | "growth" | "yield" | "symbol";
+type TabType = "valuation" | "performance" | "dividends" | "funds";
+
+export default function StocksPage() {
+  const plan = useCurrentPlan();
+  const { t, lang } = useTranslation();
+
+  // Screener Core State
+  const [q, setQ] = useState("");
+  const [sector, setSector] = useState<string | null>(null);
+  const [selectedAssetType, setSelectedAssetType] = useState<string>("ALL");
+  const [selectedVerdict, setSelectedVerdict] = useState<string>("ALL");
+  const [minMos, setMinMos] = useState<number>(-50);
+  const [maxPe, setMaxPe] = useState<number>(100);
+  const [minYield, setMinYield] = useState<number>(0);
+  const [sort, setSort] = useState<SortKey>("mos");
+  const [activeTab, setActiveTab] = useState<TabType>("valuation");
+
+  // Interactive DCF Sandbox Simulator State
+  const [sandboxSymbol, setSandboxSymbol] = useState<string>("PTT");
+  const [sandboxGrowth, setSandboxGrowth] = useState<number>(0.04);
+  const [sandboxDiscount, setSandboxDiscount] = useState<number>(0.09);
+  const [sandboxTerminal, setSandboxTerminal] = useState<number>(0.025);
+  const [isCustomSandbox, setIsCustomSandbox] = useState<boolean>(false);
+
+  // Dynamic Lookup State
+  const [dynamicStocks, setDynamicStocks] = useState<Stock[]>([]);
+  const [nasdaqStocks, setNasdaqStocks] = useState<Stock[]>([]);
+  const [isSearchingApi, setIsSearchingApi] = useState(false);
+  const [apiSearchError, setApiSearchError] = useState<string | null>(null);
+
+  // Asynchronously load the 5,472 NASDAQ stocks in the background after mounting.
+  // This splits it into a separate lazy-loaded JS chunk, reducing initial bundle size
+  // and making the initial page load blazing fast!
+  useEffect(() => {
+    import("@/lib/nasdaq_index.json")
+      .then((mod) => {
+        setNasdaqStocks(mod.default as Stock[]);
+      })
+      .catch((err) => {
+        console.error("Failed to lazy load NASDAQ index chunk:", err);
+      });
+  }, []);
+
+  const canScreen = plan.limits.screener;
+  const maxStocks = plan.limits.maxStocks;
+
+  // Merge static and dynamic stocks, ensuring absolutely zero duplicate keys by symbol
+  const allStocks = useMemo(() => {
+    const staticSymbols = new Set(STOCKS.map((s) => s.symbol.toUpperCase()));
+    const combinedDynamic = [...dynamicStocks, ...nasdaqStocks];
+    const uniqueDynamic = combinedDynamic.filter((s) => !staticSymbols.has(s.symbol.toUpperCase()));
+    return [...STOCKS, ...uniqueDynamic];
+  }, [dynamicStocks, nasdaqStocks]);
+
+  // Selected Stock for Sandbox simulation
+  const selectedStock = useMemo(() => {
+    return allStocks.find((s) => s.symbol === sandboxSymbol) || allStocks[0];
+  }, [sandboxSymbol, allStocks]);
+
+  // Handle Loading a stock into the sandbox
+  const handleSelectStockForSandbox = (symbol: string) => {
+    const s = allStocks.find((item) => item.symbol === symbol);
+    if (s) {
+      setSandboxSymbol(symbol);
+      setSandboxGrowth(s.financials.growthRate);
+      setSandboxDiscount(0.09);
+      setSandboxTerminal(0.025);
+      setIsCustomSandbox(false);
+    }
+  };
+
+  const handleDeepSearch = async () => {
+    const sym = q.trim().toUpperCase();
+    if (!sym) return;
+    setIsSearchingApi(true);
+    setApiSearchError(null);
+    try {
+      const res = await fetch(`/api/stock/${sym}`);
+      if (!res.ok) {
+        throw new Error(lang === "th" ? `ไม่พบข้อมูลของสัญลักษณ์ "${sym}" หรืออยู่นอกขอบเขตบริการ` : `Could not fetch ticker details for "${sym}".`);
+      }
+      const data = await res.json();
+      if (data && data.symbol) {
+        setDynamicStocks(prev => {
+          if (prev.some(s => s.symbol === data.symbol)) return prev;
+          return [...prev, data];
+        });
+        setQ(data.symbol); // Set active search query to the symbol so it remains selected and filtered
+        handleSelectStockForSandbox(data.symbol);
+      } else {
+        throw new Error(lang === "th" ? "รูปแบบข้อมูลที่ได้รับไม่ถูกต้อง" : "Invalid ticker dataset.");
+      }
+    } catch (err: any) {
+      setApiSearchError(err.message || "Deep Lookup Error");
+    } finally {
+      setIsSearchingApi(false);
+    }
+  };
+
+  // Automatic Background Ticker Fetch Debouncer Fallback
+  useEffect(() => {
+    const query = q.trim().toUpperCase();
+    // Match realistic ticker or fund symbol patterns (2-15 characters, letters, numbers, hyphens)
+    if (query.length < 2 || query.length > 15 || !/^[A-Z0-9-]+$/.test(query)) return;
+
+    // Check if query is already preloaded or in dynamicStocks
+    const alreadyExists = allStocks.some(s => s.symbol.toUpperCase() === query);
+    if (alreadyExists) return;
+
+    const timer = setTimeout(async () => {
+      try {
+        const res = await fetch(`/api/stock/${query}`);
+        if (res.ok) {
+          const data = await res.json();
+          if (data && data.symbol && data.symbol === query) {
+            setDynamicStocks(prev => {
+              if (prev.some(s => s.symbol === data.symbol)) return prev;
+              return [...prev, data];
+            });
+            handleSelectStockForSandbox(data.symbol);
+          }
+        }
+      } catch (err) {
+        console.error("Dynamic background ticker pull error:", err);
+      }
+    }, 500); // 500ms debounce buffer to prevent overwhelming the servers
+
+    return () => clearTimeout(timer);
+  }, [q, allStocks]);
+
+  // Simulated valuation computation
+  const simulatedValuation = useMemo(() => {
+    if (!selectedStock) return null;
+    const params = {
+      growthRate: isCustomSandbox ? sandboxGrowth : selectedStock.financials.growthRate,
+      discountRate: isCustomSandbox ? sandboxDiscount : 0.09,
+      terminalGrowth: isCustomSandbox ? sandboxTerminal : 0.025,
+      years: 5,
+    };
+    return computeValuation(selectedStock, params);
+  }, [selectedStock, isCustomSandbox, sandboxGrowth, sandboxDiscount, sandboxTerminal]);
+
+  // Preset screening logic
+  const applyPreset = (preset: "buffett" | "dividend" | "growth" | "reset") => {
+    if (!canScreen) return;
+    if (preset === "reset") {
+      setMinMos(-50);
+      setMaxPe(100);
+      setMinYield(0);
+      setSelectedAssetType("ALL");
+      setSelectedVerdict("ALL");
+      setSector(null);
+      setQ("");
+      return;
+    }
+    if (preset === "buffett") {
+      setMinMos(15);
+      setMaxPe(15);
+      setMinYield(1.0);
+      setSelectedAssetType("ALL");
+      setSelectedVerdict("ALL");
+      setSector(null);
+    } else if (preset === "dividend") {
+      setMinMos(5);
+      setMaxPe(12);
+      setMinYield(4.5);
+      setSelectedAssetType("TH_STOCK");
+      setSelectedVerdict("ALL");
+      setSector(null);
+    } else if (preset === "growth") {
+      setMinMos(0);
+      setMaxPe(30);
+      setMinYield(0);
+      setSelectedAssetType("US_STOCK");
+      setSelectedVerdict("ALL");
+      setSector(null);
+    }
+  };
+
+  // Compute Live Market Indicators for Sector Chip Metrics
+  const sectorStats = useMemo(() => {
+    return SECTORS.map((sec) => {
+      const matching = allStocks.filter((s) => s.sector === sec);
+      const vals = matching.map((s) => computeValuation(s, defaultDCFParams(s)));
+      const avgMos =
+        vals.length > 0 ? vals.reduce((sum, v) => sum + v.marginOfSafety, 0) / vals.length : 0;
+      return {
+        name: sec,
+        count: matching.length,
+        avgMos,
+      };
+    });
+  }, [allStocks]);
+
+  // Top 4 High-Density KPI Cards
+  const kpis = useMemo(() => {
+    const totalCovered = allStocks.length;
+    const allValuations = allStocks.map((s) => ({
+      s,
+      v: computeValuation(s, defaultDCFParams(s)),
+    }));
+
+    // Bargains: Under-valued (MOS >= 15%)
+    const bargains = allValuations.filter((row) => row.v.marginOfSafety >= 15);
+    const bargainRate = (bargains.length / totalCovered) * 100;
+
+    // Average Dividend Yield for Equities
+    const equities = allStocks.filter((s) => s.assetType === "TH_STOCK" || s.assetType === "US_STOCK");
+    const avgYield =
+      equities.reduce((sum, s) => {
+        const v = computeValuation(s, defaultDCFParams(s));
+        return sum + v.ratios.dividendYield;
+      }, 0) / equities.length;
+
+    // Top Star - Stock with absolute highest Margin of Safety
+    const sortedMos = [...allValuations].sort((a, b) => b.v.marginOfSafety - a.v.marginOfSafety);
+    const topStar = sortedMos[0];
+
+    return {
+      totalCovered,
+      bargainCount: bargains.length,
+      bargainRate,
+      avgYield,
+      topStar,
+    };
+  }, []);
+
+  // Process rows based on filters, search query, sliders
+  const processedRows = useMemo(() => {
+    let list = allStocks.map((s) => ({
+      s,
+      v: computeValuation(s, defaultDCFParams(s)),
+    }));
+
+    // Filter by Search Input
+    if (q.trim()) {
+      const qStr = q.trim().toLowerCase();
+      list = list.filter(
+        (r) =>
+          r.s.symbol.toLowerCase().includes(qStr) ||
+          r.s.name.toLowerCase().includes(qStr) ||
+          r.s.enName.toLowerCase().includes(qStr)
+      );
+    }
+
+    // Filter by Sector
+    if (sector) {
+      list = list.filter((r) => r.s.sector === sector);
+    }
+
+    // Filter by Asset Type
+    if (selectedAssetType !== "ALL") {
+      list = list.filter((r) => r.s.assetType === selectedAssetType);
+    }
+
+    // Filter by Verdict
+    if (selectedVerdict !== "ALL") {
+      list = list.filter((r) => r.v.verdict.toLowerCase() === selectedVerdict.toLowerCase());
+    }
+
+    // Apply Premium / Pro Sliders Filters
+    if (canScreen) {
+      if (minMos > -50) {
+        list = list.filter((r) => r.v.marginOfSafety >= minMos);
+      }
+      if (maxPe < 100) {
+        list = list.filter((r) => isFinite(r.v.ratios.pe) && r.v.ratios.pe <= maxPe);
+      }
+      if (minYield > 0) {
+        list = list.filter((r) => r.v.ratios.dividendYield >= minYield);
+      }
+    }
+
+    // Sort Rows
+    list.sort((a, b) => {
+      if (sort === "mos") return b.v.marginOfSafety - a.v.marginOfSafety;
+      if (sort === "pe") {
+        const peA = isFinite(a.v.ratios.pe) ? a.v.ratios.pe : 9999;
+        const peB = isFinite(b.v.ratios.pe) ? b.v.ratios.pe : 9999;
+        return peA - peB;
+      }
+      if (sort === "growth") return b.s.financials.growthRate - a.s.financials.growthRate;
+      if (sort === "yield") return b.v.ratios.dividendYield - a.v.ratios.dividendYield;
+      return a.s.symbol.localeCompare(b.s.symbol);
+    });
+
+    return list;
+  }, [q, sector, selectedAssetType, selectedVerdict, minMos, maxPe, minYield, sort, canScreen, allStocks]);
+
+  // Handle plan indexing limits
+  const visibleRows = maxStocks !== "unlimited" ? processedRows.slice(0, maxStocks) : processedRows;
+  const lockedCount = processedRows.length - visibleRows.length;
+
+  const [showExportModal, setShowExportModal] = useState(false);
+
+  const handleExportScreenerCSV = () => {
+    if (!plan.limits.exportData) {
+      setShowExportModal(true);
+      return;
+    }
+
+    if (processedRows.length === 0) {
+      alert(lang === "th" ? "ไม่มีข้อมูลเพื่อส่งออก" : "No screened stocks to export.");
+      return;
+    }
+
+    // Helper to completely strip line breaks (newlines) and graphical emojis/icons
+    const cleanCsvCell = (val: any) => {
+      if (val === null || val === undefined) return "";
+      let str = String(val);
+      
+      // 1. Remove line breaks to prevent cell breaking/newline wrap in Excel
+      str = str.replace(/[\r\n]+/g, " ");
+
+      // 2. Remove emojis, flag graphics, and decorative Unicode symbols
+      // - Surrogate pairs (covers modern emojis, flag symbols like 🇹🇭, etc.)
+      str = str.replace(/[\uD800-\uDBFF][\uDC00-\uDFFF]/g, "");
+      // - Basic Multilingual Plane emoji symbols, shapes, dingbats (\u2600-\u27BF)
+      str = str.replace(/[\u2600-\u27BF]/g, "");
+      // - Private use icons / web font symbols
+      str = str.replace(/[\uE000-\uF8FF]/g, "");
+
+      // 3. Trim extra surrounding spaces
+      str = str.trim();
+
+      // 4. Double quote wrap with proper quote-escape for CSV compliance
+      return `"${str.replace(/"/g, '""')}"`;
+    };
+
+    // Generate CSV content representing institutional Flat-Files standards
+    const headers = [
+      "SYMBOL", 
+      "NAME", 
+      "SECTOR", 
+      "MARKET", 
+      "PRICE", 
+      "PREV_CLOSE", 
+      "FAIR_VALUE", 
+      "MOS_PERCENT", 
+      "PE", 
+      "PB", 
+      "DIV_YIELD", 
+      "ASSET_TYPE", 
+      "CURRENCY"
+    ];
+    const rows = processedRows.map(({ s, v }) => {
+      return [
+        cleanCsvCell(s.symbol),
+        cleanCsvCell(s.name),
+        cleanCsvCell(s.sector),
+        cleanCsvCell(s.market),
+        s.price,
+        s.prevClose,
+        v.fairValue,
+        v.marginOfSafety.toFixed(2),
+        isFinite(v.ratios.pe) ? v.ratios.pe.toFixed(2) : "N/A",
+        isFinite(v.ratios.pb) ? v.ratios.pb.toFixed(2) : "N/A",
+        v.ratios.dividendYield.toFixed(2),
+        cleanCsvCell(s.assetType || "TH_STOCK"),
+        cleanCsvCell(s.currency || "THB")
+      ].join(",");
+    });
+
+    const csvContent = [headers.join(","), ...rows].join("\n");
+    // Prepend UTF-8 BOM (\uFEFF) to guarantee Excel correctly detects UTF-8 (preventing garbled Thai characters)
+    const blob = new Blob(["\uFEFF" + csvContent], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.setAttribute("href", url);
+    link.setAttribute("download", `valustock_screener_${Date.now()}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+  };
+
+  const formatPrice = (s: any, p: number) => {
+    if (s.assetType === "US_STOCK" || s.currency === "USD") return dollar(p);
+    if (s.assetType === "FUND") return nav(p);
+    return baht(p);
+  };
+
+  return (
+    <div className="mx-auto max-w-7xl space-y-6 px-4 py-2 animate-fade-up">
+      {/* 🚀 A. LIVE GLOBAL TICKER MARQUEE */}
+      <div className="w-full overflow-hidden border border-line/60 bg-elevate/45 rounded-xl py-2">
+        <div className="flex whitespace-nowrap animate-marquee gap-8 text-[11px] font-mono font-bold select-none">
+          {allStocks.concat(allStocks).map((stock, idx) => {
+            const val = computeValuation(stock, defaultDCFParams(stock));
+            const change =
+              stock.prevClose > 0 ? ((stock.price - stock.prevClose) / stock.prevClose) * 100 : 0;
+            const isUp = change >= 0;
+            return (
+              <button
+                key={`${stock.symbol}-${idx}`}
+                onClick={() => handleSelectStockForSandbox(stock.symbol)}
+                className="flex items-center gap-1.5 hover:text-brand transition shrink-0"
+              >
+                <span className="text-ink">{stock.symbol}</span>
+                <span className="text-muted">{formatPrice(stock, stock.price)}</span>
+                <span className={isUp ? "text-up" : "text-down"}>
+                  {isUp ? "▲" : "▼"} {change.toFixed(1)}%
+                </span>
+                <span
+                  className={`text-[9px] px-1 border rounded ${
+                    val.marginOfSafety >= 15
+                      ? "border-up/40 text-up bg-up/5"
+                      : val.marginOfSafety <= -15
+                      ? "border-down/40 text-down bg-down/5"
+                      : "border-line text-muted bg-surface"
+                  }`}
+                >
+                  MOS {val.marginOfSafety.toFixed(0)}%
+                </span>
+              </button>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* 🚀 B. TERMINAL TITLE HEADER */}
+      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+        <div>
+          <div className="flex items-center gap-2">
+            <span className="inline-flex h-9 w-9 items-center justify-center rounded-xl bg-brand/10 text-brand">
+              <Layers className="h-5 w-5" />
+            </span>
+            <div>
+              <h1 className="font-display text-2xl font-bold md:text-3xl tracking-tight text-ink flex items-center gap-2">
+                {lang === "th" ? "สถานีสกรีนเนอร์หุ้นคุณค่า" : "Valustock Value Terminal"}
+                <span className="text-xs bg-brand-soft border border-brand/20 text-brand px-2 py-0.5 rounded-full font-sans uppercase font-bold animate-pulse">
+                  Live
+                </span>
+              </h1>
+              <p className="text-xs text-muted mt-0.5">
+                {lang === "th"
+                  ? "เครื่องมือคำนวณมูลค่าเหมาะควร DCF & Graham แบบเวลาจริง พร้อมวิเคราะห์เชิงเปรียบเทียบเชิงลึกอย่างนักลงทุนสถาบัน"
+                  : "Institutional-grade screening terminal featuring live reactive DCF & Graham models."}
+              </p>
+            </div>
+          </div>
+        </div>
+
+        {/* Action Presets */}
+        <div className="flex flex-wrap gap-2 items-center text-xs">
+          <span className="text-muted font-bold uppercase tracking-wider text-[10px] mr-1">
+            {lang === "th" ? "สูตรสกรีนด่วน:" : "Quick Formulas:"}
+          </span>
+          <button
+            onClick={() => applyPreset("buffett")}
+            disabled={!canScreen}
+            className="px-2.5 py-1.5 border border-gold/30 bg-gold/5 text-gold rounded-xl hover:bg-gold/15 transition disabled:opacity-50 flex items-center gap-1 font-semibold"
+          >
+            👑 Buffett Core
+          </button>
+          <button
+            onClick={() => applyPreset("dividend")}
+            disabled={!canScreen}
+            className="px-2.5 py-1.5 border border-brand/30 bg-brand/5 text-brand rounded-xl hover:bg-brand/15 transition disabled:opacity-50 flex items-center gap-1 font-semibold"
+          >
+            💵 Dividend Rich
+          </button>
+          <button
+            onClick={() => applyPreset("growth")}
+            disabled={!canScreen}
+            className="px-2.5 py-1.5 border border-up/30 bg-up/5 text-up rounded-xl hover:bg-up/15 transition disabled:opacity-50 flex items-center gap-1 font-semibold"
+          >
+            🚀 Tech Growth
+          </button>
+          <button
+            onClick={() => applyPreset("reset")}
+            className="px-2.5 py-1.5 border border-line bg-surface hover:bg-elevate text-ink rounded-xl transition font-semibold"
+          >
+            {lang === "th" ? "ล้างฟิลเตอร์" : "Reset Terminal"}
+          </button>
+        </div>
+      </div>
+
+      {/* 🚀 C. HIGH-DENSITY MARKET STATS CARD GRID */}
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        {/* KPI 1 */}
+        <Card className="border border-line/60 p-4 bg-surface/30 flex items-center gap-3.5 relative overflow-hidden group hover:border-brand/40 transition">
+          <div className="h-10 w-10 rounded-xl bg-brand/10 text-brand flex items-center justify-center shrink-0">
+            <BarChart3 className="h-5 w-5" />
+          </div>
+          <div>
+            <div className="text-[10px] font-bold text-muted uppercase tracking-wider leading-none">
+              {lang === "th" ? "ความครอบคลุมระบบ" : "Terminal Coverage"}
+            </div>
+            <div className="text-xl font-display font-extrabold text-ink mt-1.5">
+              {kpis.totalCovered} <span className="text-xs text-muted font-normal">Assets</span>
+            </div>
+            <div className="text-[10px] text-muted mt-0.5">
+              SET, mai, NASDAQ, NYSE, Funds
+            </div>
+          </div>
+        </Card>
+
+        {/* KPI 2 */}
+        <Card className="border border-line/60 p-4 bg-surface/30 flex items-center gap-3.5 relative overflow-hidden group hover:border-up/40 transition">
+          <div className="h-10 w-10 rounded-xl bg-up/10 text-up flex items-center justify-center shrink-0">
+            <Target className="h-5 w-5" />
+          </div>
+          <div>
+            <div className="text-[10px] font-bold text-muted uppercase tracking-wider leading-none">
+              {lang === "th" ? "ดัชนีโอกาสซื้อ (Bargain Rate)" : "Bargain Index"}
+            </div>
+            <div className="text-xl font-display font-extrabold text-up mt-1.5">
+              {kpis.bargainRate.toFixed(1)}%
+            </div>
+            <div className="text-[10px] text-muted mt-0.5">
+              {kpis.bargainCount} {lang === "th" ? "บริษัทมี MOS >= 15%" : "companies undervalued"}
+            </div>
+          </div>
+        </Card>
+
+        {/* KPI 3 */}
+        <Card className="border border-line/60 p-4 bg-surface/30 flex items-center gap-3.5 relative overflow-hidden group hover:border-gold/40 transition">
+          <div className="h-10 w-10 rounded-xl bg-gold/10 text-gold flex items-center justify-center shrink-0">
+            <CircleDollarSign className="h-5 w-5" />
+          </div>
+          <div>
+            <div className="text-[10px] font-bold text-muted uppercase tracking-wider leading-none">
+              {lang === "th" ? "อัตราปันผลตลาดเฉลี่ย" : "Equities Avg Yield"}
+            </div>
+            <div className="text-xl font-display font-extrabold text-gold mt-1.5">
+              {kpis.avgYield.toFixed(2)}%
+            </div>
+            <div className="text-[10px] text-muted mt-0.5">
+              Historical average cash dividend
+            </div>
+          </div>
+        </Card>
+
+        {/* KPI 4 */}
+        <Card className="border border-line/60 p-4 bg-surface/30 flex items-center gap-3.5 relative overflow-hidden group hover:border-brand/40 transition">
+          <div className="h-10 w-10 rounded-xl bg-brand/15 text-brand flex items-center justify-center shrink-0">
+            <Crown className="h-5 w-5 text-gold animate-bounce" />
+          </div>
+          <div className="flex-1 min-w-0">
+            <div className="text-[10px] font-bold text-muted uppercase tracking-wider leading-none">
+              {lang === "th" ? "ดาวรุ่งราคาถูกที่สุด (Top Bargain)" : "Deepest Value Selection"}
+            </div>
+            <div className="text-xs font-bold text-ink mt-2 truncate flex items-center gap-1.5">
+              <span className="text-brand font-mono font-extrabold">{kpis.topStar?.s.symbol}</span>
+              <span className="text-muted font-normal truncate">
+                {lang === "th" ? kpis.topStar?.s.name : kpis.topStar?.s.enName}
+              </span>
+            </div>
+            <button
+              onClick={() => handleSelectStockForSandbox(kpis.topStar!.s.symbol)}
+              className="text-[9px] text-brand font-bold hover:underline mt-0.5 block flex items-center gap-0.5"
+            >
+              ⚡ {lang === "th" ? "โหลดเข้าเครื่องจำลอง" : "Load into Sandbox"}
+            </button>
+          </div>
+        </Card>
+      </div>
+
+      {/* 🚀 D. SECTOR HEATMAP CLICKABLE BAR */}
+      <div className="space-y-2">
+        <label className="text-[10px] uppercase font-bold text-muted tracking-widest block">
+          {lang === "th" ? "หมวดธุรกิจเฉลี่ยส่วนเผื่อความปลอดภัย (Sector MOS Health)" : "Industry Heatmap (Avg Margin of Safety)"}
+        </label>
+        <div className="flex gap-2.5 overflow-x-auto pb-2 scrollbar-none select-none">
+          {sectorStats.map((sec) => {
+            const isActive = sector === sec.name;
+            const isGood = sec.avgMos >= 10;
+            const label = lang === "th" ? sec.name : SECTOR_TRANS[sec.name] || sec.name;
+            return (
+              <button
+                key={sec.name}
+                onClick={() => setSector(sector === sec.name ? null : sec.name)}
+                className={`flex flex-col items-start p-2.5 rounded-xl border transition-all text-left shrink-0 min-w-[140px] ${
+                  isActive
+                    ? "border-brand bg-brand/5 shadow-glow"
+                    : "border-line bg-surface/30 hover:border-line/85 hover:bg-elevate/40"
+                }`}
+              >
+                <span className="text-[10px] font-extrabold text-ink truncate w-full">
+                  {label}
+                </span>
+                <div className="flex items-baseline gap-1.5 mt-1.5 w-full justify-between">
+                  <span className="text-[10px] font-mono text-muted">
+                    {sec.count} {lang === "th" ? "บริษัท" : "assets"}
+                  </span>
+                  <span
+                    className={`text-[10px] font-mono font-bold px-1 rounded ${
+                      isGood ? "text-up bg-up/5" : "text-down bg-down/5"
+                    }`}
+                  >
+                    {sec.avgMos >= 0 ? "+" : ""}
+                    {sec.avgMos.toFixed(0)}% MOS
+                  </span>
+                </div>
+              </button>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* 🚀 E. TWO-COLUMN LAYOUT: WORKSPACE */}
+      <div className="grid gap-6 lg:grid-cols-12">
+        {/* COLUMNS 1-8: SCREENER FILTER & TABLE EXPAND */}
+        <div className="lg:col-span-8 space-y-4">
+          <Card className="border border-line bg-surface/40 backdrop-blur-md p-4">
+            <div className="space-y-4">
+              {/* 🌍 PROFESSIONAL MARKET SEGMENTED TABS */}
+              <div className="flex border-b border-line pb-3 mb-4 gap-2 overflow-x-auto scrollbar-none select-none">
+                {[
+                  { value: "ALL", label: lang === "th" ? "🌍 สินทรัพย์ทั้งหมด" : "🌍 All Assets", count: allStocks.length },
+                  { value: "TH_STOCK", label: lang === "th" ? "🇹🇭 หุ้นไทย" : "🇹🇭 Thai Equities", count: allStocks.filter(s => s.assetType === "TH_STOCK").length },
+                  { value: "US_STOCK", label: lang === "th" ? "🇺🇸 หุ้นสหรัฐฯ" : "🇺🇸 US Equities", count: allStocks.filter(s => s.assetType === "US_STOCK").length },
+                  { value: "FUND", label: lang === "th" ? "📊 กองทุนรวมไทย" : "📊 Thai Funds", count: allStocks.filter(s => s.assetType === "FUND").length },
+                  { value: "US_FUND", label: lang === "th" ? "🇺🇸 กองทุนสหรัฐฯ" : "🇺🇸 US Funds", count: allStocks.filter(s => s.assetType === "US_FUND").length },
+                  { value: "CRYPTO", label: lang === "th" ? "🪙 คริปโตฯ" : "🪙 Crypto", count: allStocks.filter(s => s.assetType === "CRYPTO").length },
+                  { value: "FUTURES", label: lang === "th" ? "📈 ฟิวเจอร์ส" : "📈 Futures", count: allStocks.filter(s => s.assetType === "FUTURES").length },
+                ].map((mkt) => {
+                  const isActive = selectedAssetType === mkt.value;
+                  return (
+                    <button
+                      key={mkt.value}
+                      onClick={() => {
+                        setSelectedAssetType(mkt.value);
+                        setSector(null); // Clean sector selection for context consistency
+                      }}
+                      className={`px-4 py-2.5 text-xs font-bold rounded-xl border flex items-center gap-2 transition-all duration-200 shrink-0 ${
+                        isActive
+                          ? "bg-brand/10 text-brand border-brand/40 shadow-glow-brand font-extrabold"
+                          : "bg-surface/30 text-muted border-line hover:border-line/80 hover:text-ink"
+                      }`}
+                    >
+                      <span>{mkt.label}</span>
+                      <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-mono font-bold leading-none ${
+                        isActive 
+                          ? "bg-brand/20 text-brand" 
+                          : "bg-line/60 text-muted"
+                      }`}>
+                        {mkt.count}
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
+
+              {/* Screener Controls Row 1 */}
+              <div className="grid gap-3 sm:grid-cols-3">
+                {/* Search (Takes 2 Columns for Spacious Professional Feel) */}
+                <div className="space-y-1 sm:col-span-2">
+                  <label className="text-[10px] font-bold text-muted uppercase tracking-wider">
+                    {lang === "th" ? "ค้นหาตัวย่อ ชื่อย่อ หรือบริษัท" : "Search Ticker or Company Name"}
+                  </label>
+                  <div className="relative">
+                    <Search className="absolute top-2.5 left-3 h-4 w-4 text-muted" />
+                    <input
+                      type="text"
+                      placeholder={lang === "th" ? "เช่น PTT, AAPL, MINT..." : "e.g. ADVANC, NVDA..."}
+                      className="input-base text-xs pl-9 uppercase pr-28"
+                      value={q}
+                      onChange={(e) => setQ(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter") {
+                          handleDeepSearch();
+                        }
+                      }}
+                    />
+                    {q.trim() && (
+                      <button
+                        onClick={handleDeepSearch}
+                        disabled={isSearchingApi}
+                        className="absolute right-2 top-1.5 px-3 py-1 bg-brand text-[10px] text-ink font-bold rounded-lg shadow hover:bg-brand-hover transition disabled:opacity-50"
+                      >
+                        {isSearchingApi ? (
+                          <span className="animate-spin inline-block h-2.5 w-2.5 border-2 border-ink border-t-transparent rounded-full" />
+                        ) : (
+                          lang === "th" ? "เจาะลึก API" : "Deep Search"
+                        )}
+                      </button>
+                    )}
+                  </div>
+                </div>
+
+                {/* Valuation Verdict Filter (Takes 1 Column) */}
+                <div className="space-y-1 sm:col-span-1">
+                  <label className="text-[10px] font-bold text-muted uppercase tracking-wider">
+                    {lang === "th" ? "สถานะการประเมินมูลค่า" : "Valuation Verdict"}
+                  </label>
+                  <select
+                    className="input-base text-xs font-bold"
+                    value={selectedVerdict}
+                    onChange={(e) => setSelectedVerdict(e.target.value)}
+                  >
+                    <option value="ALL">
+                      {lang === "th" ? "ทุกสถานะมูลค่า" : "All Verdicts"}
+                    </option>
+                    <option value="undervalued">
+                      🟢 {lang === "th" ? "ราคาต่ำกว่ามูลค่า (MOS >= 15%)" : "Undervalued"}
+                    </option>
+                    <option value="fair">
+                      ⚪ {lang === "th" ? "ราคาเหมาะสม" : "Fair Value"}
+                    </option>
+                    <option value="overvalued">
+                      🔴 {lang === "th" ? "ราคาสูงกว่ามูลค่า (MOS <= -15%)" : "Overvalued"}
+                    </option>
+                  </select>
+                </div>
+              </div>
+
+              {/* Slider screeners - Enabled for Pro/Premium */}
+              {!canScreen ? (
+                <div className="rounded-xl border border-line bg-elevate/45 p-3.5 text-center flex flex-col items-center sm:flex-row sm:items-center sm:justify-between gap-4">
+                  <div className="flex items-center gap-3 text-left">
+                    <span className="inline-flex h-8 w-8 items-center justify-center rounded-xl bg-gold/10 text-gold shrink-0">
+                      <Lock className="h-4 w-4" />
+                    </span>
+                    <div>
+                      <h4 className="text-xs font-bold text-ink">
+                        {lang === "th" ? "ต้องการคัดกรองส่วนต่าง MOS & P/E ละเอียด?" : "Unlock Advanced Screen Sliders?"}
+                      </h4>
+                      <p className="text-[10px] text-muted leading-relaxed">
+                        {lang === "th"
+                          ? "อัปเกรดแผนสมาชิกพรีเมียม เพื่อปลดล็อกตัวคัดกรองแถบเลื่อน MOS, P/E, Div % แบบเวลาจริง"
+                          : "Upgrade to Premium to drag safety margin and PE threshold sliders."}
+                      </p>
+                    </div>
+                  </div>
+                  <Link href="/pricing">
+                    <Button size="sm" variant="gold" className="shrink-0 flex items-center gap-1">
+                      <Crown className="h-3.5 w-3.5" />
+                      {lang === "th" ? "อัปเกรดโปร" : "Upgrade to Pro"}
+                    </Button>
+                  </Link>
+                </div>
+              ) : (
+                <div className="grid gap-4 sm:grid-cols-3 border-t border-line/40 pt-3">
+                  {/* MOS Slider */}
+                  <div className="space-y-1.5">
+                    <div className="flex justify-between text-[10px] font-bold text-muted">
+                      <span>{lang === "th" ? "ส่วนลดขั้นต่ำ (MOS %)" : "Min Safety Margin (MOS)"}</span>
+                      <span className="text-brand font-mono">{minMos}%</span>
+                    </div>
+                    <input
+                      type="range"
+                      min="-50"
+                      max="50"
+                      className="w-full h-1.5 bg-line rounded-lg appearance-none cursor-pointer accent-brand"
+                      value={minMos}
+                      onChange={(e) => setMinMos(parseInt(e.target.value, 10))}
+                    />
+                  </div>
+
+                  {/* P/E Slider */}
+                  <div className="space-y-1.5">
+                    <div className="flex justify-between text-[10px] font-bold text-muted">
+                      <span>{lang === "th" ? "อัตราส่วน P/E สูงสุด" : "Max Valuation P/E"}</span>
+                      <span className="text-brand font-mono">
+                        {maxPe >= 100 ? "UNLIMITED" : maxPe + "x"}
+                      </span>
+                    </div>
+                    <input
+                      type="range"
+                      min="5"
+                      max="100"
+                      className="w-full h-1.5 bg-line rounded-lg appearance-none cursor-pointer accent-brand"
+                      value={maxPe}
+                      onChange={(e) => setMaxPe(parseInt(e.target.value, 10))}
+                    />
+                  </div>
+
+                  {/* Dividend Yield Slider */}
+                  <div className="space-y-1.5">
+                    <div className="flex justify-between text-[10px] font-bold text-muted">
+                      <span>{lang === "th" ? "อัตราปันผลขั้นต่ำ %" : "Min Dividend Yield %"}</span>
+                      <span className="text-brand font-mono">{minYield}%</span>
+                    </div>
+                    <input
+                      type="range"
+                      min="0"
+                      max="8"
+                      className="w-full h-1.5 bg-line rounded-lg appearance-none cursor-pointer accent-brand"
+                      value={minYield}
+                      onChange={(e) => setMinYield(parseFloat(e.target.value))}
+                    />
+                  </div>
+                </div>
+              )}
+            </div>
+          </Card>
+
+          {/* TABLE TAB SYSTEM */}
+          <div className="flex flex-col space-y-2">
+            <div className="flex border-b border-line gap-2 overflow-x-auto scrollbar-none text-xs">
+              <button
+                onClick={() => setActiveTab("valuation")}
+                className={`px-4 py-2 font-bold transition-all border-b-2 flex items-center gap-1.5 shrink-0 ${
+                  activeTab === "valuation"
+                    ? "border-brand text-brand"
+                    : "border-transparent text-muted hover:text-ink"
+                }`}
+              >
+                <Calculator className="h-3.5 w-3.5" />
+                {lang === "th" ? "โมเดลประเมินราคา" : "Valuation Hub"}
+              </button>
+              <button
+                onClick={() => setActiveTab("performance")}
+                className={`px-4 py-2 font-bold transition-all border-b-2 flex items-center gap-1.5 shrink-0 ${
+                  activeTab === "performance"
+                    ? "border-brand text-brand"
+                    : "border-transparent text-muted hover:text-ink"
+                }`}
+              >
+                <TrendingUp className="h-3.5 w-3.5" />
+                {lang === "th" ? "ฐานะและงบการเงิน" : "Financial Audits"}
+              </button>
+              <button
+                onClick={() => setActiveTab("dividends")}
+                className={`px-4 py-2 font-bold transition-all border-b-2 flex items-center gap-1.5 shrink-0 ${
+                  activeTab === "dividends"
+                    ? "border-brand text-brand"
+                    : "border-transparent text-muted hover:text-ink"
+                }`}
+              >
+                <CircleDollarSign className="h-3.5 w-3.5" />
+                {lang === "th" ? "เงินปันผล & เงินสด" : "Dividends & Cash"}
+              </button>
+              <button
+                onClick={() => setActiveTab("funds")}
+                className={`px-4 py-2 font-bold transition-all border-b-2 flex items-center gap-1.5 shrink-0 ${
+                  activeTab === "funds"
+                    ? "border-brand text-brand"
+                    : "border-transparent text-muted hover:text-ink"
+                }`}
+              >
+                <PieChart className="h-3.5 w-3.5" />
+                {lang === "th" ? "ข้อมูลกองทุน & ETF" : "Funds / ETFs Explorer"}
+              </button>
+
+              <div className="flex-1" />
+
+              {/* 📥 CSV Screener Export Button */}
+              <Button
+                size="sm"
+                variant="outline"
+                className="flex items-center gap-1.5 text-[10px] px-2.5 h-7.5 mr-2"
+                onClick={handleExportScreenerCSV}
+              >
+                📥 {lang === "th" ? "ส่งออกสกรีนเนอร์ (CSV)" : "Export Screener CSV"}
+              </Button>
+
+              {/* Table Sorting Trigger */}
+              <div className="flex items-center gap-1.5 py-1 px-2 mb-1.5 bg-surface/30 border border-line rounded-lg text-[10px]">
+                <span className="text-muted font-bold uppercase tracking-wider">{lang === "th" ? "เรียงตาม:" : "Sort:"}</span>
+                <select
+                  value={sort}
+                  onChange={(e) => setSort(e.target.value as SortKey)}
+                  className="bg-transparent text-ink focus:outline-none border-none font-bold font-mono cursor-pointer"
+                >
+                  <option value="mos">MOS %</option>
+                  <option value="pe">P/E Ratio</option>
+                  <option value="growth">FCF Growth</option>
+                  <option value="yield">Dividend Yield</option>
+                  <option value="symbol">A-Z Ticker</option>
+                </select>
+              </div>
+            </div>
+
+            {/* DENSE INSTITUTIONAL TABLE */}
+            <Card className="border border-line/80 overflow-hidden">
+              <div className="overflow-x-auto">
+                <table className="w-full text-left text-xs border-collapse">
+                  <thead>
+                    <tr className="border-b border-line bg-elevate/50 text-muted font-bold tracking-wider">
+                      <th className="px-4 py-3">{lang === "th" ? "หลักทรัพย์" : "TICKER"}</th>
+
+                      {activeTab === "valuation" && (
+                        <>
+                          <th className="px-4 py-3 text-right">{lang === "th" ? "ราคาปัจจุบัน" : "MARKET PRICE"}</th>
+                          <th className="px-4 py-3 text-center">{lang === "th" ? "เทรนด์ 30 วัน" : "30D SPARK"}</th>
+                          <th className="px-4 py-3 text-right">{lang === "th" ? "มูลค่าเหมาะสม" : "FAIR VALUE"}</th>
+                          <th className="px-4 py-3">{lang === "th" ? "ส่วนลดความปลอดภัย" : "MOS DISCOUNT"}</th>
+                          <th className="px-4 py-3 text-center">{lang === "th" ? "สถานะการประเมิน" : "VERDICT"}</th>
+                        </>
+                      )}
+
+                      {activeTab === "performance" && (
+                        <>
+                          <th className="px-4 py-3 text-right">{lang === "th" ? "รายได้ (Rev)" : "REVENUE"}</th>
+                          <th className="px-4 py-3 text-right">{lang === "th" ? "กำไรสุทธิ" : "NET INCOME"}</th>
+                          <th className="px-4 py-3 text-right">{lang === "th" ? "อัตรากำไร" : "NET MARGIN"}</th>
+                          <th className="px-4 py-3 text-right">{lang === "th" ? "คาดการณ์การเติบโต" : "FCF GROWTH"}</th>
+                          <th className="px-4 py-3 text-right">EBITDA</th>
+                          <th className="px-4 py-3 text-right">D/E Ratio</th>
+                          <th className="px-4 py-3 text-right">ROE %</th>
+                        </>
+                      )}
+
+                      {activeTab === "dividends" && (
+                        <>
+                          <th className="px-4 py-3 text-right">{lang === "th" ? "ราคาล่าสุด" : "PRICE"}</th>
+                          <th className="px-4 py-3 text-right">{lang === "th" ? "เงินปันผล/หุ้น" : "DPS"}</th>
+                          <th className="px-4 py-3 text-right">{lang === "th" ? "อัตราปันผล" : "DIV YIELD"}</th>
+                          <th className="px-4 py-3 text-right">{lang === "th" ? "อัตราการจ่าย (Payout)" : "PAYOUT RATIO"}</th>
+                          <th className="px-4 py-3 text-right">{lang === "th" ? "กระแสเงินสดอิสระ" : "FREE CASHFLOW"}</th>
+                          <th className="px-4 py-3 text-right">{lang === "th" ? "เงินสดสำรอง" : "CASH BALANCE"}</th>
+                          <th className="px-4 py-3 text-right">{lang === "th" ? "หนี้สินสุทธิ" : "NET DEBT"}</th>
+                        </>
+                      )}
+
+                      {activeTab === "funds" && (
+                        <>
+                          <th className="px-4 py-3">{lang === "th" ? "ประเภทกองทุน" : "FUND TYPE"}</th>
+                          <th className="px-4 py-3">{lang === "th" ? "กองทุนหลัก (Master/Feeder)" : "MASTER FUND"}</th>
+                          <th className="px-4 py-3 text-right">{lang === "th" ? "ค่าธรรมเนียม" : "EXPENSE RATIO"}</th>
+                          <th className="px-4 py-3 text-right">{lang === "th" ? "ขนาดสินทรัพย์ (AUM)" : "AUM SIZE"}</th>
+                          <th className="px-4 py-3 text-center">{lang === "th" ? "ความเสี่ยง" : "RISK LEVEL"}</th>
+                          <th className="px-4 py-3 text-center">{lang === "th" ? "ถือครองหลัก" : "TOP HOLDING"}</th>
+                        </>
+                      )}
+
+                      <th className="px-4 py-3 text-right">{lang === "th" ? "วิเคราะห์" : "AUDIT"}</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-line/60">
+                    {visibleRows.length === 0 ? (
+                      <tr>
+                        <td colSpan={10} className="p-12 text-center">
+                          <div className="flex flex-col items-center justify-center space-y-4 max-w-md mx-auto">
+                            <span className="text-xl">🔍</span>
+                            <h3 className="text-sm font-bold text-ink">
+                              {lang === "th"
+                                ? "ไม่พบหลักทรัพย์ที่กำลังค้นหาในรายการหลัก?"
+                                : "Not found in the primary asset list?"}
+                            </h3>
+                            <p className="text-xs text-muted leading-relaxed">
+                              {lang === "th"
+                                ? "คุณสามารถรันระบบ Deep Ticker Lookup เพื่อดึงข้อมูลเชิงลึกผ่านฐานข้อมูลตลาดสากลได้โดยตรงแบบเรียลไทม์"
+                                : "You can run Deep Ticker Lookup to fetch financial specifications directly from our global API engines."}
+                            </p>
+                            
+                            {q.trim() && (
+                              <button
+                                onClick={handleDeepSearch}
+                                disabled={isSearchingApi}
+                                className="button-brand text-xs px-6 py-2 rounded-xl flex items-center justify-center space-x-2 font-bold shadow-glow hover:scale-[1.02] transition active:scale-95 disabled:opacity-50"
+                              >
+                                {isSearchingApi ? (
+                                  <>
+                                    <span className="animate-spin inline-block mr-1 h-3 w-3 border-2 border-ink border-t-transparent rounded-full" />
+                                    <span>
+                                      {lang === "th" ? "กำลังดึงข้อมูล..." : "Fetching specifications..."}
+                                    </span>
+                                  </>
+                                ) : (
+                                  <span>
+                                    {lang === "th" 
+                                      ? `ดึงข้อมูลสัญลักษณ์ "${q.toUpperCase().trim()}" จาก API` 
+                                      : `Pull "${q.toUpperCase().trim()}" from Global API`}
+                                  </span>
+                                )}
+                              </button>
+                            )}
+
+                            {apiSearchError && (
+                              <p className="text-[10px] font-bold text-red-500 bg-red-500/10 px-3 py-1.5 rounded-lg border border-red-500/20">
+                                ⚠️ {apiSearchError}
+                              </p>
+                            )}
+                          </div>
+                        </td>
+                      </tr>
+                    ) : (
+                      visibleRows.map((row) => {
+                        const s = row.s;
+                        const v = row.v;
+                        const isUp = v.marginOfSafety >= 0;
+                        const displayName = lang === "th" ? s.name : s.enName || s.name;
+                        const isFund = s.assetType === "FUND" || s.assetType === "US_FUND";
+                        const isNonStock = isFund || s.assetType === "CRYPTO" || s.assetType === "FUTURES";
+
+                        // Ratios calculations
+                        const netMargin = s.financials.revenue > 0 ? (s.financials.netIncome / s.financials.revenue) * 100 : 0;
+                        const deRatio =
+                          s.financials.totalDebt > 0 && s.financials.bookValuePerShare > 0
+                            ? s.financials.totalDebt / (s.financials.bookValuePerShare * s.sharesOutstanding)
+                            : 0;
+                        const payoutRatio =
+                          s.financials.eps > 0 && s.financials.dividendPerShare > 0
+                            ? (s.financials.dividendPerShare / s.financials.eps) * 100
+                            : 0;
+                        const netDebtVal = s.financials.totalDebt - s.financials.cash;
+
+                        const verdictColor = {
+                          undervalued: "up",
+                          fair: "muted",
+                          overvalued: "down",
+                        }[v.verdict] as "up" | "muted" | "down";
+
+                        const isSelectedSandbox = s.symbol === sandboxSymbol;
+
+                        return (
+                          <tr
+                            key={s.symbol}
+                            className={`hover:bg-elevate/30 transition group ${
+                              isSelectedSandbox ? "bg-brand/5 border-l-2 border-brand" : ""
+                            }`}
+                          >
+                            {/* Symbol & Name */}
+                            <td className="px-4 py-3">
+                              <div className="flex items-center gap-2.5">
+                                <AssetLogo symbol={s.symbol} color={s.color} size="sm" />
+                                <div>
+                                  <div className="flex items-center gap-1">
+                                    <span className="font-display font-extrabold text-ink group-hover:text-brand transition">
+                                      {s.symbol}
+                                    </span>
+                                    {s.assetType === "TH_STOCK" ? (
+                                      <span className="text-[8px] border border-blue-500/20 text-blue-400 bg-blue-500/5 px-1 rounded uppercase font-mono scale-95 shrink-0 font-bold">
+                                        🇹🇭 TH
+                                      </span>
+                                    ) : s.assetType === "US_STOCK" ? (
+                                      <span className="text-[8px] border border-purple-500/20 text-purple-400 bg-purple-500/5 px-1 rounded uppercase font-mono scale-95 shrink-0 font-bold">
+                                        🇺🇸 US
+                                      </span>
+                                    ) : s.assetType === "FUND" ? (
+                                      <span className="text-[8px] border border-gold/30 text-gold bg-gold/5 px-1 rounded uppercase font-mono scale-95 shrink-0 font-bold">
+                                        📊 TH_FUND
+                                      </span>
+                                    ) : s.assetType === "US_FUND" ? (
+                                      <span className="text-[8px] border border-pink-500/30 text-pink-400 bg-pink-500/5 px-1 rounded uppercase font-mono scale-95 shrink-0 font-bold">
+                                        🇺🇸 US_FUND
+                                      </span>
+                                    ) : s.assetType === "CRYPTO" ? (
+                                      <span className="text-[8px] border border-orange-500/30 text-orange-400 bg-orange-500/5 px-1 rounded uppercase font-mono scale-95 shrink-0 font-bold">
+                                        🪙 CRYPTO
+                                      </span>
+                                    ) : s.assetType === "FUTURES" ? (
+                                      <span className="text-[8px] border border-cyan-500/30 text-cyan-400 bg-cyan-500/5 px-1 rounded uppercase font-mono scale-95 shrink-0 font-bold">
+                                        📈 FUTURE
+                                      </span>
+                                    ) : (
+                                      <span className="text-[8px] border border-emerald-500/20 text-emerald-400 bg-emerald-500/5 px-1 rounded uppercase font-mono scale-95 shrink-0 font-bold">
+                                        🌍 ETF
+                                      </span>
+                                    )}
+                                  </div>
+                                  <span
+                                    className="text-[9px] text-muted max-w-[100px] truncate block"
+                                    title={displayName}
+                                  >
+                                    {displayName}
+                                  </span>
+                                </div>
+                              </div>
+                            </td>
+
+                            {/* TAB 1: VALUATION HUB */}
+                            {activeTab === "valuation" && (
+                              <>
+                                <td className="px-4 py-3 text-right font-mono font-bold text-ink">
+                                  {formatPrice(s, s.price)}
+                                </td>
+                                <td className="px-4 py-3 text-center align-middle">
+                                  <div className="inline-flex items-center justify-center">
+                                    <Sparkline history={s.priceHistory} symbol={s.symbol} />
+                                  </div>
+                                </td>
+                                <td className="px-4 py-3 text-right font-mono font-bold text-gold">
+                                  {isNonStock ? "—" : formatPrice(s, v.fairValue)}
+                                </td>
+                                <td className="px-4 py-3 min-w-[120px]">
+                                  {isFund ? (
+                                    <span className="text-[10px] text-muted font-mono font-semibold">NAV-Backed</span>
+                                  ) : s.assetType === "CRYPTO" || s.assetType === "FUTURES" ? (
+                                    <span className="text-[10px] text-muted font-mono font-semibold">Market-Driven</span>
+                                  ) : (
+                                    <div className="flex items-center gap-2">
+                                      <span
+                                        className={`font-mono font-extrabold text-xs shrink-0 ${
+                                          isUp ? "text-up" : "text-down"
+                                        }`}
+                                      >
+                                        {isUp ? "+" : ""}
+                                        {v.marginOfSafety.toFixed(0)}%
+                                      </span>
+                                      <div className="h-1.5 w-12 bg-line rounded-full overflow-hidden shrink-0 hidden sm:block">
+                                        <div
+                                          className={`h-full rounded-full ${isUp ? "bg-up" : "bg-down"}`}
+                                          style={{
+                                            width: `${Math.min(
+                                              Math.max(v.marginOfSafety + 50, 0),
+                                              100
+                                            )}%`,
+                                          }}
+                                        />
+                                      </div>
+                                    </div>
+                                  )}
+                                </td>
+                                <td className="px-4 py-3 text-center">
+                                  <Badge tone={verdictColor} className="text-[9px] font-bold py-0.5 px-1.5 leading-none">
+                                    {t(`verdict.${v.verdict}`)}
+                                  </Badge>
+                                </td>
+                              </>
+                            )}
+
+                            {/* TAB 2: FINANCIAL AUDITS */}
+                            {activeTab === "performance" && (
+                              <>
+                                <td className="px-4 py-3 text-right font-mono text-ink">
+                                  {isNonStock ? "—" : formatPrice(s, s.financials.revenue)}
+                                </td>
+                                <td className="px-4 py-3 text-right font-mono text-ink">
+                                  {isNonStock ? "—" : formatPrice(s, s.financials.netIncome)}
+                                </td>
+                                <td className="px-4 py-3 text-right font-mono font-bold text-ink">
+                                  {isNonStock ? "—" : pct(netMargin)}
+                                </td>
+                                <td className="px-4 py-3 text-right font-mono font-semibold text-brand">
+                                  {isNonStock ? "—" : pct(s.financials.growthRate * 100)}
+                                </td>
+                                <td className="px-4 py-3 text-right font-mono text-muted">
+                                  {isNonStock ? "—" : formatPrice(s, s.financials.ebitda)}
+                                </td>
+                                <td className="px-4 py-3 text-right font-mono text-muted">
+                                  {isNonStock || deRatio === 0 ? "—" : deRatio.toFixed(2)}
+                                </td>
+                                <td className="px-4 py-3 text-right font-mono text-muted">
+                                  {isNonStock || isNaN(v.ratios.roe) ? "—" : pct(v.ratios.roe)}
+                                </td>
+                              </>
+                            )}
+
+                            {/* TAB 3: DIVIDENDS & CASHFLOW */}
+                            {activeTab === "dividends" && (
+                              <>
+                                <td className="px-4 py-3 text-right font-mono text-ink">
+                                  {formatPrice(s, s.price)}
+                                </td>
+                                <td className="px-4 py-3 text-right font-mono text-gold font-bold">
+                                  {s.financials.dividendPerShare > 0 ? formatPrice(s, s.financials.dividendPerShare) : "0.00"}
+                                </td>
+                                <td className="px-4 py-3 text-right font-mono font-extrabold text-gold">
+                                  {num(v.ratios.dividendYield, 2)}%
+                                </td>
+                                <td className="px-4 py-3 text-right font-mono text-muted">
+                                  {payoutRatio > 0 ? pct(payoutRatio) : "0%"}
+                                </td>
+                                <td className="px-4 py-3 text-right font-mono text-ink">
+                                  {isNonStock ? "—" : formatPrice(s, s.financials.freeCashFlow)}
+                                </td>
+                                <td className="px-4 py-3 text-right font-mono text-muted">
+                                  {isNonStock ? "—" : formatPrice(s, s.financials.cash)}
+                                </td>
+                                <td className="px-4 py-3 text-right font-mono text-muted">
+                                  {isNonStock ? "—" : formatPrice(s, netDebtVal)}
+                                </td>
+                              </>
+                            )}
+
+                            {/* TAB 4: FUNDS & ETFS */}
+                            {activeTab === "funds" && (
+                              <>
+                                <td className="px-4 py-3 text-muted capitalize">
+                                  {s.fundType || s.assetType}
+                                </td>
+                                <td className="px-4 py-3 text-muted text-[10px] max-w-[140px] truncate" title={s.masterFund || s.feederFund}>
+                                  {s.masterFund || s.feederFund || "—"}
+                                </td>
+                                <td className="px-4 py-3 text-right font-mono text-ink font-semibold">
+                                  {s.expenseRatio ? `${s.expenseRatio.toFixed(2)}%` : "—"}
+                                </td>
+                                <td className="px-4 py-3 text-right font-mono font-bold text-ink">
+                                  {s.aum ? (s.currency === "USD" ? dollar(s.aum) : baht(s.aum)) : "—"}
+                                </td>
+                                <td className="px-4 py-3 text-center">
+                                  {s.riskLevel ? (
+                                    <span className="inline-flex h-5 w-5 items-center justify-center rounded bg-elevate text-ink font-mono font-extrabold text-[10px] border border-line">
+                                      {s.riskLevel}
+                                    </span>
+                                  ) : (
+                                    "—"
+                                  )}
+                                </td>
+                                <td className="px-4 py-3 text-center">
+                                  {s.topHoldings && s.topHoldings.length > 0 ? (
+                                    <span className="text-[10px] text-brand font-bold uppercase" title={s.topHoldings.map((h: any) => `${h.name} (${h.weight}%)`).join(", ")}>
+                                      {s.topHoldings[0].name} ({s.topHoldings[0].weight}%)
+                                    </span>
+                                  ) : (
+                                    "—"
+                                  )}
+                                </td>
+                              </>
+                            )}
+
+                            {/* Clickable Actions */}
+                            <td className="px-4 py-3 text-right shrink-0">
+                              <div className="flex items-center justify-end gap-1.5">
+                                <button
+                                  onClick={() => handleSelectStockForSandbox(s.symbol)}
+                                  className="p-1 rounded bg-elevate hover:bg-brand/10 text-muted hover:text-brand transition"
+                                  title={lang === "th" ? "โหลดเข้าเครื่องจำลอง" : "Load into Sandbox"}
+                                >
+                                  <Calculator className="h-3.5 w-3.5" />
+                                </button>
+                                <Link href={`/stocks/${s.symbol}`}>
+                                  <button className="p-1 rounded bg-brand-soft hover:bg-brand text-brand hover:text-white transition">
+                                    <ChevronRight className="h-3.5 w-3.5" />
+                                  </button>
+                                </Link>
+                              </div>
+                            </td>
+                          </tr>
+                        );
+                      })
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            </Card>
+
+            {/* F. UNRESTRICTED CAPACITY LIMIT CHECK */}
+            {lockedCount > 0 && (
+              <Card className="border border-gold/40 bg-gold/5 p-4 text-center mt-3 animate-pulse">
+                <span className="inline-flex h-8 w-8 items-center justify-center rounded-xl bg-gold/15 text-gold mb-2">
+                  <Lock className="h-4 w-4" />
+                </span>
+                <h3 className="text-xs font-bold text-ink">
+                  {lang === "th"
+                    ? `🔒 คัดกรองเพิ่มเติมอีก ${lockedCount} บริษัท ถูกระงับสิทธิ์การรับชม`
+                    : `🔒 ${lockedCount} Screened Opportunities Locked`}
+                </h3>
+                <p className="text-[10px] text-muted max-w-md mx-auto mt-0.5">
+                  {lang === "th"
+                    ? `บัญชีทดลองฟรีจำกัดสิทธิ์เข้าถึงไม่เกิน ${maxStocks} บริษัท อัปเกรดแผนสมาชิกรายปีเพื่อคัดกรองข้อมูลแบบไม่จำกัด (Unlimited)`
+                    : `Your current tier is capped at ${maxStocks} listings. Upgrade to premium for full terminal capacity.`}
+                </p>
+                <Link href="/pricing" className="mt-3.5 inline-block">
+                  <Button size="sm" variant="gold" className="text-[11px] font-bold px-4">
+                    {t("common.upgrade")}
+                  </Button>
+                </Link>
+              </Card>
+            )}
+          </div>
+        </div>
+
+        {/* COLUMNS 9-12: HIGH-DENSITY INTERACTIVE VALUATION SANDBOX */}
+        <div className="lg:col-span-4 space-y-4">
+          <Card className="border-2 border-brand/60 bg-surface/50 backdrop-blur-md p-4 relative overflow-hidden shadow-glow-brand rounded-2xl flex flex-col justify-between">
+            {/* Header Badge */}
+            <div className="absolute top-3 right-3">
+              {isCustomSandbox ? (
+                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[9px] font-bold uppercase tracking-wider bg-gold/10 text-gold border border-gold/30">
+                  ⚡ Simulation
+                </span>
+              ) : (
+                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[9px] font-bold uppercase tracking-wider bg-up/10 text-up border border-up/30">
+                  ✔️ Standard
+                </span>
+              )}
+            </div>
+
+            <div className="space-y-4">
+              {/* Title Widget */}
+              <div className="flex items-center gap-2 border-b border-line pb-3">
+                <Calculator className="h-5 w-5 text-brand" />
+                <div>
+                  <h3 className="font-display font-extrabold text-sm text-ink uppercase tracking-wider">
+                    {lang === "th" ? "เครื่องจำลองมูลค่าอัจฉริยะ" : "Valuation Sandbox"}
+                  </h3>
+                  <p className="text-[9px] text-muted leading-tight">
+                    {lang === "th"
+                      ? "จำลองการเติบโต และค่าเสียโอกาสทางการเงินแบบ DCF สด"
+                      : "Recalculate DCF models live under custom assumptions."}
+                  </p>
+                </div>
+              </div>
+
+              {/* Selected Asset Profile info */}
+              <div className="flex items-center justify-between bg-elevate/30 p-2.5 rounded-xl border border-line/60">
+                <div className="flex items-center gap-2">
+                  <AssetLogo symbol={selectedStock.symbol} color={selectedStock.color} size="md" />
+                  <div>
+                    <h4 className="font-display font-extrabold text-sm text-ink leading-none">
+                      {selectedStock.symbol}
+                    </h4>
+                    <span className="text-[10px] text-muted truncate max-w-[120px] block mt-0.5">
+                      {lang === "th" ? selectedStock.name : selectedStock.enName}
+                    </span>
+                  </div>
+                </div>
+
+                <div className="text-right">
+                  <div className="text-[10px] text-muted uppercase font-bold leading-none">
+                    {lang === "th" ? "ราคาปัจจุบัน" : "Mkt Price"}
+                  </div>
+                  <div className="text-sm font-mono font-extrabold text-ink mt-1">
+                    {formatPrice(selectedStock, selectedStock.price)}
+                  </div>
+                </div>
+              </div>
+
+              {/* Valuation simulated output */}
+              {selectedStock.assetType === "FUND" || selectedStock.assetType === "US_FUND" ? (
+                <div className="p-4 bg-elevate/45 border border-line rounded-xl text-center space-y-1">
+                  <span className="text-xl">📊</span>
+                  <h4 className="text-xs font-bold text-ink">
+                    {lang === "th" ? "ไม่เปิดใช้งานการประเมิน DCF" : "DCF Simulation Disabled"}
+                  </h4>
+                  <p className="text-[9px] text-muted leading-normal">
+                    {lang === "th"
+                      ? "สินทรัพย์ประเภทกองทุนรวม มีราคาตามมูลค่าทรัพย์สินสุทธิ (NAV) อ้างอิงผลงานของกลุ่มหลักทรัพย์ภายในพอร์ต"
+                      : "This asset is a mutual fund. Valuations are backed by net asset value (NAV) of underlying holdings."}
+                  </p>
+                </div>
+              ) : selectedStock.assetType === "CRYPTO" || selectedStock.assetType === "FUTURES" ? (
+                <div className="p-4 bg-elevate/45 border border-line rounded-xl text-center space-y-1">
+                  <span className="text-xl">🪙</span>
+                  <h4 className="text-xs font-bold text-ink">
+                    {lang === "th" ? "ไม่มีโมเดลจำลอง DCF" : "DCF Simulation N/A"}
+                  </h4>
+                  <p className="text-[9px] text-muted leading-normal">
+                    {lang === "th"
+                      ? "สินทรัพย์ทางเลือก เช่น คริปโต หรือตราสารฟิวเจอร์ส ขับเคลื่อนโดยราคากลางตลาดตามกลไกอุปสงค์และอุปทานของโลก"
+                      : "Alternative assets (Crypto, Futures) are driven purely by market demand/supply without cashflow metrics."}
+                  </p>
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  {/* Intrinsic Comparison Row */}
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="p-2.5 border border-line/80 bg-surface rounded-xl text-center">
+                      <span className="text-[9px] uppercase font-bold text-muted">
+                        {lang === "th" ? "มูลค่าที่เหมาะสม" : "Simulated Fair"}
+                      </span>
+                      <div className="text-base font-mono font-black text-gold mt-1">
+                        {simulatedValuation ? formatPrice(selectedStock, simulatedValuation.fairValue) : "—"}
+                      </div>
+                    </div>
+
+                    <div className="p-2.5 border border-line/80 bg-surface rounded-xl text-center flex flex-col justify-center">
+                      <span className="text-[9px] uppercase font-bold text-muted">
+                        {lang === "th" ? "ส่วนลดราคา (MOS)" : "MOS discount"}
+                      </span>
+                      {simulatedValuation ? (
+                        <div
+                          className={`text-sm font-mono font-black mt-1 ${
+                            simulatedValuation.marginOfSafety >= 0 ? "text-up" : "text-down"
+                          }`}
+                        >
+                          {simulatedValuation.marginOfSafety >= 0 ? "+" : ""}
+                          {simulatedValuation.marginOfSafety.toFixed(1)}%
+                        </div>
+                      ) : (
+                        "—"
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Verdict Glowing Badge */}
+                  {simulatedValuation && (
+                    <div
+                      className={`p-2.5 rounded-xl border text-center transition-all ${
+                        simulatedValuation.verdict === "undervalued"
+                          ? "bg-up/5 border-up/40 text-up shadow-glow-up"
+                          : simulatedValuation.verdict === "overvalued"
+                          ? "bg-down/5 border-down/40 text-down shadow-glow-down"
+                          : "bg-elevate border-line text-muted"
+                      }`}
+                    >
+                      <div className="text-[9px] uppercase font-bold tracking-wider leading-none">
+                        {lang === "th" ? "คำแนะนำสมมติฐาน" : "Simulated Verdict"}
+                      </div>
+                      <div className="text-xs font-black uppercase mt-1 leading-none">
+                        {t(`verdict.${simulatedValuation.verdict}`)}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Sliders Container */}
+                  <div className="space-y-3.5 border-t border-line/50 pt-3">
+                    {/* Forecast Growth Slider */}
+                    <div className="space-y-1">
+                      <div className="flex justify-between text-[10px] font-bold text-muted">
+                        <span>
+                          {lang === "th" ? "อัตราการเติบโต 5 ปีแรก (g)" : "Growth Rate (g)"}
+                        </span>
+                        <span className="text-brand font-mono font-extrabold">
+                          {(sandboxGrowth * 100).toFixed(1)}%
+                        </span>
+                      </div>
+                      <input
+                        type="range"
+                        min="-20"
+                        max="40"
+                        step="0.5"
+                        className="w-full h-1.5 bg-line rounded-lg appearance-none cursor-pointer accent-brand"
+                        value={sandboxGrowth * 100}
+                        onChange={(e) => {
+                          setSandboxGrowth(parseFloat(e.target.value) / 100);
+                          setIsCustomSandbox(true);
+                        }}
+                      />
+                    </div>
+
+                    {/* Discount Rate Slider */}
+                    <div className="space-y-1">
+                      <div className="flex justify-between text-[10px] font-bold text-muted">
+                        <span>
+                          {lang === "th" ? "อัตราคิดลด (WACC)" : "Discount Rate (WACC)"}
+                        </span>
+                        <span className="text-brand font-mono font-extrabold">
+                          {(sandboxDiscount * 100).toFixed(1)}%
+                        </span>
+                      </div>
+                      <input
+                        type="range"
+                        min="5"
+                        max="20"
+                        step="0.5"
+                        className="w-full h-1.5 bg-line rounded-lg appearance-none cursor-pointer accent-brand"
+                        value={sandboxDiscount * 100}
+                        onChange={(e) => {
+                          setSandboxDiscount(parseFloat(e.target.value) / 100);
+                          setIsCustomSandbox(true);
+                        }}
+                      />
+                    </div>
+
+                    {/* Terminal Growth Rate Slider */}
+                    <div className="space-y-1">
+                      <div className="flex justify-between text-[10px] font-bold text-muted">
+                        <span>
+                          {lang === "th" ? "โตคงที่ระยะยาว (Terminal g)" : "Terminal Growth"}
+                        </span>
+                        <span className="text-brand font-mono font-extrabold">
+                          {(sandboxTerminal * 100).toFixed(1)}%
+                        </span>
+                      </div>
+                      <input
+                        type="range"
+                        min="1"
+                        max="5"
+                        step="0.1"
+                        className="w-full h-1.5 bg-line rounded-lg appearance-none cursor-pointer accent-brand"
+                        value={sandboxTerminal * 100}
+                        onChange={(e) => {
+                          setSandboxTerminal(parseFloat(e.target.value) / 100);
+                          setIsCustomSandbox(true);
+                        }}
+                      />
+                    </div>
+                  </div>
+
+                  {/* Quick breakdown notes */}
+                  <div className="text-[9px] text-muted leading-relaxed bg-surface/30 p-2.5 rounded-xl border border-line/45 flex items-start gap-1.5">
+                    <Info className="h-3 w-3 text-brand shrink-0 mt-0.5" />
+                    <span>
+                      {lang === "th"
+                        ? `สูตรจำลองน้ำหนักความเหมาะสม DCF 60% (${
+                            simulatedValuation?.dcf.intrinsicValue.toFixed(1) || 0
+                          } บาท) ร่วมกับเกรแฮม Graham 40% (${
+                            simulatedValuation?.grahamNumber.toFixed(1) || 0
+                          } บาท) แสดงประเมินผลลัพธ์แบบสถาบัน`
+                        : `Formula combines 60% DCF (${
+                            simulatedValuation?.dcf.intrinsicValue.toFixed(1) || 0
+                          }) and 40% Graham Number (${
+                            simulatedValuation?.grahamNumber.toFixed(1) || 0
+                          }) to balance earnings flow.`}
+                    </span>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Sandbox Operations */}
+            {isCustomSandbox && (
+              <div className="flex gap-2 mt-4 border-t border-line/50 pt-3">
+                <button
+                  onClick={() => {
+                    setSandboxGrowth(selectedStock.financials.growthRate);
+                    setSandboxDiscount(0.09);
+                    setSandboxTerminal(0.025);
+                    setIsCustomSandbox(false);
+                  }}
+                  className="w-full py-1.5 text-[10px] font-bold rounded-xl border border-line bg-surface hover:bg-elevate text-muted hover:text-ink transition flex items-center justify-center gap-1"
+                >
+                  <RefreshCw className="h-3 w-3" />
+                  {lang === "th" ? "คืนค่าเริ่มต้น" : "Reset Simulation"}
+                </button>
+              </div>
+            )}
+          </Card>
+
+          {/* SIDEBAR: EXTRA OPPORTUNITIES LIST */}
+          <Card className="border border-line p-4">
+            <h4 className="font-display font-extrabold text-xs text-ink uppercase tracking-wider mb-3 flex items-center gap-1.5">
+              <Sparkles className="h-3.5 w-3.5 text-brand" />
+              {lang === "th" ? "โอกาสปันผลสูงแนะนำ" : "High-Dividend Leaders"}
+            </h4>
+            <div className="divide-y divide-line/60">
+              {allStocks.map((s) => ({ s, v: computeValuation(s, defaultDCFParams(s)) }))
+                .sort((a, b) => b.v.ratios.dividendYield - a.v.ratios.dividendYield)
+                .slice(0, 3)
+                .map((item) => {
+                  const s = item.s;
+                  const v = item.v;
+                  const disp = lang === "th" ? s.name : s.enName || s.name;
+                  return (
+                    <button
+                      key={s.symbol}
+                      onClick={() => handleSelectStockForSandbox(s.symbol)}
+                      className="w-full flex items-center justify-between py-2 text-left hover:bg-elevate/25 transition group rounded-lg px-1.5"
+                    >
+                      <div className="flex items-center gap-2">
+                        <AssetLogo symbol={s.symbol} color={s.color} size="sm" />
+                        <div className="min-w-0">
+                          <span className="font-display font-extrabold text-xs text-ink group-hover:text-brand transition block leading-tight">
+                            {s.symbol}
+                          </span>
+                          <span className="text-[9px] text-muted truncate max-w-[90px] block mt-0.5">
+                            {disp}
+                          </span>
+                        </div>
+                      </div>
+                      <div className="text-right">
+                        <div className="text-xs font-mono font-bold text-ink">
+                          {formatPrice(s, s.price)}
+                        </div>
+                        <div className="text-[9px] font-bold text-gold mt-0.5">
+                          Yield: {v.ratios.dividendYield.toFixed(2)}%
+                        </div>
+                      </div>
+                    </button>
+                  );
+                })}
+            </div>
+          </Card>
+        </div>
+      </div>
+
+      {/* 💳 Premium CSV Export Paywall Modal */}
+      <Modal
+        open={showExportModal}
+        onClose={() => setShowExportModal(false)}
+        title={lang === "th" ? "คุณสมบัติพรีเมียมเฉพาะตัว" : "Premium Feature Lock"}
+      >
+        <LockedCard
+          required="premium"
+          title={lang === "th" ? "ระบบส่งออกข้อมูลสกรีนเนอร์ (CSV)" : "Screener Data Export (CSV)"}
+          desc={
+            lang === "th"
+              ? "ส่งออกรายชื่อและผลลัพธ์การคัดกรองหุ้นตามสกรีนเนอร์ที่คุณตั้งค่าไว้ทั้งหมดเป็นไฟล์ CSV เพื่อนำไปใช้ต่อในโปรแกรมเทรดหรือโมเดลวิเคราะห์ส่วนตัว — ปลดล็อคเต็มรูปแบบด้วยแพ็กเกจพรีเมียม"
+              : "Download all filtered, sorted, and screened equity listings as raw CSV flat-files. Unlock with the Premium Plan."
+          }
+        />
+      </Modal>
+    </div>
+  );
+}
+
+// ================== GORGEOUS CUSTOM SVG SPARKLINE COMPONENT ==================
+function Sparkline({ history, symbol }: { history: number[]; symbol: string }) {
+  if (!history || history.length === 0) return null;
+
+  const min = Math.min(...history);
+  const max = Math.max(...history);
+  const range = max - min === 0 ? 1 : max - min;
+  const width = 80;
+  const height = 24;
+
+  const points = history
+    .map((val, idx) => {
+      const x = (idx / (history.length - 1)) * width;
+      const y = height - 2 - ((val - min) / range) * (height - 4);
+      return `${x},${y}`;
+    })
+    .join(" ");
+
+  const isUp = history[history.length - 1] >= history[0];
+  const strokeColor = isUp ? "#10b981" : "#ef4444"; // Emerald-500 or Red-500
+  const gradId = `spark-grad-${symbol}`;
+
+  return (
+    <svg width={width} height={height} className="overflow-visible select-none pointer-events-none">
+      <defs>
+        <linearGradient id={gradId} x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stopColor={strokeColor} stopOpacity="0.15" />
+          <stop offset="100%" stopColor={strokeColor} stopOpacity="0.0" />
+        </linearGradient>
+      </defs>
+      <polygon
+        fill={`url(#${gradId})`}
+        points={`0,${height} ${points} ${width},${height}`}
+      />
+      <polyline
+        fill="none"
+        stroke={strokeColor}
+        strokeWidth="1.5"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        points={points}
+      />
+      {/* Dynamic Endpoint Marker */}
+      <circle
+        cx={width}
+        cy={height - 2 - ((history[history.length - 1] - min) / range) * (height - 4)}
+        r="2"
+        fill={strokeColor}
+      />
+    </svg>
+  );
+}

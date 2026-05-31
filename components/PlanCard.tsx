@@ -1,0 +1,190 @@
+"use client";
+import { Plan } from "@/lib/types";
+import { num } from "@/lib/format";
+import { Check, Crown, Zap, Shield } from "@/lib/icons";
+import { Button } from "./ui/Button";
+import { useTranslation } from "@/lib/translations";
+
+const planIcon = {
+  free: Shield,
+  pro: Zap,
+  premium: Crown,
+} as const;
+
+export const PLAN_TRANS = {
+  th: {
+    free: {
+      name: "ฟรี",
+      tagline: "เริ่มต้นสำรวจมูลค่าหุ้น",
+      badge: "เริ่มต้นฟรี",
+      features: [
+        "ดูข้อมูลหุ้นได้ 5 ตัว",
+        "อัตราส่วนพื้นฐาน (P/E, P/B, ปันผล)",
+        "ราคาและกราฟย้อนหลัง",
+        "บันทึกรายการโปรดได้ 3 ตัว",
+      ]
+    },
+    pro: {
+      name: "โปร",
+      tagline: "เครื่องมือครบสำหรับนักลงทุนเน้นคุณค่า",
+      badge: "ยอดนิยม",
+      features: [
+        "ดูหุ้นได้ทั้งหมดในตลาด",
+        "เครื่องคำนวณ DCF แบบปรับค่าได้",
+        "Graham Number & มูลค่าเหมาะสม",
+        "สกรีนเนอร์คัดกรองหุ้นถูก",
+        "รายการโปรดไม่จำกัด",
+        "อัตราส่วนการเงินครบทุกตัว",
+      ]
+    },
+    premium: {
+      name: "พรีเมียม",
+      tagline: "สำหรับมืออาชีพและพอร์ตจริงจัง",
+      badge: "ครบทุกฟีเจอร์",
+      features: [
+        "ทุกอย่างในแพ็กเกจโปร",
+        "เปรียบเทียบหุ้นหลายตัวพร้อมกัน",
+        "แจ้งเตือนเมื่อราคาต่ำกว่ามูลค่า",
+        "ส่งออกข้อมูลเป็น CSV",
+        "สมมติฐานการประเมินขั้นสูง",
+        "สนับสนุนแบบเร่งด่วน",
+      ]
+    }
+  },
+  en: {
+    free: {
+      name: "Free",
+      tagline: "Start exploring stock valuations",
+      badge: "Start Free",
+      features: [
+        "Research up to 5 assets",
+        "Basic ratios (P/E, P/B, yield)",
+        "Historical prices & charts",
+        "Track up to 3 watchlist items",
+      ]
+    },
+    pro: {
+      name: "Pro",
+      tagline: "Advanced tools for value investors",
+      badge: "Most Popular",
+      features: [
+        "Unlimited asset research capacity",
+        "Interactive DCF modeling engine",
+        "Graham Number & Fair Value calculations",
+        "High Margin-of-Safety stock screener",
+        "Unlimited synced watchlist tracking",
+        "Full institutional financial ratios",
+      ]
+    },
+    premium: {
+      name: "Premium",
+      tagline: "Built for active portfolio managers",
+      badge: "Full Access",
+      features: [
+        "Everything in the Pro plan",
+        "Side-by-side asset comparison tool",
+        "Under-intrinsic-value price alert triggers",
+        "Prism direct exports (Excel & CSV)",
+        "Advanced valuation growth constraints",
+        "Institutional priority support",
+      ]
+    }
+  }
+};
+
+export function PlanCard({
+  plan,
+  billing,
+  current,
+  onSelect,
+}: {
+  plan: Plan;
+  billing: "monthly" | "yearly";
+  current?: boolean;
+  onSelect?: () => void;
+}) {
+  const { lang, t } = useTranslation();
+  const Icon = planIcon[plan.id];
+  const price = billing === "monthly" ? plan.priceMonthly : plan.priceYearly;
+  const per = billing === "monthly" 
+    ? (lang === "th" ? "/เดือน" : "/mo") 
+    : (lang === "th" ? "/ปี" : "/yr");
+  const highlight = plan.highlight;
+
+  const localPlan = PLAN_TRANS[lang || "th"][plan.id];
+
+  return (
+    <div
+      className={`relative flex flex-col rounded-2xl border p-6 transition ${
+        highlight
+          ? "border-brand bg-surface shadow-glow"
+          : "border-line bg-surface"
+      }`}
+    >
+      {localPlan.badge && (
+        <span
+          className={`absolute -top-3 left-6 chip ${
+            highlight
+              ? "border-brand/40 bg-brand text-bg font-semibold"
+              : "border-gold/40 bg-gold/15 text-gold font-semibold"
+          }`}
+        >
+          {localPlan.badge}
+        </span>
+      )}
+      <div className="flex items-center gap-2.5">
+        <span
+          className={`grid h-10 w-10 place-items-center rounded-xl ${
+            plan.id === "premium"
+              ? "bg-gold/15 text-gold"
+              : "bg-brand-soft text-brand"
+          }`}
+        >
+          <Icon className="h-5 w-5" />
+        </span>
+        <div>
+          <div className="font-display text-lg font-bold">{localPlan.name}</div>
+          <div className="text-xs text-muted">{localPlan.tagline}</div>
+        </div>
+      </div>
+
+      <div className="mt-5 flex items-end gap-1">
+        <span className="num font-display text-4xl font-extrabold">
+          {price === 0 ? "0" : num(price, 0)}
+        </span>
+        <span className="mb-1.5 text-sm text-muted">
+          {lang === "th" ? "บาท" : "THB"}{per}
+        </span>
+      </div>
+      {billing === "yearly" && plan.priceMonthly > 0 && (
+        <div className="num mt-1 text-xs text-up font-medium">
+          {lang === "th" 
+            ? `ประหยัด ${num(plan.priceMonthly * 12 - plan.priceYearly, 0)} บาท/ปี` 
+            : `Save ${num(plan.priceMonthly * 12 - plan.priceYearly, 0)} THB/yr`}
+        </div>
+      )}
+
+      <ul className="mt-5 flex-1 space-y-2.5">
+        {localPlan.features.map((f) => (
+          <li key={f} className="flex items-start gap-2.5 text-sm">
+            <Check className="mt-0.5 h-4 w-4 shrink-0 text-brand" />
+            <span className="text-ink/90">{f}</span>
+          </li>
+        ))}
+      </ul>
+
+      <Button
+        variant={highlight ? "primary" : plan.id === "premium" ? "gold" : "outline"}
+        className="mt-6 w-full"
+        onClick={onSelect}
+        disabled={current}
+      >
+        {current
+          ? t("pricing.currentPlanBadge")
+          : plan.id === "free"
+          ? t("common.startFree")
+          : `${lang === "th" ? "เลือก" : "Select"} ${localPlan.name}`}
+      </Button>
+    </div>
+  );
+}
