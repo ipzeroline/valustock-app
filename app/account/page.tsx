@@ -85,13 +85,13 @@ export default function AccountPage() {
             <div>
               <div className="font-display font-semibold">{lang === "th" ? `แพ็กเกจ ${currentLocalPlan.name}` : `${currentLocalPlan.name} Tier`}</div>
               <div className="text-xs text-muted">
-                {user.email.toLowerCase().trim() === "zeroline@live.com"
+                {(user.email.toLowerCase().trim() === "zeroline@live.com" || user.email.toLowerCase().trim() === "tayasit.pea@gmail.com")
                   ? (lang === "th" ? "สิทธิ์พิเศษระดับผู้บริหารสูงสุดของระบบ" : "Exclusive permanent enterprise subscription tier")
                   : currentLocalPlan.tagline}
               </div>
             </div>
             <div className="text-right">
-              {user.email.toLowerCase().trim() === "zeroline@live.com" ? (
+              {user.email.toLowerCase().trim() === "zeroline@live.com" || user.email.toLowerCase().trim() === "tayasit.pea@gmail.com" ? (
                 <>
                   <div className="num font-display text-lg font-bold text-gold">
                     {lang === "th" ? "ไม่มีวันหมดอายุ" : "Lifetime Access"}

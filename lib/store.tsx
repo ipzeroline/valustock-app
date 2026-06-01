@@ -73,15 +73,22 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     else root.classList.remove("light");
   }, [data.theme]);
 
+  const PREMIUM_EMAILS = new Set([
+    "zeroline@live.com",
+    "tayasit.pea@gmail.com",
+  ]);
+
   const login = useCallback((email: string, name?: string) => {
-    const isSpecialAdmin = email.toLowerCase().trim() === "zeroline@live.com";
+    const isPremium = PREMIUM_EMAILS.has(email.toLowerCase().trim());
     setData((d) => ({
       ...d,
       user: {
-        name: isSpecialAdmin ? "Zeroline VIP" : (name || email.split("@")[0] || "นักลงทุน"),
+        name: isPremium
+          ? (email.toLowerCase().trim() === "zeroline@live.com" ? "Zeroline VIP" : (name || email.split("@")[0] || "นักลงทุน"))
+          : (name || email.split("@")[0] || "นักลงทุน"),
         email,
-        plan: isSpecialAdmin ? "premium" : "free",
-        billing: isSpecialAdmin ? "yearly" : "monthly",
+        plan: isPremium ? "premium" : "free",
+        billing: isPremium ? "yearly" : "monthly",
         joinedAt: new Date().toISOString(),
       },
     }));
@@ -106,13 +113,13 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
             },
           };
         }
-        const isSpecialAdmin = d.user.email.toLowerCase().trim() === "zeroline@live.com";
+        const isPremium = PREMIUM_EMAILS.has(d.user.email.toLowerCase().trim());
         return {
           ...d,
           user: {
             ...d.user,
-            plan: isSpecialAdmin ? "premium" : plan,
-            billing: isSpecialAdmin ? "yearly" : billing,
+            plan: isPremium ? "premium" : plan,
+            billing: isPremium ? "yearly" : billing,
           },
         };
       });
