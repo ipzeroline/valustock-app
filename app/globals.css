@@ -67,7 +67,6 @@ body {
 }
 
 @media (max-width: 639px) {
-  header.sticky > div > a[href="/"] > span:nth-child(2),
   header.sticky > div > div > a[href="/pricing"] {
     display: none;
   }

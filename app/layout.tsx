@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Script from "next/script";
 import {
   Bricolage_Grotesque,
   IBM_Plex_Sans_Thai,
@@ -31,26 +32,38 @@ const mono = IBM_Plex_Mono({
 
 export const metadata: Metadata = {
   metadataBase: new URL("https://valustock.app"),
-  title: "ValuStock - เครื่องมือประเมินมูลค่าหุ้น และค้นหาหุ้นพื้นฐานดีสำหรับนักลงทุนระยะยาว",
-  description: "ตอบคำถาม 'หุ้นตัวไหนดี' และ 'หุ้นไทยถูกหรือแพง' ด้วยเครื่องประเมินมูลค่าหุ้นที่แท้จริง (Intrinsic Value / DCF Calculator) คัดกรอง หุ้นปันผลสูง และ หุ้น undervalue ทรงคุณค่าที่มีส่วนเผื่อความปลอดภัยสูงสุดได้อย่างเป็นระบบ",
+  title: "ValuStock | เครื่องมือประเมินมูลค่าหุ้น คำนวณ DCF และหาหุ้นพื้นฐานดี",
+  description: "ประเมินมูลค่าหุ้นด้วย DCF, Intrinsic Value และ Margin of Safety คัดกรองหุ้นพื้นฐานดี หุ้น undervalue หุ้นปันผลสูง และดูว่าหุ้นไทยหรือหุ้นอเมริกาถูกหรือแพง",
   keywords: [
     "หุ้นตัวไหนดี",
     "หุ้นปันผลสูง",
     "หุ้น undervalue",
+    "หุ้นราคาถูกพื้นฐานดี",
     "หุ้นพื้นฐานดี",
     "หุ้นน่าซื้อ",
     "มูลค่าหุ้น",
+    "fair value หุ้น",
     "intrinsic value",
+    "intrinsic value หุ้น",
     "dcf calculator",
+    "dcf calculator หุ้น",
+    "คำนวณ dcf หุ้น",
     "peg ratio คือ",
+    "pe ratio คือ",
+    "roe คือ",
     "หุ้นไทยถูกหรือแพง",
     "ประเมินมูลค่าหุ้น",
     "วิเคราะห์หุ้น",
     "มูลค่าเหมาะสมของหุ้น",
     "เครื่องคำนวณ dcf",
+    "เครื่องมือประเมินมูลค่าหุ้น",
+    "โปรแกรมคัดกรองหุ้น",
+    "วิธีประเมินมูลค่าหุ้น",
+    "วิธีหาหุ้น undervalue",
     "graham number",
     "สูตรเกรแฮม",
     "margin of safety",
+    "margin of safety คือ",
     "คัดกรองหุ้น",
     "หุ้นไทย",
     "หุ้นอเมริกา",
@@ -76,8 +89,8 @@ export const metadata: Metadata = {
     type: "website",
     locale: "th_TH",
     url: "https://valustock.app",
-    title: "ValuStock - เครื่องมือประเมินมูลค่าหุ้น และค้นหาหุ้นพื้นฐานดีสำหรับนักลงทุนระยะยาว",
-    description: "ตอบคำถาม 'หุ้นตัวไหนดี' และ 'หุ้นไทยถูกหรือแพง' ด้วยเครื่องคำนวณ DCF / intrinsic value หุ้น คัดกรองหุ้นปันผลสูง หุ้นน่าซื้อ และหุ้น undervalue ทรงคุณค่าอย่างเป็นระบบ",
+    title: "ValuStock | เครื่องมือประเมินมูลค่าหุ้น คำนวณ DCF และหาหุ้นพื้นฐานดี",
+    description: "ประเมินมูลค่าหุ้นด้วย DCF, Intrinsic Value และ Margin of Safety คัดกรองหุ้นพื้นฐานดี หุ้น undervalue หุ้นปันผลสูง และดูว่าหุ้นไทยหรือหุ้นอเมริกาถูกหรือแพง",
     siteName: "ValuStock",
     images: [
       {
@@ -90,8 +103,8 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: "summary_large_image",
-    title: "ValuStock - เครื่องมือประเมินมูลค่าหุ้น และค้นหาหุ้นพื้นฐานดีสำหรับนักลงทุนระยะยาว",
-    description: "ตอบคำถาม 'หุ้นตัวไหนดี' และ 'หุ้นไทยถูกหรือแพง' ด้วยเครื่องคำนวณ DCF / intrinsic value หุ้น คัดกรองหุ้นปันผลสูง หุ้นน่าซื้อ และหุ้น undervalue ทรงคุณค่าอย่างเป็นระบบ",
+    title: "ValuStock | เครื่องมือประเมินมูลค่าหุ้น คำนวณ DCF และหาหุ้นพื้นฐานดี",
+    description: "ประเมินมูลค่าหุ้นด้วย DCF, Intrinsic Value และ Margin of Safety คัดกรองหุ้นพื้นฐานดี หุ้น undervalue หุ้นปันผลสูง และดูว่าหุ้นไทยหรือหุ้นอเมริกาถูกหรือแพง",
     images: ["https://valustock.app/og-image.png"],
     creator: "@valustock",
   },
@@ -119,6 +132,18 @@ export default function RootLayout({
   return (
     <html lang="th" data-scroll-behavior="smooth" className={`${display.variable} ${body.variable} ${mono.variable}`}>
       <body className="font-sans antialiased">
+        <Script
+          src="https://www.googletagmanager.com/gtag/js?id=G-XXH2TRCZCD"
+          strategy="afterInteractive"
+        />
+        <Script id="google-analytics" strategy="afterInteractive">
+          {`
+            window.dataLayer = window.dataLayer || [];
+            function gtag(){dataLayer.push(arguments);}
+            gtag('js', new Date());
+            gtag('config', 'G-XXH2TRCZCD');
+          `}
+        </Script>
         <StoreProvider>
           <Shell>{children}</Shell>
         </StoreProvider>

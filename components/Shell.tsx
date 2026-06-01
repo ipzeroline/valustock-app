@@ -27,7 +27,7 @@ import { Button } from "./ui/Button";
 const MARKETING = ["/", "/pricing", "/login"];
 function Logo({ compact = false }: { compact?: boolean }) {
   return (
-    <Link href="/" className="flex items-center gap-2.5">
+    <Link href="/" className="flex shrink-0 items-center gap-2.5">
       <span className="grid h-9 w-9 place-items-center rounded-xl bg-brand text-bg shadow-[0_6px_20px_-8px_rgb(var(--brand))]">
         <LineChart className="h-5 w-5" strokeWidth={2.5} />
       </span>
@@ -220,19 +220,19 @@ function AppTopbar() {
   const { user, logout } = useStore();
   const { t } = useTranslation();
   return (
-    <div className="sticky top-0 z-30 flex h-16 items-center justify-between border-b border-line bg-bg/80 px-5 backdrop-blur-xl lg:px-8">
-      <div className="lg:hidden">
-        <Logo compact />
+    <div className="sticky top-0 z-30 flex h-16 items-center justify-between border-b border-line bg-bg/80 px-3 backdrop-blur-xl sm:px-5 lg:px-8">
+      <div className="shrink-0 lg:hidden">
+        <Logo />
       </div>
       <div className="hidden lg:block" />
-      <div className="flex items-center gap-2.5">
+      <div className="flex shrink-0 items-center gap-1.5 sm:gap-2.5">
         <LangToggle />
         <ThemeToggle />
         {user ? (
-          <div className="flex items-center gap-2.5">
+          <div className="flex items-center gap-1.5 sm:gap-2.5">
             <Link
               href="/account"
-              className="flex items-center gap-2.5 rounded-xl border border-line px-3 py-2"
+              className="flex items-center gap-2 rounded-xl border border-line px-2 py-2 sm:gap-2.5 sm:px-3"
             >
               <span className="grid h-7 w-7 place-items-center rounded-lg bg-brand-soft text-xs font-bold text-brand">
                 {user.name.slice(0, 1).toUpperCase()}

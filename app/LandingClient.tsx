@@ -247,6 +247,47 @@ export default function Landing() {
     }
   ];
 
+  const searchIntentCards = [
+    {
+      title: lang === "th" ? "หุ้นตัวนี้ถูกหรือแพง?" : "Is this stock cheap or expensive?",
+      desc: lang === "th"
+        ? "เปรียบเทียบราคาตลาดกับมูลค่าเหมาะสมจาก DCF, Graham Number และ Margin of Safety เพื่อดูว่าหุ้นมีแต้มต่อพอหรือไม่"
+        : "Compare market price against DCF, Graham Number, and Margin of Safety estimates before committing capital.",
+      link: "/intrinsic-value-calculator",
+      linkText: lang === "th" ? "คำนวณมูลค่าเหมาะสมของหุ้น" : "Calculate intrinsic value",
+      icon: Target,
+    },
+    {
+      title: lang === "th" ? "หุ้นพื้นฐานดีมีตัวไหนบ้าง?" : "Which stocks have strong fundamentals?",
+      desc: lang === "th"
+        ? "คัดกรองหุ้นด้วย ROE, P/E, กระแสเงินสด, เงินปันผล และงบดุล เพื่อหาโอกาสลงทุนระยะยาวทั้งหุ้นไทยและหุ้นอเมริกา"
+        : "Screen equities by ROE, P/E, free cash flow, dividends, and balance-sheet strength across Thai and US markets.",
+      link: "/stocks",
+      linkText: lang === "th" ? "เปิดโปรแกรมคัดกรองหุ้น" : "Open stock screener",
+      icon: Filter,
+    },
+    {
+      title: lang === "th" ? "หุ้น undervalue และหุ้นปันผลสูงหายังไง?" : "How do I find undervalued and dividend stocks?",
+      desc: lang === "th"
+        ? "รวมรายการหุ้นราคาถูกพื้นฐานดีและหุ้นปันผลสูง พร้อมตัวเลขที่ใช้ตรวจว่าเป็นโอกาสจริงหรือเป็น value trap"
+        : "Find deep-value and dividend candidates with practical checks against common value traps.",
+      link: "/undervalued-stocks",
+      linkText: lang === "th" ? "ดูหุ้น undervalue" : "View undervalued stocks",
+      icon: Shield,
+    },
+  ];
+
+  const keywordLinks = [
+    { label: lang === "th" ? "เครื่องมือประเมินมูลค่าหุ้น" : "Stock valuation tool", href: "/intrinsic-value-calculator" },
+    { label: lang === "th" ? "เครื่องคำนวณ DCF หุ้น" : "DCF calculator", href: "/dcf-calculator" },
+    { label: lang === "th" ? "หุ้น undervalue" : "Undervalued stocks", href: "/undervalued-stocks" },
+    { label: lang === "th" ? "หุ้นปันผลสูง" : "High dividend stocks", href: "/dividend-stocks" },
+    { label: lang === "th" ? "วิธีประเมินมูลค่าหุ้น" : "How to value stocks", href: "/stock-valuation" },
+    { label: lang === "th" ? "แนวคิดลงทุนแบบ VI" : "Value investing guide", href: "/value-investing" },
+    { label: lang === "th" ? "สูตรและวิธีคำนวณ" : "Methodology", href: "/methodology" },
+    { label: lang === "th" ? "เปรียบเทียบหุ้นและ ETF" : "Compare stocks and ETFs", href: "/compare" },
+  ];
+
   // Homepage FAQs
   const homeFaqs = useMemo(() => [
     {
@@ -272,6 +313,24 @@ export default function Landing() {
       a: lang === "th"
         ? "สำหรับนักลงทุนแนวคุณค่า (Value Investors) แนะนำส่วนเผื่อความปลอดภัยขั้นต่ำที่ 15% - 30% ขึ้นไป เพื่อช่วยเป็นกันชนป้องกันพอร์ตเมื่อเกิดความคาดเคลื่อนในการประเมินกระแสเงินสดอนาคต"
         : "For defensive value reinvestors, we recommend maintaining a Margin of Safety between 15% and 30%. This serves as an operational buffer against long-term cash flow projection errors."
+    },
+    {
+      q: lang === "th" ? "มือใหม่ใช้ ValuStock หาหุ้นตัวไหนดีได้ไหม?" : "Can beginners use ValuStock to find stock ideas?",
+      a: lang === "th"
+        ? "ได้ครับ หน้าโปรแกรมคัดกรองหุ้นช่วยเริ่มจากคำถามง่าย ๆ เช่น หุ้นตัวนี้ถูกหรือแพง หุ้นพื้นฐานดีตัวไหนน่าสนใจ และหุ้นมี Margin of Safety เพียงพอหรือไม่ จากนั้นผู้ใช้ควรอ่านงบและศึกษาความเสี่ยงก่อนลงทุนจริง"
+        : "Yes. The screener starts from practical questions such as whether a stock is cheap, financially strong, and trading with enough Margin of Safety. Users should still review filings and risks before investing."
+    },
+    {
+      q: lang === "th" ? "หุ้น undervalue ต่างจากหุ้นราคาถูกทั่วไปอย่างไร?" : "How are undervalued stocks different from simply cheap stocks?",
+      a: lang === "th"
+        ? "หุ้น undervalue คือหุ้นที่ราคาตลาดต่ำกว่ามูลค่าที่ประเมินได้จากพื้นฐาน เช่น กระแสเงินสด กำไร คุณภาพงบดุล และผลตอบแทนต่อผู้ถือหุ้น ไม่ใช่แค่หุ้นที่ P/E ต่ำหรือราคาลดลงแรง"
+        : "An undervalued stock trades below a reasonable estimate of intrinsic value based on cash flow, earnings quality, balance-sheet strength, and shareholder returns, not just a low P/E ratio."
+    },
+    {
+      q: lang === "th" ? "DCF Calculator เหมาะกับหุ้นแบบไหน?" : "What types of stocks are best suited for DCF valuation?",
+      a: lang === "th"
+        ? "DCF เหมาะกับธุรกิจที่มีกระแสเงินสดคาดการณ์ได้พอสมควร เช่น บริษัทกำไรสม่ำเสมอ เติบโตเป็นรอบชัดเจน หรือมี free cash flow เป็นบวกต่อเนื่อง หุ้นวัฏจักรหนักหรือธุรกิจขาดทุนอาจต้องใช้สมมติฐานระมัดระวังเป็นพิเศษ"
+        : "DCF is best for companies with reasonably forecastable cash flows, recurring earnings, or consistent free cash flow. Cyclical or loss-making businesses require more conservative assumptions."
     }
   ], [lang]);
 
@@ -299,7 +358,7 @@ export default function Landing() {
                 "name": "ValuStock",
                 "applicationCategory": "FinancialApplication",
                 "operatingSystem": "All",
-                "description": "Professional stock valuation and intrinsic value calculation platform featuring DCF Modeling, Graham Number calculations, and high Margin-of-Safety screeners for Thai and US stock markets.",
+                "description": "เครื่องมือประเมินมูลค่าหุ้นและคำนวณ DCF สำหรับนักลงทุนไทย ใช้ Intrinsic Value, Graham Number และ Margin of Safety เพื่อคัดกรองหุ้นพื้นฐานดี หุ้น undervalue และหุ้นปันผลสูง",
                 "offers": {
                   "@type": "Offer",
                   "price": "0",
@@ -312,8 +371,8 @@ export default function Landing() {
                 "@type": "WebSite",
                 "@id": "https://valustock.app/#website",
                 "url": "https://valustock.app",
-                "name": "ValuStock — แพลตฟอร์มประเมินมูลค่าสินทรัพย์ระดับโลก",
-                "description": "เครื่องมือประเมินมูลค่าสินทรัพย์และเทอร์มินัลการเงินระดับสถาบัน วิเคราะห์ครบทั้งหุ้นโลก คริปโตเคอร์เรนซี และฟิวเจอร์ส",
+                "name": "ValuStock — เครื่องมือประเมินมูลค่าหุ้นสำหรับนักลงทุนไทย",
+                "description": "ประเมินมูลค่าหุ้นด้วย DCF, Intrinsic Value และ Margin of Safety คัดกรองหุ้นพื้นฐานดี หุ้น undervalue หุ้นปันผลสูง และดูว่าหุ้นไทยหรือหุ้นอเมริกาถูกหรือแพง",
                 "publisher": {
                   "@id": "https://valustock.app/#organization"
                 },
@@ -347,9 +406,9 @@ export default function Landing() {
       <section className="relative overflow-hidden border-b border-line/60">
         <div className="aurora absolute inset-0 -z-10" />
         <div className="grid-lines absolute inset-0 -z-10 opacity-60" />
-        <div className="mx-auto grid w-full max-w-6xl grid-cols-[minmax(0,1fr)] items-start gap-10 px-5 pb-12 pt-10 sm:py-16 md:min-h-[720px] md:items-center lg:grid-cols-[minmax(0,1.05fr)_minmax(0,0.95fr)] lg:min-h-[760px] lg:gap-14 lg:py-20">
-          <div className="animate-fade-up min-w-0 max-w-[350px] sm:max-w-2xl">
-            <span className={`${eyebrowClass} border-brand/35 bg-brand/10 text-brand sm:text-sm`}>
+        <div className="mx-auto grid w-full max-w-6xl grid-cols-[minmax(0,1fr)] items-start gap-9 px-4 pb-12 pt-9 text-center sm:px-5 sm:py-16 md:min-h-[720px] md:items-center lg:grid-cols-[minmax(0,1.05fr)_minmax(0,0.95fr)] lg:min-h-[760px] lg:gap-14 lg:py-20 lg:text-left">
+          <div className="animate-fade-up mx-auto min-w-0 max-w-md sm:max-w-2xl lg:mx-0">
+            <span className={`${eyebrowClass} mx-auto justify-center border-brand/35 bg-brand/10 text-brand sm:text-sm lg:mx-0 lg:justify-start`}>
               <Sparkles className="h-3.5 w-3.5" /> 
               {lang === "th" 
                 ? "แพลตฟอร์มประเมินมูลค่าหุ้น และคัดกรองระบบงบการเงิน" 
@@ -360,10 +419,9 @@ export default function Landing() {
               {lang === "th" ? (
                 <>
                   <span className="block">ValuStock</span>
-                  <span className="block">เครื่องมือประเมิน</span>
-                  <span className="block">มูลค่าหุ้น</span>
+                  <span className="block">เครื่องมือประเมินมูลค่าหุ้น</span>
                   <span className="mt-3 block text-lg font-bold text-muted sm:text-xl md:text-2xl">
-                    และค้นหา <strong className="text-brand font-bold">หุ้นพื้นฐานดี</strong> สำหรับนักลงทุนระยะยาว
+                    คำนวณ DCF และค้นหา <strong className="text-brand font-bold">หุ้นพื้นฐานดี</strong> สำหรับนักลงทุนระยะยาว
                   </span>
                 </>
               ) : (
@@ -377,13 +435,13 @@ export default function Landing() {
               )}
             </h1>
 
-            <p className="mt-6 max-w-[350px] text-sm font-medium leading-relaxed text-muted [overflow-wrap:anywhere] sm:max-w-xl sm:text-base">
+            <p className="mx-auto mt-6 max-w-md text-sm font-medium leading-relaxed text-muted [overflow-wrap:anywhere] sm:max-w-xl sm:text-base lg:mx-0">
               {lang === "th" 
-                ? "ตอบคำถาม 'หุ้นตัวไหนดี' และ 'หุ้นไทยถูกหรือแพง' ด้วยเครื่องประเมินมูลค่าหุ้นที่แท้จริง (Intrinsic Value / DCF Calculator) คัดกรอง หุ้นปันผลสูง และ หุ้น undervalue ทรงคุณค่าที่มีส่วนเผื่อความปลอดภัยสูงสุดได้อย่างเป็นระบบ"
+                ? "ตอบคำถาม 'หุ้นตัวไหนดี' และ 'หุ้นไทยถูกหรือแพง' ด้วยเครื่องประเมินมูลค่าหุ้นที่แท้จริง คำนวณ Intrinsic Value, Fair Value, DCF Calculator และ Margin of Safety เพื่อคัดกรองหุ้นปันผลสูง หุ้น undervalue และหุ้นราคาถูกพื้นฐานดีอย่างเป็นระบบ"
                 : "Solve the question of what stocks to buy and evaluate if equities are cheap or expensive. Utilize our professional DCF Calculator and intrinsic value models to discover high dividend, undervalued stocks in seconds."}
             </p>
 
-            <div className="mt-8 flex max-w-sm flex-col items-stretch gap-3 sm:max-w-none sm:flex-row sm:items-center">
+            <div className="mx-auto mt-8 flex max-w-sm flex-col items-stretch gap-3 sm:max-w-none sm:flex-row sm:items-center sm:justify-center lg:mx-0 lg:justify-start">
               <Link href="/pricing" className="w-full sm:w-auto">
                 <Button size="lg" className="w-full text-xs sm:w-auto sm:text-sm">
                   {t("common.startFree")} <ArrowRight className="h-4 w-4" />
@@ -396,7 +454,7 @@ export default function Landing() {
               </Link>
             </div>
 
-            <nav className="mt-7 flex max-w-[350px] flex-wrap gap-x-4 gap-y-2 text-[11px] font-bold text-muted sm:max-w-none sm:text-xs" aria-label="ลิงก์เครื่องมือประเมินมูลค่าหุ้นยอดนิยม">
+            <nav className="mx-auto mt-7 flex max-w-sm flex-wrap justify-center gap-x-4 gap-y-2 text-[11px] font-bold text-muted sm:max-w-none sm:text-xs lg:mx-0 lg:justify-start" aria-label="ลิงก์เครื่องมือประเมินมูลค่าหุ้นยอดนิยม">
               <Link className="hover:text-brand" href="/dcf-calculator">DCF Calculator</Link>
               <Link className="hover:text-brand" href="/intrinsic-value-calculator">Intrinsic Value</Link>
               <Link className="hover:text-brand" href="/undervalued-stocks">หุ้น undervalue</Link>
@@ -406,7 +464,7 @@ export default function Landing() {
 
           {/* Floating Valuation Card */}
           <div className="animate-fade-up min-w-0 w-full overflow-hidden [animation-delay:120ms] lg:justify-self-end">
-            <div className="surface w-full max-w-[350px] rounded-2xl border border-line bg-surface/55 p-4 shadow-card backdrop-blur-md sm:mx-auto sm:max-w-md sm:p-5">
+            <div className="surface mx-auto w-full max-w-[350px] rounded-2xl border border-line bg-surface/55 p-4 text-left shadow-card backdrop-blur-md sm:max-w-md sm:p-5">
               <div className="flex min-w-0 flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                 <div className="flex min-w-0 items-center gap-3">
                   <AssetLogo symbol={demo.symbol} color={demo.color} size="md" />
@@ -441,6 +499,66 @@ export default function Landing() {
         </div>
       </section>
 
+      {/* SEO SEARCH INTENT SECTION */}
+      <section className={borderedSectionClass}>
+        <div className={centeredHeaderClass}>
+          <span className={`${eyebrowClass} border-brand/35 bg-brand/10 text-brand`}>
+            <Gauge className="h-3.5 w-3.5" /> {lang === "th" ? "คำถามที่นักลงทุนไทยค้นหาบ่อย" : "High-intent investor searches"}
+          </span>
+          <h2 className={sectionTitleClass}>
+            {lang === "th" ? "เครื่องมือประเมินมูลค่าหุ้นสำหรับนักลงทุนไทย" : "Stock Valuation Tools for Long-Term Investors"}
+          </h2>
+          <p className="mx-auto mt-3 max-w-2xl text-sm font-medium leading-relaxed text-muted [overflow-wrap:anywhere]">
+            {lang === "th"
+              ? "ValuStock ช่วยตอบคำถามสำคัญก่อนซื้อหุ้น เช่น หุ้นตัวไหนดี หุ้นไทยถูกหรือแพง มูลค่าเหมาะสมควรเป็นเท่าไร และหุ้นมีส่วนเผื่อความปลอดภัยเพียงพอสำหรับลงทุนระยะยาวหรือไม่"
+              : "ValuStock helps investors answer whether a stock is cheap or expensive, what its fair value may be, and whether there is enough Margin of Safety for long-term allocation."}
+          </p>
+        </div>
+
+        <div className="grid gap-4 md:grid-cols-3">
+          {searchIntentCards.map((item) => {
+            const Icon = item.icon;
+            return (
+              <Link
+                key={item.link}
+                href={item.link}
+                className="group surface rounded-2xl border border-line p-5 text-center transition duration-300 hover:border-brand/40 hover:shadow-lg sm:p-6"
+              >
+                <span className="mx-auto grid h-11 w-11 place-items-center rounded-xl bg-brand/10 text-brand transition duration-300 group-hover:scale-110">
+                  <Icon className="h-5 w-5" />
+                </span>
+                <h3 className="mt-4 font-display text-base font-bold leading-snug text-ink group-hover:text-brand">
+                  {item.title}
+                </h3>
+                <p className="mt-2 text-xs font-medium leading-relaxed text-muted [overflow-wrap:anywhere]">
+                  {item.desc}
+                </p>
+                <span className="mt-4 inline-flex items-center justify-center gap-1 text-xs font-extrabold text-brand">
+                  {item.linkText} <ChevronRight className="h-3.5 w-3.5 transition group-hover:translate-x-0.5" />
+                </span>
+              </Link>
+            );
+          })}
+        </div>
+
+        <div className="mx-auto mt-8 max-w-4xl rounded-2xl border border-line bg-surface/35 p-4 sm:p-5">
+          <h3 className="font-display text-sm font-bold text-ink">
+            {lang === "th" ? "คำค้นยอดนิยมที่ ValuStock ครอบคลุม" : "Popular valuation topics covered"}
+          </h3>
+          <div className="mt-3 flex flex-wrap gap-2">
+            {keywordLinks.map((item) => (
+              <Link
+                key={item.href + item.label}
+                href={item.href}
+                className="rounded-full border border-line bg-bg px-3 py-1.5 text-[11px] font-bold text-muted transition hover:border-brand/40 hover:text-brand"
+              >
+                {item.label}
+              </Link>
+            ))}
+          </div>
+        </div>
+      </section>
+
       {/* 🛠️ 2. TOP FEATURES SECTION */}
       <section className={sectionClass}>
         <div className={centeredHeaderClass}>
@@ -448,7 +566,7 @@ export default function Landing() {
             <Calculator className="h-3.5 w-3.5" /> High-Utility Core Toolkits
           </span>
           <h2 className={sectionTitleClass}>
-            {lang === "th" ? "เครื่องมือวิเคราะห์ทางการเงินชั้นนำ" : "Premium Valuation Toolkits"}
+            {lang === "th" ? "เครื่องมือวิเคราะห์หุ้น คำนวณ DCF และคัดกรองหุ้นพื้นฐานดี" : "Premium Valuation Toolkits"}
           </h2>
         </div>
 
@@ -482,7 +600,7 @@ export default function Landing() {
             </span>
             <h3 className="mt-4 font-display font-bold text-ink group-hover:text-brand transition">Stock Screener</h3>
             <p className="mt-1.5 text-xs text-muted leading-relaxed font-medium">
-              {lang === "th" ? "คัดกรองหุ้นปันผลและหุ้น undervalue ยอดเยี่ยมด้วยชุดงบการเงินเรียลไทม์" : "Filter cash cows and deep discounts from our multi-exchange dynamic database."}
+              {lang === "th" ? "โปรแกรมคัดกรองหุ้นพื้นฐานดี หุ้นปันผลสูง และหุ้น undervalue ด้วยชุดงบการเงินเรียลไทม์" : "Filter cash cows and deep discounts from our multi-exchange dynamic database."}
             </p>
           </Link>
 
