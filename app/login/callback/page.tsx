@@ -1,13 +1,13 @@
 "use client";
 
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useState, useRef, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useStore } from "@/lib/store";
 import { LineChart, AlertTriangle } from "@/lib/icons";
 import { useTranslation } from "@/lib/translations";
 import Link from "next/link";
 
-export default function LoginCallbackPage() {
+function CallbackContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { login, lang } = useStore();
@@ -131,5 +131,19 @@ export default function LoginCallbackPage() {
         </div>
       </div>
     </div>
+  );
+}
+
+export default function LoginCallbackPage() {
+  return (
+    <Suspense fallback={
+      <div className="relative min-h-[calc(100vh-4rem)] overflow-hidden flex items-center justify-center">
+        <div className="aurora absolute inset-0 -z-10 opacity-70 animate-pulse" />
+        <div className="grid-lines absolute inset-0 -z-10 opacity-50" />
+        <div className="text-muted animate-pulse">Verifying Google authentication...</div>
+      </div>
+    }>
+      <CallbackContent />
+    </Suspense>
   );
 }
