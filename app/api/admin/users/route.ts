@@ -96,10 +96,16 @@ export async function POST(req: Request) {
     }
   } catch (err: any) {
     console.error("Database user upsert error:", err.message);
+    return NextResponse.json(
+      { error: "Database user upsert failed", detail: err.message, mockMode: true },
+      { status: 500 }
+    );
   }
 
-  // Simulate success in Mock mode
-  return NextResponse.json({ success: true, mockMode: true });
+  return NextResponse.json(
+    { error: "Database is not connected. User was not saved.", mockMode: true },
+    { status: 503 }
+  );
 }
 
 export async function DELETE(req: Request) {
@@ -117,8 +123,14 @@ export async function DELETE(req: Request) {
     }
   } catch (err: any) {
     console.error("Database user delete error:", err.message);
+    return NextResponse.json(
+      { error: "Database user delete failed", detail: err.message, mockMode: true },
+      { status: 500 }
+    );
   }
 
-  // Simulate success in Mock mode
-  return NextResponse.json({ success: true, mockMode: true });
+  return NextResponse.json(
+    { error: "Database is not connected. User was not deleted.", mockMode: true },
+    { status: 503 }
+  );
 }

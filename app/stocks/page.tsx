@@ -30,6 +30,8 @@ import {
   Crown,
   RefreshCw,
   Info,
+  CheckCircle,
+  Shield,
 } from "@/lib/icons";
 
 type SortKey = "mos" | "pe" | "growth" | "yield" | "symbol";
@@ -49,6 +51,7 @@ export default function StocksPage() {
   const [minYield, setMinYield] = useState<number>(0);
   const [sort, setSort] = useState<SortKey>("mos");
   const [activeTab, setActiveTab] = useState<TabType>("valuation");
+  const [openFaq, setOpenFaq] = useState<number | null>(0);
 
   // Interactive DCF Sandbox Simulator State
   const [sandboxSymbol, setSandboxSymbol] = useState<string>("PTT");
@@ -86,6 +89,38 @@ export default function StocksPage() {
     const uniqueDynamic = combinedDynamic.filter((s) => !staticSymbols.has(s.symbol.toUpperCase()));
     return [...STOCKS, ...uniqueDynamic];
   }, [dynamicStocks, nasdaqStocks]);
+
+  const tickerStocks = useMemo(() => {
+    const prioritySymbols = [
+      "PTT",
+      "KBANK",
+      "BBL",
+      "SCB",
+      "ADVANC",
+      "CPALL",
+      "AOT",
+      "PTTEP",
+      "SCC",
+      "BDMS",
+      "AAPL",
+      "MSFT",
+      "NVDA",
+      "GOOGL",
+      "META",
+      "AMZN",
+      "BRK.B",
+      "JPM",
+      "V",
+      "JNJ",
+      "SPY",
+      "QQQ",
+      "VOO",
+      "SCHD",
+    ];
+    return prioritySymbols
+      .map((symbol) => allStocks.find((stock) => stock.symbol.toUpperCase() === symbol))
+      .filter((stock): stock is Stock => Boolean(stock));
+  }, [allStocks]);
 
   // Selected Stock for Sandbox simulation
   const selectedStock = useMemo(() => {
@@ -417,13 +452,111 @@ export default function StocksPage() {
     return baht(p);
   };
 
+  const screenerGuides = [
+    {
+      title: lang === "th" ? "เริ่มจาก Margin of Safety" : "Start with Margin of Safety",
+      desc: lang === "th"
+        ? "MOS ช่วยบอกว่าราคาตลาดต่ำกว่ามูลค่าประเมินมากแค่ไหน นักลงทุนระยะยาวมักมองหาหุ้นที่มี MOS อย่างน้อย 15% พร้อมพื้นฐานแข็งแรง"
+        : "MOS estimates how far market price sits below fair value. Long-term investors often seek 15% or more with solid fundamentals.",
+    },
+    {
+      title: lang === "th" ? "กรอง P/E คู่กับคุณภาพกำไร" : "Filter P/E with earnings quality",
+      desc: lang === "th"
+        ? "P/E ต่ำไม่ได้แปลว่าถูกเสมอ ควรดูรายได้ กำไรสุทธิ ROE และกระแสเงินสดร่วมกัน เพื่อหลีกเลี่ยง value trap"
+        : "Low P/E is not always cheap. Check revenue, net profit, ROE, and cash flow together to avoid value traps.",
+    },
+    {
+      title: lang === "th" ? "แยกหุ้นปันผลสูงที่ยั่งยืน" : "Separate sustainable dividend stocks",
+      desc: lang === "th"
+        ? "Dividend Yield สูงควรตรวจ payout ratio, free cash flow และหนี้สิน เพราะปันผลสูงจากราคาหุ้นตกอาจเป็นสัญญาณความเสี่ยง"
+        : "High yield needs payout, free cash flow, and leverage checks because a falling share price can make yield look misleading.",
+    },
+    {
+      title: lang === "th" ? "เทียบหุ้นไทย หุ้นอเมริกา และ ETF" : "Compare Thai stocks, US stocks, and ETFs",
+      desc: lang === "th"
+        ? "ใช้ตัวกรองประเภทสินทรัพย์เพื่อเทียบหุ้นไทย หุ้นสหรัฐ กองทุน และ ETF ด้วยกรอบ valuation ที่เหมาะกับสินทรัพย์แต่ละแบบ"
+        : "Use asset-type filters to compare Thai equities, US equities, funds, and ETFs with suitable valuation metrics.",
+    },
+  ];
+
+  const faqItems = [
+    {
+      q: lang === "th" ? "Stock Screener คืออะไร?" : "What is a stock screener?",
+      a: lang === "th"
+        ? "Stock Screener คือเครื่องมือคัดกรองหุ้นตามเงื่อนไข เช่น Margin of Safety, P/E, Dividend Yield, ROE, sector และประเภทสินทรัพย์ เพื่อช่วยค้นหาหุ้นพื้นฐานดีหรือหุ้น undervalue ได้เร็วขึ้น"
+        : "A stock screener filters securities by conditions such as Margin of Safety, P/E, Dividend Yield, ROE, sector, and asset type.",
+    },
+    {
+      q: lang === "th" ? "หุ้น undervalue ดูจากอะไร?" : "How do I identify undervalued stocks?",
+      a: lang === "th"
+        ? "ควรดูว่าราคาตลาดต่ำกว่ามูลค่าประเมินจาก DCF หรือ Graham Number พร้อมตรวจคุณภาพธุรกิจ หนี้สิน กระแสเงินสด และความสม่ำเสมอของกำไร ไม่ควรดูแค่ราคาถูกหรือ P/E ต่ำ"
+        : "Compare market price with DCF or Graham estimates, then review business quality, debt, cash flow, and earnings consistency.",
+    },
+    {
+      q: lang === "th" ? "หุ้นพื้นฐานดีควรมีตัวเลขอะไรบ้าง?" : "What metrics suggest strong fundamentals?",
+      a: lang === "th"
+        ? "ตัวเลขสำคัญได้แก่ ROE ที่ดี, หนี้ไม่สูงเกินไป, กระแสเงินสดอิสระเป็นบวก, กำไรเติบโตสม่ำเสมอ, P/E ไม่แพงเกินพื้นฐาน และมี Margin of Safety เพียงพอ"
+        : "Useful signals include healthy ROE, reasonable debt, positive free cash flow, consistent earnings, fair P/E, and enough Margin of Safety.",
+    },
+    {
+      q: lang === "th" ? "หุ้นปันผลสูงน่าซื้อเสมอไหม?" : "Are high dividend stocks always attractive?",
+      a: lang === "th"
+        ? "ไม่เสมอครับ ต้องดูว่าปันผลมาจากกำไรและกระแสเงินสดจริงหรือไม่ หากราคาหุ้นตกแรงเพราะธุรกิจถดถอย Dividend Yield อาจดูสูงผิดปกติและกลายเป็น value trap"
+        : "No. Dividends should be supported by earnings and cash flow. A falling stock price can make yield look high while risk is rising.",
+    },
+    {
+      q: lang === "th" ? "ควรใช้ตัวกรองไหนก่อนสำหรับมือใหม่?" : "Which filters should beginners start with?",
+      a: lang === "th"
+        ? "เริ่มจากประเภทสินทรัพย์ที่สนใจ เช่น หุ้นไทยหรือหุ้นอเมริกา จากนั้นใช้ MOS, P/E, Dividend Yield และ sector เพื่อจำกัดรายชื่อ แล้วค่อยเปิดหน้าหุ้นรายตัวอ่านรายละเอียด"
+        : "Start with asset type, then narrow by MOS, P/E, Dividend Yield, and sector before reviewing individual stock pages.",
+    },
+  ];
+
   return (
-    <div className="mx-auto max-w-7xl space-y-5 overflow-hidden px-3 pb-24 pt-2 animate-fade-up sm:space-y-6 sm:px-4 lg:pb-2">
+    <div className="mx-auto -mt-3 max-w-7xl space-y-5 overflow-hidden px-3 pb-24 pt-0 animate-fade-up sm:-mt-4 sm:space-y-6 sm:px-4 lg:-mt-5 lg:pb-2">
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{
+          __html: JSON.stringify({
+            "@context": "https://schema.org",
+            "@graph": [
+              {
+                "@type": "SoftwareApplication",
+                "@id": "https://valustock.com/stocks#screener",
+                "name": "ValuStock Stock Screener",
+                "applicationCategory": "FinanceApplication",
+                "operatingSystem": "All",
+                "url": "https://valustock.com/stocks",
+                "description": "โปรแกรมคัดกรองหุ้นไทย หุ้นอเมริกา หุ้นพื้นฐานดี หุ้น undervalue และหุ้นปันผลสูงด้วย DCF, Graham Number, P/E, Dividend Yield และ Margin of Safety",
+                "offers": {
+                  "@type": "Offer",
+                  "price": "0",
+                  "priceCurrency": "THB"
+                }
+              },
+              {
+                "@type": "FAQPage",
+                "@id": "https://valustock.com/stocks#faq",
+                "mainEntity": faqItems.map((faq) => ({
+                  "@type": "Question",
+                  "name": faq.q,
+                  "acceptedAnswer": {
+                    "@type": "Answer",
+                    "text": faq.a
+                  }
+                }))
+              }
+            ]
+          })
+        }}
+      />
       {/* 🚀 A. LIVE GLOBAL TICKER MARQUEE */}
-      <div className="w-full overflow-hidden border border-line/60 bg-elevate/45 rounded-xl py-2">
-        <div className="flex whitespace-nowrap animate-marquee gap-8 text-[11px] font-mono font-bold select-none">
-          {allStocks.concat(allStocks).map((stock, idx) => {
+      <div className="group w-full overflow-hidden rounded-xl border border-line/60 bg-elevate/45 py-2.5 shadow-sm">
+        <div className="flex w-max animate-marquee whitespace-nowrap gap-10 text-[11px] font-mono font-bold select-none group-hover:[animation-play-state:paused]">
+          {tickerStocks.concat(tickerStocks).map((stock, idx) => {
             const val = computeValuation(stock, defaultDCFParams(stock));
+            const mos = val.marginOfSafety;
+            const hasMos = Number.isFinite(mos);
             const change =
               stock.prevClose > 0 ? ((stock.price - stock.prevClose) / stock.prevClose) * 100 : 0;
             const isUp = change >= 0;
@@ -431,7 +564,7 @@ export default function StocksPage() {
               <button
                 key={`${stock.symbol}-${idx}`}
                 onClick={() => handleSelectStockForSandbox(stock.symbol)}
-                className="flex items-center gap-1.5 hover:text-brand transition shrink-0"
+                className="flex items-center gap-2 hover:text-brand transition shrink-0"
               >
                 <span className="text-ink">{stock.symbol}</span>
                 <span className="text-muted">{formatPrice(stock, stock.price)}</span>
@@ -440,14 +573,14 @@ export default function StocksPage() {
                 </span>
                 <span
                   className={`text-[9px] px-1 border rounded ${
-                    val.marginOfSafety >= 15
+                    hasMos && mos >= 15
                       ? "border-up/40 text-up bg-up/5"
-                      : val.marginOfSafety <= -15
+                      : hasMos && mos <= -15
                       ? "border-down/40 text-down bg-down/5"
                       : "border-line text-muted bg-surface"
                   }`}
                 >
-                  MOS {val.marginOfSafety.toFixed(0)}%
+                  {hasMos ? `MOS ${mos.toFixed(0)}%` : "MOS N/A"}
                 </span>
               </button>
             );
@@ -1701,6 +1834,120 @@ export default function StocksPage() {
           </Card>
         </div>
       </div>
+
+      {/* SEO GUIDE CONTENT */}
+      <section className="space-y-6 border-t border-line/60 pt-8">
+        <div className="mx-auto max-w-3xl text-center">
+          <span className="chip border-brand/35 bg-brand/10 text-brand text-xs font-bold">
+            <Filter className="h-3.5 w-3.5" /> {lang === "th" ? "คู่มือใช้โปรแกรมคัดกรองหุ้น" : "Stock screener guide"}
+          </span>
+          <h2 className="mt-3 font-display text-2xl font-black leading-tight text-ink sm:text-3xl">
+            {lang === "th" ? "Stock Screener สำหรับหาหุ้นพื้นฐานดี หุ้น Undervalue และหุ้นปันผลสูง" : "Stock Screener for quality, undervalued, and dividend stocks"}
+          </h2>
+          <p className="mx-auto mt-3 max-w-2xl text-sm font-medium leading-relaxed text-muted [overflow-wrap:anywhere]">
+            {lang === "th"
+              ? "หน้า Stocks ของ ValuStock ถูกออกแบบให้เป็นโปรแกรมคัดกรองหุ้นสำหรับนักลงทุนไทยที่ต้องการตอบคำถามว่า หุ้นตัวไหนดี หุ้นไทยถูกหรือแพง หุ้นตัวไหนมี Margin of Safety และหุ้นปันผลสูงตัวไหนยังมีพื้นฐานรองรับ"
+              : "ValuStock Stocks helps investors screen for quality stocks, undervalued opportunities, dividend leaders, and assets trading with a visible Margin of Safety."}
+          </p>
+        </div>
+
+        <div className="grid gap-4 md:grid-cols-4">
+          {screenerGuides.map((item, idx) => (
+            <Card key={item.title} className="border border-line bg-surface/25 p-5">
+              <span className="grid h-8 w-8 place-items-center rounded-lg bg-brand/10 font-mono text-xs font-black text-brand">
+                {idx + 1}
+              </span>
+              <h3 className="mt-4 font-display text-sm font-bold leading-snug text-ink">{item.title}</h3>
+              <p className="mt-2 text-xs font-medium leading-relaxed text-muted">{item.desc}</p>
+            </Card>
+          ))}
+        </div>
+      </section>
+
+      <section className="grid gap-5 border-t border-line/60 pt-8 md:grid-cols-[1fr_0.9fr]">
+        <Card className="border border-line bg-surface/25 p-5">
+          <span className="chip border-up/30 bg-up/10 text-up text-[10px] font-bold">
+            <Shield className="h-3.5 w-3.5" /> {lang === "th" ? "วิธีอ่านผลลัพธ์" : "Reading screener results"}
+          </span>
+          <h2 className="mt-3 font-display text-xl font-black text-ink">
+            {lang === "th" ? "อย่าเลือกหุ้นจากตัวเลขเดียว" : "Do not choose stocks from one metric"}
+          </h2>
+          <p className="mt-2 text-sm font-medium leading-relaxed text-muted">
+            {lang === "th"
+              ? "หุ้นที่มี MOS สูงหรือ P/E ต่ำอาจดูน่าสนใจ แต่ควรตรวจหลายมิติร่วมกัน ทั้งคุณภาพกำไร หนี้สิน กระแสเงินสด ปันผล และความสามารถแข่งขันของธุรกิจ เพื่อแยกหุ้นพื้นฐานดีออกจาก value trap"
+              : "High MOS or low P/E can look attractive, but investors should check earnings quality, leverage, cash flow, dividends, and business durability to avoid value traps."}
+          </p>
+          <div className="mt-4 grid gap-2 text-xs font-bold text-muted">
+            {[
+              lang === "th" ? "MOS สูง: ตรวจว่าสมมติฐาน DCF สมเหตุสมผลหรือไม่" : "High MOS: verify that DCF assumptions are realistic",
+              lang === "th" ? "P/E ต่ำ: ตรวจว่ากำไรเป็นกำไรปกติหรือกำไรพิเศษ" : "Low P/E: check whether earnings are recurring",
+              lang === "th" ? "Yield สูง: ตรวจ payout ratio และ free cash flow" : "High yield: check payout ratio and free cash flow",
+            ].map((item) => (
+              <div key={item} className="flex items-start gap-2">
+                <CheckCircle className="mt-0.5 h-4 w-4 shrink-0 text-brand" />
+                <span>{item}</span>
+              </div>
+            ))}
+          </div>
+        </Card>
+
+        <Card className="border border-line bg-surface/25 p-5">
+          <h2 className="font-display text-xl font-black text-ink">
+            {lang === "th" ? "เครื่องมือและหน้าที่เกี่ยวข้อง" : "Related tools and guides"}
+          </h2>
+          <div className="mt-4 space-y-2">
+            {[
+              { href: "/undervalued-stocks", label: lang === "th" ? "หุ้น undervalue จากระบบคัดกรอง" : "Undervalued stocks" },
+              { href: "/dividend-stocks", label: lang === "th" ? "หุ้นปันผลสูงสำหรับลงทุนระยะยาว" : "High dividend stocks" },
+              { href: "/dcf-calculator", label: lang === "th" ? "DCF Calculator สำหรับคำนวณราคาเหมาะสม" : "DCF Calculator" },
+              { href: "/intrinsic-value-calculator", label: lang === "th" ? "Intrinsic Value Calculator และ Graham Number" : "Intrinsic Value Calculator" },
+              { href: "/stock-valuation", label: lang === "th" ? "คู่มือวิธีประเมินมูลค่าหุ้น" : "Stock valuation guide" },
+            ].map((item) => (
+              <Link
+                key={item.href}
+                href={item.href}
+                className="flex items-center justify-between rounded-xl border border-line bg-bg px-3 py-2.5 text-xs font-bold text-muted transition hover:border-brand/40 hover:text-brand"
+              >
+                {item.label}
+                <ChevronRight className="h-4 w-4" />
+              </Link>
+            ))}
+          </div>
+        </Card>
+      </section>
+
+      <section className="space-y-4 border-t border-line/60 pt-8">
+        <div className="mx-auto max-w-2xl text-center">
+          <span className="chip border-amber-500/30 bg-amber-500/10 text-amber-400 text-xs font-bold">
+            <Info className="h-3.5 w-3.5" /> FAQ
+          </span>
+          <h2 className="mt-3 font-display text-2xl font-black text-ink">
+            {lang === "th" ? "คำถามที่พบบ่อยเกี่ยวกับโปรแกรมคัดกรองหุ้น" : "Stock Screener FAQ"}
+          </h2>
+        </div>
+
+        <div className="mx-auto max-w-4xl space-y-3">
+          {faqItems.map((faq, idx) => {
+            const isOpen = openFaq === idx;
+            return (
+              <div key={faq.q} className="overflow-hidden rounded-2xl border border-line bg-bg/40">
+                <button
+                  onClick={() => setOpenFaq(isOpen ? null : idx)}
+                  className="flex w-full items-center justify-between gap-4 px-5 py-4 text-left text-sm font-bold text-ink transition hover:bg-elevate/45"
+                >
+                  <span>{faq.q}</span>
+                  <span className="shrink-0 font-mono text-xs text-brand">{isOpen ? "−" : "+"}</span>
+                </button>
+                {isOpen && (
+                  <div className="border-t border-line/30 px-5 pb-4 pt-3 text-xs font-medium leading-relaxed text-muted">
+                    {faq.a}
+                  </div>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      </section>
 
       {/* 💳 Premium CSV Export Paywall Modal */}
       <Modal

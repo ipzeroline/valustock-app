@@ -7,6 +7,7 @@ const pool = mysql.createPool({
   database: process.env.DB_NAME,
   user: process.env.DB_USER,
   password: process.env.DB_PASSWORD,
+  connectTimeout: 8000,
   waitForConnections: true,
   connectionLimit: 10,
   queueLimit: 0,
@@ -22,12 +23,25 @@ export async function query<T = any>(sql: string, params?: any[]): Promise<T> {
 
 // Health check to verify database connectivity status
 export async function isDbConnected(): Promise<boolean> {
+  const status = await getDbConnectionStatus();
+  return status.connected;
+}
+
+export async function getDbConnectionStatus(): Promise<{
+  connected: boolean;
+  error?: string;
+  code?: string;
+}> {
   try {
     const conn = await pool.getConnection();
     conn.release();
-    return true;
-  } catch (err) {
-    return false;
+    return { connected: true };
+  } catch (err: any) {
+    return {
+      connected: false,
+      error: err?.message || "Unknown database connection error",
+      code: err?.code,
+    };
   }
 }
 

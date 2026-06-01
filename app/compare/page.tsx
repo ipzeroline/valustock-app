@@ -1,20 +1,19 @@
 "use client";
 
 import { useState, useMemo } from "react";
+import Link from "next/link";
 import { STOCKS, getStock } from "@/lib/stocks";
 import {
   computeValuation,
   defaultDCFParams,
-  marketCap,
 } from "@/lib/valuation";
 import { useCurrentPlan } from "@/lib/store";
-import { baht, num, pct, moneyMB, dollar, nav } from "@/lib/format";
+import { baht, num, pct, dollar, nav } from "@/lib/format";
 import { Card, CardHeader, Badge } from "@/components/ui/Card";
 import { LockedCard } from "@/components/Paywall";
 import { useTranslation } from "@/lib/translations";
 import { AssetLogo } from "@/components/AssetLogo";
 import {
-  Plus,
   X,
   Layers,
   Search,
@@ -22,10 +21,11 @@ import {
   TrendingUp,
   TrendingDown,
   Info,
-  Crown,
   ChevronRight,
   Star,
   Zap,
+  Shield,
+  CheckCircle,
 } from "@/lib/icons";
 
 const verdictTone = {
@@ -50,6 +50,64 @@ export default function ComparePage() {
     solvency: true,
     funds: false,
   });
+
+  const faqItems = [
+    {
+      q: lang === "th" ? "หน้าเปรียบเทียบหุ้นใช้ดูอะไร?" : "What can I compare on this page?",
+      a:
+        lang === "th"
+          ? "ใช้เทียบหุ้นหรือสินทรัพย์สูงสุด 4 ตัวแบบเคียงข้างกัน ทั้งราคาเหมาะสม DCF, Graham Number, Margin of Safety, P/E, P/BV, ROE, หนี้สิน กระแสเงินสด และเงินปันผล"
+          : "You can compare up to four assets side by side across DCF, Graham Number, margin of safety, P/E, P/BV, ROE, debt, cash flow, and dividends.",
+    },
+    {
+      q: lang === "th" ? "ควรเลือกหุ้นแบบไหนมาเทียบกัน?" : "Which stocks should I compare?",
+      a:
+        lang === "th"
+          ? "ควรเทียบหุ้นในกลุ่มธุรกิจใกล้เคียงกัน เช่น ธนาคารกับธนาคาร หรือเทคโนโลยีกับเทคโนโลยี เพราะอัตราส่วน P/E, ROE และหนี้สินของแต่ละอุตสาหกรรมมีธรรมชาติไม่เหมือนกัน"
+          : "Compare companies in similar sectors where possible because P/E, ROE, margins, and leverage differ naturally across industries.",
+    },
+    {
+      q: lang === "th" ? "Metric Leader หรือผู้ชนะในตารางแปลว่าอะไร?" : "What does Metric Leader mean?",
+      a:
+        lang === "th"
+          ? "ระบบไฮไลต์ตัวที่เด่นสุดในแต่ละตัวชี้วัด เช่น MOS สูงสุด, P/E ต่ำกว่าอย่างเหมาะสม หรือ ROE สูงกว่า เพื่อช่วยให้สแกนความได้เปรียบได้เร็วขึ้น ไม่ใช่คำสั่งซื้อขาย"
+          : "It highlights the strongest asset for each metric, such as highest MOS, lower reasonable P/E, or higher ROE. It is a scanning aid, not a buy/sell signal.",
+    },
+    {
+      q: lang === "th" ? "ข้อมูลนี้เป็นคำแนะนำลงทุนไหม?" : "Is this investment advice?",
+      a:
+        lang === "th"
+          ? "ไม่ใช่ครับ เป็นเครื่องมือช่วยวิเคราะห์เชิงข้อมูล นักลงทุนควรตรวจงบการเงินจริง ข่าว ความเสี่ยงเฉพาะบริษัท และเป้าหมายการลงทุนของตัวเองก่อนตัดสินใจ"
+          : "No. This is a research tool. Investors should review filings, news, company-specific risks, and personal objectives before making decisions.",
+    },
+  ];
+
+  const compareSteps = [
+    {
+      title: lang === "th" ? "เลือกหุ้น 2-4 ตัว" : "Pick 2-4 assets",
+      desc:
+        lang === "th"
+          ? "เลือกหุ้นที่อยู่ในกลุ่มใกล้เคียงกันเพื่อให้การเทียบอัตราส่วนยุติธรรมขึ้น"
+          : "Choose comparable assets, ideally from similar sectors.",
+      icon: <Search className="h-4.5 w-4.5" />,
+    },
+    {
+      title: lang === "th" ? "ดูมูลค่าและ MOS" : "Compare value and MOS",
+      desc:
+        lang === "th"
+          ? "เทียบราคาเหมาะสม DCF, Graham Number และส่วนเผื่อความปลอดภัย"
+          : "Review DCF, Graham Number, and margin of safety side by side.",
+      icon: <Shield className="h-4.5 w-4.5" />,
+    },
+    {
+      title: lang === "th" ? "เช็กคุณภาพธุรกิจ" : "Check business quality",
+      desc:
+        lang === "th"
+          ? "ดู ROE, Net Margin, หนี้สิน, FCF และเงินปันผลก่อนตัดสินใจ"
+          : "Review ROE, margins, debt, FCF, and dividends before deciding.",
+      icon: <CheckCircle className="h-4.5 w-4.5" />,
+    },
+  ];
 
   // Search & Filter available stocks
   const available = useMemo(() => {
@@ -88,6 +146,56 @@ export default function ComparePage() {
   }
 
   const stocks = picked.map((sym) => getStock(sym)!).filter(Boolean);
+
+  const structuredData = {
+    "@context": "https://schema.org",
+    "@graph": [
+      {
+        "@type": "WebApplication",
+        name: "ValuStock Compare",
+        applicationCategory: "FinanceApplication",
+        operatingSystem: "Web",
+        url: "https://valustock.com/compare",
+        description:
+          lang === "th"
+            ? "เครื่องมือเปรียบเทียบหุ้นและสินทรัพย์ด้วย DCF, Graham Number, Margin of Safety, P/E, P/BV, ROE, กระแสเงินสด และปันผล"
+            : "A stock comparison tool for DCF, Graham Number, margin of safety, P/E, P/BV, ROE, cash flow, and dividends.",
+        offers: {
+          "@type": "Offer",
+          price: "0",
+          priceCurrency: "THB",
+        },
+      },
+      {
+        "@type": "ItemList",
+        "@id": "https://valustock.com/compare#selected-assets",
+        name: lang === "th" ? "หลักทรัพย์ที่เลือกเปรียบเทียบ" : "Selected comparison assets",
+        numberOfItems: stocks.length,
+        itemListElement: stocks.map((s, index) => ({
+          "@type": "ListItem",
+          position: index + 1,
+          item: {
+            "@type": "FinancialProduct",
+            name: lang === "th" ? s.name : s.enName || s.name,
+            tickerSymbol: s.symbol,
+            url: `https://valustock.com/stocks/${s.symbol}`,
+          },
+        })),
+      },
+      {
+        "@type": "FAQPage",
+        "@id": "https://valustock.com/compare#faq",
+        mainEntity: faqItems.map((faq) => ({
+          "@type": "Question",
+          name: faq.q,
+          acceptedAnswer: {
+            "@type": "Answer",
+            text: faq.a,
+          },
+        })),
+      },
+    ],
+  };
 
   const add = (sym: string) => {
     if (picked.length < 4) {
@@ -149,6 +257,10 @@ export default function ComparePage() {
 
   return (
     <div className="mx-auto max-w-7xl space-y-6 px-4 py-2 animate-fade-up">
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredData) }}
+      />
       {/* 🚀 A. HEADER CONTROLS */}
       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
         <div>
@@ -158,12 +270,12 @@ export default function ComparePage() {
             </span>
             <div>
               <h1 className="font-display text-2xl font-bold md:text-3xl tracking-tight text-ink">
-                {lang === "th" ? "สถานีเปรียบเทียบหลักทรัพย์อัจฉริยะ" : "Securities Comparison Terminal"}
+                {lang === "th" ? "เปรียบเทียบหุ้นและหลักทรัพย์" : "Stock & Securities Comparison"}
               </h1>
               <p className="text-xs text-muted mt-0.5">
                 {lang === "th"
-                  ? "วิเคราะห์งบดุล ความคุ้มค่า อัตราปันผล และแบบจำลองมูลค่าเหมาะสมเคียงข้างกันสูงสุด 4 หลักทรัพย์"
-                  : "Audit balance sheets, multiples, and intrinsic valuations side-by-side for up to 4 assets."}
+                  ? "เทียบ DCF, Graham Number, Margin of Safety, P/E, ROE, หนี้สิน กระแสเงินสด และปันผลของหุ้นสูงสุด 4 ตัว"
+                  : "Compare DCF, Graham Number, MOS, P/E, ROE, debt, cash flow, and dividends for up to 4 assets."}
               </p>
             </div>
           </div>
@@ -250,6 +362,22 @@ export default function ComparePage() {
           )}
         </div>
       </div>
+
+      <section className="grid gap-3 md:grid-cols-3">
+        {compareSteps.map((item) => (
+          <Card key={item.title} className="border border-line bg-surface/35 p-4">
+            <div className="flex items-start gap-3">
+              <span className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-brand-soft text-brand">
+                {item.icon}
+              </span>
+              <div>
+                <h2 className="font-display text-sm font-black text-ink">{item.title}</h2>
+                <p className="mt-1 text-xs font-semibold leading-relaxed text-muted">{item.desc}</p>
+              </div>
+            </div>
+          </Card>
+        ))}
+      </section>
 
       {stocks.length === 0 ? (
         <Card className="p-16 text-center border border-dashed border-line">
@@ -784,6 +912,41 @@ export default function ComparePage() {
             : "⚠️ Disclaimer: Financial comparison indexes computed via automated DCF scenario matrices. Intended for institutional software showcase. This does not constitute professional investment solicitation or fiduciary advice."}
         </p>
       </div>
+
+      <Card className="border border-line bg-surface/35 p-5">
+        <div className="mb-4">
+          <h2 className="font-display text-lg font-black text-ink">
+            {lang === "th" ? "คำถามที่พบบ่อยเกี่ยวกับการเปรียบเทียบหุ้น" : "Stock Comparison FAQ"}
+          </h2>
+          <p className="mt-1 text-xs font-semibold text-muted">
+            {lang === "th"
+              ? "แนวทางอ่านผลเปรียบเทียบ DCF, MOS และอัตราส่วนการเงินให้ไม่ตีความผิด"
+              : "How to interpret DCF, MOS, and financial ratios without overreading a single metric."}
+          </p>
+        </div>
+        <div className="grid gap-3 md:grid-cols-2">
+          {faqItems.map((item) => (
+            <div key={item.q} className="rounded-xl border border-line bg-bg/35 p-4">
+              <h3 className="font-display text-sm font-black text-ink">{item.q}</h3>
+              <p className="mt-2 text-xs font-semibold leading-relaxed text-muted">{item.a}</p>
+            </div>
+          ))}
+        </div>
+        <div className="mt-5 flex flex-wrap gap-2">
+          <Link href="/stocks">
+            <span className="inline-flex items-center gap-1 rounded-xl border border-line bg-elevate px-3 py-2 text-xs font-bold text-muted transition hover:border-brand/35 hover:text-brand">
+              {lang === "th" ? "ไปคัดกรองหุ้นเพิ่ม" : "Screen more stocks"}
+              <ChevronRight className="h-3.5 w-3.5" />
+            </span>
+          </Link>
+          <Link href="/methodology">
+            <span className="inline-flex items-center gap-1 rounded-xl border border-line bg-elevate px-3 py-2 text-xs font-bold text-muted transition hover:border-brand/35 hover:text-brand">
+              {lang === "th" ? "อ่านสูตรคำนวณ" : "Read methodology"}
+              <ChevronRight className="h-3.5 w-3.5" />
+            </span>
+          </Link>
+        </div>
+      </Card>
     </div>
   );
 }

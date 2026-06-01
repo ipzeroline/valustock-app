@@ -110,9 +110,16 @@ export async function POST(req: Request) {
     }
   } catch (err: any) {
     console.error("Database payments write error:", err.message);
+    return NextResponse.json(
+      { error: "Database payment write failed", detail: err.message, mockMode: true },
+      { status: 500 }
+    );
   }
 
-  return NextResponse.json({ success: true, mockMode: true });
+  return NextResponse.json(
+    { error: "Database is not connected. Payment was not saved.", mockMode: true },
+    { status: 503 }
+  );
 }
 
 export async function DELETE(req: Request) {
@@ -130,7 +137,14 @@ export async function DELETE(req: Request) {
     }
   } catch (err: any) {
     console.error("Database payment delete error:", err.message);
+    return NextResponse.json(
+      { error: "Database payment delete failed", detail: err.message, mockMode: true },
+      { status: 500 }
+    );
   }
 
-  return NextResponse.json({ success: true, mockMode: true });
+  return NextResponse.json(
+    { error: "Database is not connected. Payment was not deleted.", mockMode: true },
+    { status: 503 }
+  );
 }

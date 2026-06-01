@@ -1,0 +1,94 @@
+import { NextResponse } from "next/server";
+import { isDbConnected, query } from "@/lib/db";
+import { signToken } from "@/lib/auth";
+
+export async function GET(req: Request) {
+  const { searchParams } = new URL(req.url);
+  const code = searchParams.get("code");
+
+  const host = req.headers.get("host") || "localhost:7887";
+  const protocol = host.includes("localhost") || host.includes("127.0.0.1") ? "http" : "https";
+  const loginPageUrl = `${protocol}://${host}/login`;
+
+  if (!code) {
+    console.error("Google Callback Error: Missing auth code");
+    return NextResponse.redirect(`${loginPageUrl}?error=missing_code`);
+  }
+
+  try {
+    const clientId = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID;
+    const clientSecret = process.env.GOOGLE_CLIENT_SECRET;
+    if (!clientId || !clientSecret) {
+      throw new Error("OAuth credentials not configured properly");
+    }
+
+    const redirectUri = `${protocol}://${host}/api/auth/google/callback`;
+
+    // 1. Exchange OAuth code for Google tokens
+    const tokenResponse = await fetch("https://oauth2.googleapis.com/token", {
+      method: "POST",
+      headers: { "Content-Type": "application/x-www-form-urlencoded" },
+      body: new URLSearchParams({
+        code,
+        client_id: clientId,
+        client_secret: clientSecret,
+        redirect_uri: redirectUri,
+        grant_type: "authorization_code",
+      }),
+    });
+
+    if (!tokenResponse.ok) {
+      const errorText = await tokenResponse.text();
+      throw new Error(`Google token exchange failed: ${errorText}`);
+    }
+
+    const tokens = await tokenResponse.json();
+    const accessToken = tokens.access_token;
+
+    // 2. Fetch user information using access token
+    const userinfoResponse = await fetch("https://www.googleapis.com/oauth2/v3/userinfo", {
+      headers: { Authorization: `Bearer ${accessToken}` },
+    });
+
+    if (!userinfoResponse.ok) {
+      throw new Error("Failed to fetch Google userinfo");
+    }
+
+    const googleUser = await userinfoResponse.json();
+    const email = googleUser.email?.toLowerCase().trim();
+    const name = googleUser.name || email.split("@")[0] || "นักลงทุน";
+
+    if (!email) {
+      throw new Error("Google userinfo did not contain email address");
+    }
+
+    // 3. Register or log in the user in the MariaDB database
+    const dbConnected = await isDbConnected();
+    if (dbConnected) {
+      try {
+        await query(
+          `INSERT INTO users (email, name, plan, billing)
+           VALUES (?, ?, 'free', 'monthly')
+           ON DUPLICATE KEY UPDATE name = VALUES(name)`,
+          [email, name]
+        );
+      } catch (dbErr: any) {
+        console.error("Database user upsert failure:", dbErr.message);
+        // Continue flow so user can still log in in-memory
+      }
+    } else {
+      console.warn("Database offline. Authenticating user locally.");
+    }
+
+    // 4. Create cryptographically signed token
+    const token = signToken({ email, name });
+
+    // 5. Redirect back to client callback route with the signed token
+    const callbackTargetUrl = `${protocol}://${host}/login/callback?token=${encodeURIComponent(token)}`;
+    return NextResponse.redirect(callbackTargetUrl);
+
+  } catch (err: any) {
+    console.error("Google Auth Callback Exception:", err.message);
+    return NextResponse.redirect(`${loginPageUrl}?error=oauth_failed`);
+  }
+}

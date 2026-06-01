@@ -1,16 +1,189 @@
 "use client";
 
 import Link from "next/link";
-import { Card, CardHeader } from "@/components/ui/Card";
-import { Button } from "@/components/ui/Button";
+import { useState } from "react";
+import { Card } from "@/components/ui/Card";
 import { useTranslation } from "@/lib/translations";
-import { Sparkles, Target, Shield, Info, Calculator, Layers } from "@/lib/icons";
+import {
+  Sparkles,
+  Target,
+  Shield,
+  Info,
+  Calculator,
+  Layers,
+  CheckCircle,
+  ChevronDown,
+  ChevronUp,
+  ArrowRight,
+  BarChart3,
+  FileText,
+} from "@/lib/icons";
 
 export default function MethodologyPage() {
   const { lang } = useTranslation();
+  const [openFaq, setOpenFaq] = useState<number | null>(0);
+
+  const methodCards = [
+    {
+      label: "DCF",
+      title:
+        lang === "th"
+          ? "กระแสเงินสดคิดลด"
+          : "Discounted Cash Flow",
+      detail:
+        lang === "th"
+          ? "เหมาะกับธุรกิจที่คาดการณ์กระแสเงินสดได้ เช่น บริษัทกำไรสม่ำเสมอ มี FCF เป็นบวก และมีแผนเติบโตพอประเมินได้"
+          : "Best for companies with predictable free cash flow, steady earnings, and a growth path that can be estimated with reasonable assumptions.",
+    },
+    {
+      label: "Graham",
+      title:
+        lang === "th"
+          ? "Graham Number"
+          : "Graham Number",
+      detail:
+        lang === "th"
+          ? "เหมาะกับหุ้นคุณค่าเชิงรับที่มีกำไรและสินทรัพย์รองรับ ใช้ EPS และ BVPS เพื่อตรวจว่าราคาหุ้นสูงเกินพื้นฐานหรือไม่"
+          : "Useful for defensive value stocks with positive earnings and tangible book value, combining EPS and BVPS into a conservative ceiling price.",
+    },
+    {
+      label: "MOS",
+      title:
+        lang === "th"
+          ? "Margin of Safety"
+          : "Margin of Safety",
+      detail:
+        lang === "th"
+          ? "ใช้ลดความเสี่ยงจากสมมติฐานผิดพลาด โดยต้องการส่วนลดจากมูลค่าที่แท้จริงก่อนพิจารณาเข้าซื้อ"
+          : "Adds a cushion against forecasting errors by requiring a discount to estimated intrinsic value before considering an entry.",
+    },
+  ];
+
+  const processSteps = [
+    {
+      title: lang === "th" ? "รวบรวมข้อมูลพื้นฐาน" : "Collect financial inputs",
+      body:
+        lang === "th"
+          ? "เริ่มจากรายได้ กำไรสุทธิ Free Cash Flow หนี้สิน เงินสด ส่วนของผู้ถือหุ้น EPS, BVPS, ROE และอัตราการเติบโตย้อนหลัง"
+          : "Start with revenue, net income, free cash flow, debt, cash, equity, EPS, BVPS, ROE, and historical growth.",
+    },
+    {
+      title: lang === "th" ? "ปรับสมมติฐานให้อนุรักษ์นิยม" : "Normalize assumptions",
+      body:
+        lang === "th"
+          ? "ลดผลกระทบของตัวเลขปีพิเศษ ตรวจ cyclicality และหลีกเลี่ยงการใช้ growth สูงเกินจริงกับธุรกิจที่ยังพิสูจน์กระแสเงินสดไม่ได้"
+          : "Reduce one-off effects, account for cyclicality, and avoid aggressive growth assumptions for businesses without proven cash generation.",
+    },
+    {
+      title: lang === "th" ? "ถ่วงน้ำหนักหลายสูตร" : "Blend valuation models",
+      body:
+        lang === "th"
+          ? "ใช้ DCF เพื่อดูมูลค่าจากกระแสเงินสด และใช้ Graham Number หรืออัตราส่วนพื้นฐานเป็นตัวตรวจความสมเหตุสมผล"
+          : "Use DCF for cash-flow value, then cross-check with Graham Number and core fundamentals.",
+    },
+    {
+      title: lang === "th" ? "อ่านผลพร้อมความเสี่ยง" : "Read value with risk context",
+      body:
+        lang === "th"
+          ? "ราคาถูกกว่ามูลค่าไม่ได้แปลว่าควรซื้อทันที ต้องดูคุณภาพธุรกิจ หนี้ สภาพคล่อง ข่าวสำคัญ และ Margin of Safety ประกอบ"
+          : "A discount to fair value is not an automatic buy signal; quality, debt, liquidity, news, and margin of safety still matter.",
+    },
+  ];
+
+  const faqItems = [
+    {
+      q: lang === "th" ? "ValuStock คำนวณมูลค่าหุ้นจากอะไร?" : "What does ValuStock use to estimate fair value?",
+      a:
+        lang === "th"
+          ? "ระบบใช้ข้อมูลทางการเงิน เช่น Free Cash Flow, EPS, BVPS, หนี้สิน, เงินสด, อัตราการเติบโต และราคาตลาด แล้วประเมินร่วมด้วย DCF, Graham Number และ Margin of Safety เพื่อให้เห็นกรอบราคาเหมาะสม ไม่ใช่ตัวเลขฟันธงเพียงค่าเดียว"
+          : "ValuStock combines financial inputs such as free cash flow, EPS, BVPS, debt, cash, growth, and market price with DCF, Graham Number, and margin-of-safety logic.",
+    },
+    {
+      q: lang === "th" ? "DCF กับ Graham Number ต่างกันอย่างไร?" : "How are DCF and Graham Number different?",
+      a:
+        lang === "th"
+          ? "DCF ประเมินจากกระแสเงินสดในอนาคต จึงเหมาะกับธุรกิจที่คาดการณ์ FCF ได้ ส่วน Graham Number เป็นสูตรเชิงรับจาก EPS และ BVPS เหมาะกับหุ้นที่มีกำไรและสินทรัพย์รองรับชัดเจน"
+          : "DCF values future cash flows, while Graham Number is a defensive EPS and book-value formula for companies with tangible asset backing.",
+    },
+    {
+      q: lang === "th" ? "ควรใช้ Margin of Safety เท่าไร?" : "What margin of safety should investors use?",
+      a:
+        lang === "th"
+          ? "โดยทั่วไปหุ้นคุณภาพสูงอาจใช้ส่วนเผื่อ 15-25% ส่วนธุรกิจผันผวน หนี้สูง หรือคาดการณ์ยากควรใช้ 30-50% ขึ้นไป เพราะความผิดพลาดของสมมติฐานส่งผลต่อมูลค่า DCF มาก"
+          : "High-quality companies may justify a 15-25% cushion, while cyclical, leveraged, or uncertain businesses often need 30-50% or more.",
+    },
+    {
+      q: lang === "th" ? "สูตรเหล่านี้ใช้แทนคำแนะนำลงทุนได้ไหม?" : "Is this investment advice?",
+      a:
+        lang === "th"
+          ? "ไม่ได้ครับ ข้อมูลและสูตรใน ValuStock เป็นเครื่องมือช่วยวิเคราะห์และเรียนรู้ นักลงทุนควรตรวจงบการเงิน ข่าว ความเสี่ยงเฉพาะบริษัท และเป้าหมายการลงทุนของตัวเองก่อนตัดสินใจ"
+          : "No. These models are research and education tools. Investors should review filings, news, company-specific risks, and personal objectives before making decisions.",
+    },
+  ];
+
+  const structuredData = [
+    {
+      "@context": "https://schema.org",
+      "@type": "TechArticle",
+      headline:
+        lang === "th"
+          ? "วิธีคำนวณมูลค่าหุ้นของ ValuStock: DCF, Graham Number และ Margin of Safety"
+          : "ValuStock valuation methodology: DCF, Graham Number, and Margin of Safety",
+      description:
+        lang === "th"
+          ? "คู่มืออธิบายสูตรประเมินมูลค่าหุ้น แหล่งข้อมูล และวิธีอ่านผลราคาเหมาะสมใน ValuStock"
+          : "A guide to ValuStock's stock valuation formulas, data sources, and fair value interpretation.",
+      inLanguage: lang === "th" ? "th-TH" : "en-US",
+      author: {
+        "@type": "Organization",
+        name: "ValuStock",
+        url: "https://valustock.com",
+      },
+      publisher: {
+        "@type": "Organization",
+        name: "ValuStock",
+        url: "https://valustock.com",
+      },
+      mainEntityOfPage: "https://valustock.com/methodology",
+    },
+    {
+      "@context": "https://schema.org",
+      "@type": "FAQPage",
+      mainEntity: faqItems.map((item) => ({
+        "@type": "Question",
+        name: item.q,
+        acceptedAnswer: {
+          "@type": "Answer",
+          text: item.a,
+        },
+      })),
+    },
+    {
+      "@context": "https://schema.org",
+      "@type": "BreadcrumbList",
+      itemListElement: [
+        {
+          "@type": "ListItem",
+          position: 1,
+          name: "ValuStock",
+          item: "https://valustock.com",
+        },
+        {
+          "@type": "ListItem",
+          position: 2,
+          name: "Methodology",
+          item: "https://valustock.com/methodology",
+        },
+      ],
+    },
+  ];
 
   return (
     <div className="mx-auto max-w-4xl space-y-8 py-6 animate-fade-up px-4 sm:px-6">
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredData) }}
+      />
       {/* 🔮 TOP BANNER */}
       <div className="surface rounded-2xl p-6 border border-line bg-surface/40 backdrop-blur-md relative overflow-hidden">
         <div className="absolute top-0 right-0 -translate-y-1/3 translate-x-1/3 w-36 h-36 bg-brand/10 rounded-full blur-2xl pointer-events-none" />
@@ -24,10 +197,58 @@ export default function MethodologyPage() {
         </h1>
         <p className="text-xs sm:text-sm text-muted mt-1 font-semibold leading-relaxed">
           {lang === "th"
-            ? "เจาะลึกทฤษฎีการเงินและสูตรคณิตศาสตร์ที่ใช้ประเมินมูลค่าหุ้นที่แท้จริง พร้อมที่มาของชุดข้อมูลทางการเงินในระบบ ValuStock"
+            ? "เจาะลึกทฤษฎีการเงิน สูตรคำนวณมูลค่าหุ้น และวิธีอ่านราคาเหมาะสมจาก DCF, Graham Number และ Margin of Safety พร้อมที่มาของชุดข้อมูลทางการเงินในระบบ ValuStock"
             : "Explore the financial theories, mathematical models, and datasets underpinning ValuStock's dynamic intrinsic value assessments."}
         </p>
+        <div className="mt-4 flex flex-wrap gap-2 text-[11px] font-bold">
+          {["DCF", "Free Cash Flow", "WACC", "Graham Number", "Margin of Safety"].map((term) => (
+            <span key={term} className="rounded-full border border-line bg-bg/50 px-3 py-1 text-muted">
+              {term}
+            </span>
+          ))}
+        </div>
       </div>
+
+      <section className="grid gap-4 sm:grid-cols-3">
+        {methodCards.map((item) => (
+          <Card key={item.label} className="border border-line bg-surface/35 p-4">
+            <span className="inline-flex rounded-full bg-brand-soft px-2.5 py-1 text-[10px] font-black text-brand">
+              {item.label}
+            </span>
+            <h2 className="mt-3 font-display text-base font-black text-ink">{item.title}</h2>
+            <p className="mt-2 text-xs font-semibold leading-relaxed text-muted">{item.detail}</p>
+          </Card>
+        ))}
+      </section>
+
+      <section className="space-y-4">
+        <div>
+          <h2 className="font-display text-xl font-bold text-ink flex items-center gap-2">
+            <BarChart3 className="h-5 w-5 text-brand" />
+            {lang === "th" ? "วิธีประเมินมูลค่าหุ้นใน ValuStock" : "How ValuStock Estimates Stock Value"}
+          </h2>
+          <p className="mt-1 text-xs sm:text-sm text-muted font-semibold leading-relaxed">
+            {lang === "th"
+              ? "เป้าหมายของ methodology นี้คือทำให้ตัวเลข Fair Value อ่านง่าย ตรวจสอบได้ และไม่พึ่งสูตรเดียวจนเสี่ยงเกินไป เพราะหุ้นแต่ละกลุ่มตอบสนองต่อ DCF, สินทรัพย์, กำไร และอัตราดอกเบี้ยไม่เหมือนกัน"
+              : "This methodology is designed to make fair value easier to interpret and less dependent on a single formula because sectors react differently to cash flow, assets, earnings, and interest rates."}
+          </p>
+        </div>
+        <div className="grid gap-3">
+          {processSteps.map((step, index) => (
+            <Card key={step.title} className="border border-line bg-surface/30 p-4">
+              <div className="flex gap-3">
+                <span className="grid h-8 w-8 shrink-0 place-items-center rounded-xl bg-brand-soft text-xs font-black text-brand">
+                  {index + 1}
+                </span>
+                <div>
+                  <h3 className="font-display text-sm font-black text-ink">{step.title}</h3>
+                  <p className="mt-1 text-xs font-semibold leading-relaxed text-muted">{step.body}</p>
+                </div>
+              </div>
+            </Card>
+          ))}
+        </div>
+      </section>
 
       {/* 📊 1. HOW WE CALCULATE FAIR VALUE */}
       <section className="space-y-4">
@@ -75,6 +296,36 @@ export default function MethodologyPage() {
             </span>
           </Card>
         </div>
+      </section>
+
+      <section className="space-y-4">
+        <h2 className="font-display text-xl font-bold text-ink flex items-center gap-2">
+          <Target className="h-5 w-5 text-brand" />
+          {lang === "th" ? "4. วิธีอ่านผล Fair Value ให้ไม่พลาด" : "4. How to Interpret Fair Value"}
+        </h2>
+        <Card className="border border-line bg-surface/35 p-5">
+          <div className="grid gap-4 md:grid-cols-2">
+            {[
+              lang === "th"
+                ? "ถ้าราคาตลาดต่ำกว่ามูลค่าที่ประเมินมาก อาจเป็นหุ้นน่าสนใจ แต่ต้องตรวจเหตุผลที่ตลาดให้ส่วนลด เช่น กำไรถดถอย หนี้สูง หรือความเสี่ยงเฉพาะอุตสาหกรรม"
+                : "If market price is meaningfully below estimated value, it may be attractive, but the reason for the discount still matters.",
+              lang === "th"
+                ? "ถ้าราคาตลาดสูงกว่ามูลค่ามาก หุ้นอาจสะท้อนความคาดหวังสูงไปแล้ว ควรระวังการเติบโตที่ถูก price-in จน Margin of Safety เหลือน้อย"
+                : "If market price is far above estimated value, expectations may already be priced in and margin of safety may be thin.",
+              lang === "th"
+                ? "หุ้น cyclical เช่น พลังงาน เดินเรือ หรือสินค้าโภคภัณฑ์ ควรใช้กำไรเฉลี่ยหลายปี ไม่ใช้ปีที่กำไรสูงผิดปกติเป็นฐาน"
+                : "For cyclical stocks, use normalized multi-year earnings rather than a peak-profit year.",
+              lang === "th"
+                ? "หุ้นเติบโตสูงควรทดสอบหลาย scenario เพราะการเปลี่ยน growth rate หรือ WACC เพียงเล็กน้อยสามารถทำให้มูลค่า DCF เปลี่ยนมาก"
+                : "For high-growth stocks, test several scenarios because small changes in growth or WACC can move DCF value materially.",
+            ].map((text) => (
+              <div key={text} className="flex gap-2 text-xs font-semibold leading-relaxed text-muted">
+                <CheckCircle className="mt-0.5 h-4 w-4 shrink-0 text-brand" />
+                <span>{text}</span>
+              </div>
+            ))}
+          </div>
+        </Card>
       </section>
 
       {/* 🛡️ 2. DATA SOURCES & TRANSPARENCY */}
@@ -139,6 +390,95 @@ export default function MethodologyPage() {
             </li>
           </ul>
         </Card>
+      </section>
+
+      <section className="space-y-4">
+        <h2 className="font-display text-xl font-bold text-ink flex items-center gap-2">
+          <FileText className="h-5 w-5 text-brand" />
+          {lang === "th" ? "อ่านต่อและทดลองคำนวณจริง" : "Continue With Practical Tools"}
+        </h2>
+        <div className="grid gap-3 sm:grid-cols-2">
+          {[
+            {
+              href: "/dcf-calculator",
+              title: lang === "th" ? "DCF Calculator" : "DCF Calculator",
+              desc:
+                lang === "th"
+                  ? "คำนวณราคาเหมาะสมหุ้นจาก Free Cash Flow, Growth, WACC และ Terminal Value"
+                  : "Estimate fair value using free cash flow, growth, WACC, and terminal value.",
+            },
+            {
+              href: "/intrinsic-value-calculator",
+              title: lang === "th" ? "Intrinsic Value Calculator" : "Intrinsic Value Calculator",
+              desc:
+                lang === "th"
+                  ? "ใช้สูตร Graham Number และ Margin of Safety เพื่อประเมินกรอบราคาหุ้นเชิงรับ"
+                  : "Use Graham Number and margin of safety to estimate a defensive valuation range.",
+            },
+            {
+              href: "/stocks",
+              title: lang === "th" ? "ค้นหาหุ้นและกรองหุ้น" : "Stock Screener",
+              desc:
+                lang === "th"
+                  ? "ดูหุ้นที่มีพื้นฐาน ราคา และสัญญาณมูลค่าน่าสนใจจากรายการหุ้นในระบบ"
+                  : "Browse stocks by fundamentals, price, and value signals.",
+            },
+            {
+              href: "/value-investing",
+              title: lang === "th" ? "คู่มือ Value Investing" : "Value Investing Guide",
+              desc:
+                lang === "th"
+                  ? "เรียนรู้แนวคิดหุ้นคุณค่า Intrinsic Value และการลงทุนพร้อมส่วนเผื่อความปลอดภัย"
+                  : "Learn value investing, intrinsic value, and margin-of-safety principles.",
+            },
+          ].map((item) => (
+            <Link
+              key={item.href}
+              href={item.href}
+              className="group rounded-2xl border border-line bg-surface/35 p-4 transition hover:border-brand/45 hover:bg-brand/5"
+            >
+              <div className="flex items-start justify-between gap-3">
+                <div>
+                  <h3 className="font-display text-sm font-black text-ink group-hover:text-brand">{item.title}</h3>
+                  <p className="mt-1 text-xs font-semibold leading-relaxed text-muted">{item.desc}</p>
+                </div>
+                <ArrowRight className="mt-1 h-4 w-4 shrink-0 text-brand transition group-hover:translate-x-0.5" />
+              </div>
+            </Link>
+          ))}
+        </div>
+      </section>
+
+      <section className="space-y-4">
+        <h2 className="font-display text-xl font-bold text-ink">
+          {lang === "th" ? "คำถามที่พบบ่อยเกี่ยวกับสูตรคำนวณมูลค่าหุ้น" : "Valuation Methodology FAQ"}
+        </h2>
+        <div className="space-y-3">
+          {faqItems.map((item, index) => {
+            const isOpen = openFaq === index;
+            return (
+              <Card key={item.q} className="border border-line bg-surface/35">
+                <button
+                  type="button"
+                  onClick={() => setOpenFaq(isOpen ? null : index)}
+                  className="flex w-full items-center justify-between gap-3 p-4 text-left"
+                >
+                  <span className="font-display text-sm font-black text-ink">{item.q}</span>
+                  {isOpen ? (
+                    <ChevronUp className="h-4 w-4 shrink-0 text-brand" />
+                  ) : (
+                    <ChevronDown className="h-4 w-4 shrink-0 text-brand" />
+                  )}
+                </button>
+                {isOpen ? (
+                  <div className="px-4 pb-4 text-xs font-semibold leading-relaxed text-muted">
+                    {item.a}
+                  </div>
+                ) : null}
+              </Card>
+            );
+          })}
+        </div>
       </section>
 
       {/* 🏛️ EEAT DISCLAIMER WIDGET */}

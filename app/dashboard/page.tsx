@@ -9,7 +9,7 @@ import { StockCard } from "@/components/StockCard";
 import { Card, CardHeader, Badge } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import { num, pct, dollar, nav, baht } from "@/lib/format";
-import { useTranslation, SECTOR_TRANS } from "@/lib/translations";
+import { useTranslation } from "@/lib/translations";
 import { Sparkline } from "@/components/Charts";
 import { AssetLogo } from "@/components/AssetLogo";
 import {
@@ -20,12 +20,10 @@ import {
   Sparkles,
   Info,
   CircleDollarSign,
-  TrendingDown,
   Calculator,
-  Shield,
   Layers,
   ChevronRight,
-  Zap,
+  ArrowUpRight,
 } from "@/lib/icons";
 
 type StrategyType = "dividend" | "growth" | "value";
@@ -44,6 +42,29 @@ export default function Dashboard() {
   const [activeStrategy, setActiveStrategy] = useState<StrategyType>("dividend");
   // Beginner glossary tab state
   const [activeGlossary, setActiveGlossary] = useState<GlossaryTerm>("mos");
+
+  const structuredData = {
+    "@context": "https://schema.org",
+    "@type": "WebApplication",
+    name: "ValuStock Dashboard",
+    applicationCategory: "FinanceApplication",
+    operatingSystem: "Web",
+    url: "https://valustock.com/dashboard",
+    description:
+      lang === "th"
+        ? "แดชบอร์ดสำหรับติดตามหุ้น Watchlist, หุ้น undervalue, DCF, Margin of Safety, พอร์ตจำลอง และภาพรวมตลาด"
+        : "A dashboard for tracking watchlists, undervalued stocks, DCF, margin of safety, portfolio tools, and market overview.",
+    offers: {
+      "@type": "Offer",
+      price: "0",
+      priceCurrency: "THB",
+    },
+    publisher: {
+      "@type": "Organization",
+      name: "ValuStock",
+      url: "https://valustock.com",
+    },
+  };
 
   const ranked = useMemo(() => {
     return STOCKS.map((s) => ({
@@ -78,8 +99,8 @@ export default function Dashboard() {
   const estimatedTax = calculateEstimatedTax(incomeThb);
 
   const welcomeText = lang === "th"
-    ? `สวัสดี${user ? `, ${user.name}` : " นักลงทุน"} 👋`
-    : `Hello${user ? `, ${user.name}` : ", Investor"} 👋`;
+    ? `สวัสดี${user ? `, ${user.name}` : " นักลงทุน"}`
+    : `Hello${user ? `, ${user.name}` : ", Investor"}`;
 
   const [currentDate, setCurrentDate] = useState<string>("");
 
@@ -106,8 +127,8 @@ export default function Dashboard() {
   // Beginner strategy filter recommendation details
   const strategyDetails = {
     dividend: {
-      titleTh: "💰 พอร์ตปันผลรับทรัพย์ (High-Dividend Shield)",
-      titleEn: "💰 High-Dividend Shields",
+      titleTh: "พอร์ตปันผลรับทรัพย์ (High-Dividend Shield)",
+      titleEn: "High-Dividend Shields",
       descTh: "เน้นปันผลสูงสม่ำเสมอ ชนะเงินเฟ้อและลดความเสี่ยงพอร์ตในช่วงตลาดผันผวน เหมาะกับผู้ที่ต้องการเงินสดสำรองเรื่อยๆ",
       descEn: "Focus on resilient cash payouts, superior yield safety, and low volatility during consolidation.",
       badge: lang === "th" ? "ชนะเงินเฟ้อ" : "Yield Shield",
@@ -119,8 +140,8 @@ export default function Dashboard() {
       } as Record<string, string>,
     },
     growth: {
-      titleTh: "🚀 พอร์ตเติบโตพุ่งทะยาน (High-Growth Innovators)",
-      titleEn: "🚀 High-Tech Growth Innovators",
+      titleTh: "พอร์ตเติบโตระยะยาว (High-Growth Innovators)",
+      titleEn: "High-Tech Growth Innovators",
       descTh: "เน้นบริษัทเทคโนโลยีระดับโลกที่มีกำไรเติบโตก้าวกระโดดด้วยนวัตกรรมและ AI เหมาะสำหรับผู้ที่ต้องการปั้นพอร์ตให้โตเร็ว",
       descEn: "Focus on compounding capital gains through disruptive technological advancements and AI scale.",
       badge: lang === "th" ? "ปั้นพอร์ตโต" : "Compounding Core",
@@ -132,8 +153,8 @@ export default function Dashboard() {
       } as Record<string, string>,
     },
     value: {
-      titleTh: "🛡️ พอร์ตคุณค่าเกราะเหล็ก (Deep-Value Moats)",
-      titleEn: "🛡️ Buffett Value Core",
+      titleTh: "พอร์ตหุ้นคุณค่า (Deep-Value Moats)",
+      titleEn: "Buffett Value Core",
       descTh: "เน้นหุ้นคุณค่ายักษ์ใหญ่ผูกขาดตลาด ที่ราคา ณ ปัจจุบันมีส่วนต่างความปลอดภัย (MOS) เกิน 15% ขึ้นไป ราคาถูกมาก",
       descEn: "Target stable defensive giants trading at deep discounts with wide business moats.",
       badge: lang === "th" ? "ปลอดภัยสูงสุด" : "Deep Margin",
@@ -146,8 +167,51 @@ export default function Dashboard() {
     },
   };
 
+  const actionItems = [
+    {
+      href: "/stocks",
+      title: lang === "th" ? "ค้นหาและคัดกรองหุ้น" : "Screen Stocks",
+      desc:
+        lang === "th"
+          ? "หาโอกาสจากหุ้น undervalue, ปันผลสูง และหุ้นพื้นฐานดี"
+          : "Find undervalued, dividend, and high-quality stocks.",
+      icon: <Gauge className="h-4.5 w-4.5" />,
+    },
+    {
+      href: "/dcf-calculator",
+      title: lang === "th" ? "คำนวณ DCF" : "Run DCF",
+      desc:
+        lang === "th"
+          ? "ประเมินมูลค่าหุ้นด้วย Free Cash Flow, WACC และ Terminal Value"
+          : "Estimate fair value using FCF, WACC, and terminal value.",
+      icon: <Calculator className="h-4.5 w-4.5" />,
+    },
+    {
+      href: "/portfolio",
+      title: lang === "th" ? "จัดการพอร์ต" : "Manage Portfolio",
+      desc:
+        lang === "th"
+          ? "ติดตามต้นทุน มูลค่าพอร์ต และสัญญาณ Margin of Safety"
+          : "Track cost, value, and margin-of-safety signals.",
+      icon: <CircleDollarSign className="h-4.5 w-4.5" />,
+    },
+    {
+      href: "/watchlist",
+      title: lang === "th" ? "ดู Watchlist" : "Open Watchlist",
+      desc:
+        lang === "th"
+          ? "ติดตามหุ้นที่สนใจและจังหวะเข้าซื้ออย่างเป็นระบบ"
+          : "Follow your target stocks and entry opportunities.",
+      icon: <Star className="h-4.5 w-4.5" />,
+    },
+  ];
+
   return (
     <div className="mx-auto max-w-7xl space-y-6 px-4 py-2 animate-fade-up">
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredData) }}
+      />
       {/* 1. WELCOME HEADER */}
       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 border-b border-line pb-4">
         <div>
@@ -155,7 +219,7 @@ export default function Dashboard() {
             {welcomeText}
           </h1>
           <p className="mt-1 text-xs text-muted">
-            📅 {currentDate} | {t("dashboard.subtitle")}
+            {currentDate} | {t("dashboard.subtitle")}
           </p>
         </div>
         <Badge tone="gold" className="px-3.5 py-1 text-xs font-semibold self-start md:self-auto flex items-center gap-1.5 shadow-glow">
@@ -163,7 +227,31 @@ export default function Dashboard() {
         </Badge>
       </div>
 
-      {/* 2. REAL-TIME MARKET INDICES ROW */}
+      {/* 2. QUICK ACTION CONTROL CENTER */}
+      <section className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+        {actionItems.map((item) => (
+          <Link
+            key={item.href}
+            href={item.href}
+            className="group rounded-2xl border border-line bg-surface/35 p-4 transition hover:border-brand/45 hover:bg-brand/5"
+          >
+            <div className="flex items-start justify-between gap-3">
+              <span className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-brand-soft text-brand">
+                {item.icon}
+              </span>
+              <ArrowUpRight className="h-4 w-4 shrink-0 text-muted transition group-hover:-translate-y-0.5 group-hover:translate-x-0.5 group-hover:text-brand" />
+            </div>
+            <h2 className="mt-3 font-display text-sm font-black text-ink group-hover:text-brand">
+              {item.title}
+            </h2>
+            <p className="mt-1 text-xs font-semibold leading-relaxed text-muted">
+              {item.desc}
+            </p>
+          </Link>
+        ))}
+      </section>
+
+      {/* 3. REAL-TIME MARKET INDICES ROW */}
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <MarketIndexCard
           title={t("dashboard.thaiMarket")}
@@ -180,14 +268,14 @@ export default function Dashboard() {
           up={false}
         />
         <MarketIndexCard
-          title={lang === "th" ? "🪙 ดัชนีบิตคอยน์ (BTC/USD)" : "🪙 Bitcoin Index (BTC)"}
+          title={lang === "th" ? "Bitcoin Index (BTC/USD)" : "Bitcoin Index (BTC)"}
           value="$67,500.00"
           change="+1.25%"
           points={["66500", "66800", "67100", "67300", "67500"]}
           up={true}
         />
         <MarketIndexCard
-          title={lang === "th" ? "📈 สัญญาซื้อขายทองคำล่วงหน้า" : "📈 Gold Spot Index"}
+          title={lang === "th" ? "Gold Spot Index" : "Gold Spot Index"}
           value="$2,340.50"
           change="+0.82%"
           points={["2320", "2325", "2330", "2335", "2340.50"]}
@@ -195,7 +283,7 @@ export default function Dashboard() {
         />
       </div>
 
-      {/* 3. CORE SUMMARY STATS */}
+      {/* 4. CORE SUMMARY STATS */}
       <div className="grid gap-4 sm:grid-cols-3">
         <SummaryStat
           icon={<TrendingUp className="h-5 w-5" />}
@@ -218,7 +306,7 @@ export default function Dashboard() {
         />
       </div>
 
-      {/* 🚀 NEW SECTION: BEGINNER STRATEGY WIZARD & GLOSSARY PORTAL */}
+      {/* 5. PORTFOLIO STRATEGY WIZARD & GLOSSARY PORTAL */}
       <div className="grid gap-6 lg:grid-cols-12">
         {/* WIDGET 1: INTERACTIVE BEGINNER STRATEGY PORTABLE */}
         <Card className="lg:col-span-8 border border-line bg-surface/40 backdrop-blur-md p-5 flex flex-col justify-between rounded-2xl relative overflow-hidden">
@@ -231,7 +319,7 @@ export default function Dashboard() {
             <div className="border-b border-line pb-3">
               <h3 className="font-display font-extrabold text-sm text-ink flex items-center gap-1.5 uppercase tracking-wider">
                 <Sparkles className="h-4.5 w-4.5 text-brand" />
-                {lang === "th" ? "ระบบจับคู่พอร์ตที่ใช่สำหรับมือใหม่" : "Beginner Portfolio Strategy Guide"}
+                {lang === "th" ? "ระบบจับคู่พอร์ตตามเป้าหมาย" : "Portfolio Strategy Guide"}
               </h3>
               <p className="text-[10px] text-muted mt-0.5">
                 {lang === "th"
@@ -250,7 +338,7 @@ export default function Dashboard() {
                     : "text-muted hover:text-ink"
                 }`}
               >
-                💰 {lang === "th" ? "ปันผลสูงปัง" : "Dividend Yield"}
+                {lang === "th" ? "ปันผลสูง" : "Dividend Yield"}
               </button>
               <button
                 onClick={() => setActiveStrategy("growth")}
@@ -260,7 +348,7 @@ export default function Dashboard() {
                     : "text-muted hover:text-ink"
                 }`}
               >
-                🚀 {lang === "th" ? "เติบโตไฮเทค" : "Tech Growth"}
+                {lang === "th" ? "เติบโต" : "Tech Growth"}
               </button>
               <button
                 onClick={() => setActiveStrategy("value")}
@@ -270,7 +358,7 @@ export default function Dashboard() {
                     : "text-muted hover:text-ink"
                 }`}
               >
-                🛡️ {lang === "th" ? "เน้นหุ้นคุณค่า" : "Value Moats"}
+                {lang === "th" ? "หุ้นคุณค่า" : "Value Moats"}
               </button>
             </div>
 
@@ -292,7 +380,7 @@ export default function Dashboard() {
             {/* RenderCurated match list */}
             <div className="space-y-2">
               <span className="text-[9px] uppercase font-bold text-muted tracking-wider block">
-                {lang === "th" ? "3 หุ้นเด่นสปอตไลท์ตามเป้าหมาย (Curated Matches):" : "3 Key target picks for your strategy:"}
+                {lang === "th" ? "3 หุ้นเด่นตามเป้าหมาย (Curated Matches):" : "3 Key target picks for your strategy:"}
               </span>
               <div className="grid gap-2 sm:grid-cols-3">
                 {strategyDetails[activeStrategy].stocks.map((symbol) => {
@@ -348,7 +436,7 @@ export default function Dashboard() {
                       </div>
 
                       <div className="mt-2.5 pt-2 border-t border-line/45 text-[9px] text-muted leading-tight min-h-[28px] italic">
-                        💡 {strategyDetails[activeStrategy].insights[s.symbol]}
+                        {strategyDetails[activeStrategy].insights[s.symbol]}
                       </div>
                     </div>
                   );
@@ -491,7 +579,7 @@ export default function Dashboard() {
         </Card>
       </div>
 
-      {/* 4. UNIQUE FX RATE & INBOUND TAX ESTIMATOR */}
+      {/* 6. UNIQUE FX RATE & INBOUND TAX ESTIMATOR */}
       <div className="grid gap-6 md:grid-cols-5">
         <Card className="md:col-span-3 border border-line bg-surface/30">
           <CardHeader
@@ -545,8 +633,8 @@ export default function Dashboard() {
               <Info className="h-4 w-4 text-gold shrink-0 mt-0.5" />
               <span>
                 {lang === "th" 
-                  ? "คำนวณตามอัตราก้าวหน้าขั้นบันไดปี 2569 (หักลดหย่อนเริ่มต้น 100,000 บาท) *แบบยื่นภาษีต้องนำเงินเข้าประเทศไทยในปีภาษีนั้นๆ จึงต้องยื่นแบบตามกฎเกณฑ์ใหม่"
-                  : "Based on 2026 progressive brackets (including standard 100,000 THB allowance). Overseas earnings are only taxable when repatriated to Thailand within the same fiscal year."}
+                  ? "ตัวเลขนี้เป็นเพียงการประมาณการเพื่อวางแผนเบื้องต้น ไม่ใช่คำปรึกษาภาษีอย่างเป็นทางการ อัตราและเงื่อนไขภาษีอาจเปลี่ยนได้ ควรตรวจสอบกับผู้เชี่ยวชาญหรือประกาศกรมสรรพากรก่อนยื่นจริง"
+                  : "This is an estimate for planning only and is not formal tax advice. Rates and rules may change; consult a qualified tax professional or official tax guidance before filing."}
               </span>
             </div>
           </div>
@@ -577,7 +665,7 @@ export default function Dashboard() {
             </div>
 
             <p className="mt-4 text-xs text-muted leading-relaxed border-t border-line/60 pt-4">
-              💡 <strong>AI Sentiment Highlight:</strong> {lang === "th" 
+              <strong>AI Sentiment Highlight:</strong> {lang === "th" 
                 ? "หุ้นปันผลไทยแข็งแกร่งรองรับดอกเบี้ยขาลง แต่กลุ่มพลังงานตึงตัว แนะนำเน้นกระจายพอร์ตหุ้น Tech สหรัฐฯ ที่ MOS ต่ำกว่ามูลค่า"
                 : "Thai dividend stocks hold strong defensive values against global yield cuts. Keep accumulating US high-conviction growth during dips."}
             </p>
@@ -585,7 +673,7 @@ export default function Dashboard() {
         </Card>
       </div>
 
-      {/* 5. CURATED TARGET CATEGORIES */}
+      {/* 7. CURATED TARGET CATEGORIES */}
       <div className="space-y-4">
         <div className="flex items-center justify-between">
           <h2 className="font-display text-lg font-bold flex items-center gap-2">
@@ -761,7 +849,7 @@ export default function Dashboard() {
         </div>
       </div>
 
-      {/* 6. WATCHLIST PREVIEW LIST */}
+      {/* 8. WATCHLIST PREVIEW LIST */}
       <section className="space-y-4">
         <div className="flex items-center justify-between">
           <h2 className="font-display text-lg font-bold flex items-center gap-2">
@@ -772,11 +860,20 @@ export default function Dashboard() {
           </Link>
         </div>
         {watched.length === 0 ? (
-          <Card className="p-12 text-center border border-dashed border-line">
+          <Card className="p-8 text-center border border-dashed border-line">
             <Star className="mx-auto h-8 w-8 text-muted" />
-            <p className="mt-3 text-xs text-muted leading-relaxed">
+            <h3 className="mt-3 font-display text-base font-black text-ink">
+              {lang === "th" ? "เริ่มสร้าง Watchlist แรกของคุณ" : "Start Your First Watchlist"}
+            </h3>
+            <p className="mx-auto mt-2 max-w-md text-xs text-muted leading-relaxed">
               {t("watchlist.noStocks")}
             </p>
+            <Link href="/stocks">
+              <Button className="mt-5" size="sm">
+                {lang === "th" ? "ไปเลือกหุ้นที่สนใจ" : "Browse Stocks"}
+                <ChevronRight className="h-4 w-4" />
+              </Button>
+            </Link>
           </Card>
         ) : (
           <div className="grid gap-4 sm:grid-cols-3">
@@ -806,26 +903,31 @@ function GlossaryContent({
   egTh: string;
   egEn: string;
 }) {
+  const { lang } = useTranslation();
+  const definition = lang === "th" ? defTh : defEn;
+  const usage = lang === "th" ? howTh : howEn;
+  const example = lang === "th" ? egTh : egEn;
+
   return (
     <div className="space-y-3 animate-fade-up">
       <div>
         <span className="text-xs font-mono font-black text-brand block">{title}</span>
         <p className="text-[11px] text-ink font-bold mt-1 leading-normal">
-          📝 {defTh}
+          {definition}
         </p>
       </div>
 
       <div className="border-t border-line/45 pt-2">
         <span className="text-[9px] uppercase font-bold text-muted block tracking-wider">
-          💡 วิธีประยุกต์ใช้ช่วยตัดสินใจ:
+          {lang === "th" ? "วิธีประยุกต์ใช้ช่วยตัดสินใจ" : "How to use it"}
         </span>
         <p className="text-[10px] text-muted leading-relaxed mt-0.5">
-          {howTh}
+          {usage}
         </p>
       </div>
 
       <div className="bg-elevate/45 border border-line/50 p-2 rounded-lg text-[9px] text-muted leading-normal">
-        <strong>💡 ตัวอย่างเชิงปฏิบัติ:</strong> {egTh}
+        <strong>{lang === "th" ? "ตัวอย่างเชิงปฏิบัติ:" : "Practical example:"}</strong> {example}
       </div>
     </div>
   );

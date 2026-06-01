@@ -6,7 +6,7 @@ import { Card } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import { useTranslation } from "@/lib/translations";
 import { num } from "@/lib/format";
-import { Sparkles, Calculator, Info, Shield, Target } from "@/lib/icons";
+import { Sparkles, Calculator, Info, Shield, Target, CheckCircle, ChevronRight } from "@/lib/icons";
 
 export default function DcfCalculatorPage() {
   const { lang } = useTranslation();
@@ -25,6 +25,7 @@ export default function DcfCalculatorPage() {
   const [intrinsicValue, setIntrinsicValue] = useState<number>(0);
   const [mos, setMos] = useState<number>(0);
   const [fcfTimeline, setFcfTimeline] = useState<Array<{ year: number; val: number; pv: number }>>([]);
+  const [openFaq, setOpenFaq] = useState<number | null>(0);
 
   useEffect(() => {
     const f = parseFloat(fcf) || 0;
@@ -81,10 +82,94 @@ export default function DcfCalculatorPage() {
     }
   }, [fcf, growth1_5, growth6_10, wacc, terminalGrowth, netDebt, shares, price]);
 
-  const titleTH = "Discounted Cash Flow (DCF) Calculator: เครื่องคำนวณราคาเหมาะสมจากกระแสเงินสด";
+  const titleTH = "DCF Calculator: เครื่องคำนวณมูลค่าหุ้นด้วยกระแสเงินสดคิดลด";
   const titleEN = "Discounted Cash Flow (DCF) Calculator: Real-Time Intrinsic Cash Flow Modeling";
-  const descTH = "คำนวณหามูลค่าที่แท้จริงตามทฤษฎีการเงินสูงสุด (DCF Model) ปรับค่ากระแสเงินสดอิสระ อัตราคิดลด (WACC) และอัตราเติบโตทบต้น";
+  const descTH = "คำนวณมูลค่าหุ้นด้วย Discounted Cash Flow ใช้ Free Cash Flow, Growth Rate, WACC, Terminal Value และ Margin of Safety เพื่อดูราคาเหมาะสมต่อหุ้น";
   const descEN = "Estimate dynamic intrinsic equity values using our interactive multi-stage Discounted Cash Flow models. Reserve safety buffers instantly.";
+
+  const howToSteps = [
+    {
+      title: lang === "th" ? "เริ่มจาก Free Cash Flow ที่เชื่อถือได้" : "Start with reliable free cash flow",
+      desc: lang === "th"
+        ? "ใช้ FCF ล่าสุดหรือค่าเฉลี่ยย้อนหลัง 3-5 ปี หากธุรกิจเป็นวัฏจักร เพื่อไม่ให้มูลค่าประเมินเหวี่ยงตามกำไรปีเดียว"
+        : "Use latest FCF or a 3-5 year average for cyclical companies to avoid one-year distortions.",
+    },
+    {
+      title: lang === "th" ? "แยกอัตราเติบโตระยะสั้นและระยะกลาง" : "Separate near-term and mid-term growth",
+      desc: lang === "th"
+        ? "ปี 1-5 มักสะท้อนช่วงเติบโตหลัก ส่วนปี 6-10 ควรลดสมมติฐานลงให้ใกล้การเติบโตระยะยาวมากขึ้น"
+        : "Years 1-5 often reflect stronger growth, while years 6-10 should usually fade toward mature growth.",
+    },
+    {
+      title: lang === "th" ? "ตั้ง WACC ให้เหมาะกับความเสี่ยงธุรกิจ" : "Set WACC based on business risk",
+      desc: lang === "th"
+        ? "ธุรกิจมั่นคงอาจใช้อัตราคิดลดต่ำกว่า ส่วนธุรกิจผันผวน หนี้สูง หรือคาดการณ์ยากควรใช้ WACC สูงขึ้น"
+        : "Stable companies may justify lower discount rates; volatile or leveraged companies need higher WACC.",
+    },
+    {
+      title: lang === "th" ? "ระวัง Terminal Growth ไม่ให้สูงเกินจริง" : "Keep terminal growth realistic",
+      desc: lang === "th"
+        ? "Terminal Growth ควรต่ำกว่า WACC และมักไม่ควรสูงกว่าอัตราเติบโตเศรษฐกิจระยะยาวของประเทศ"
+        : "Terminal growth must stay below WACC and should usually not exceed long-term GDP growth.",
+    },
+  ];
+
+  const formulaCards = [
+    {
+      title: lang === "th" ? "มูลค่าปัจจุบันของ FCF" : "Present value of FCF",
+      formula: "PV = FCFₙ ÷ (1 + WACC)ⁿ",
+      desc: lang === "th"
+        ? "นำกระแสเงินสดอิสระในอนาคตแต่ละปีกลับมาเป็นมูลค่าปัจจุบัน เพราะเงินในอนาคตมีค่าน้อยกว่าเงินวันนี้"
+        : "Future free cash flows are discounted back because future money is worth less than money today.",
+    },
+    {
+      title: "Terminal Value",
+      formula: "TV = FCF₁₀ × (1 + g) ÷ (WACC - g)",
+      desc: lang === "th"
+        ? "มูลค่าหลังปีที่ 10 มักเป็นส่วนใหญ่ของ DCF จึงต้องตั้ง g อย่างระมัดระวังมากเป็นพิเศษ"
+        : "Terminal value often drives most DCF value, so the perpetual growth assumption must be conservative.",
+    },
+    {
+      title: lang === "th" ? "มูลค่าต่อหุ้น" : "Value per share",
+      formula: "(PV of FCF + PV of TV - Net Debt) ÷ Shares",
+      desc: lang === "th"
+        ? "หลังรวมมูลค่ากิจการแล้วต้องหักหนี้สินสุทธิ และหารด้วยจำนวนหุ้น เพื่อได้ราคาเหมาะสมต่อหุ้น"
+        : "After estimating enterprise value, subtract net debt and divide by shares outstanding.",
+    },
+  ];
+
+  const faqItems = [
+    {
+      q: lang === "th" ? "DCF คืออะไร?" : "What is DCF?",
+      a: lang === "th"
+        ? "DCF หรือ Discounted Cash Flow คือวิธีประเมินมูลค่ากิจการจากกระแสเงินสดอิสระในอนาคต แล้วคิดลดกลับมาเป็นมูลค่าปัจจุบันด้วย WACC หรืออัตราผลตอบแทนที่นักลงทุนต้องการ"
+        : "DCF estimates a company's value from future free cash flows discounted back to today using WACC or a required return.",
+    },
+    {
+      q: lang === "th" ? "Free Cash Flow คืออะไร?" : "What is free cash flow?",
+      a: lang === "th"
+        ? "Free Cash Flow คือเงินสดที่ธุรกิจเหลือหลังจ่ายค่าใช้จ่าย ดอกเบี้ย ภาษี และลงทุนรักษาการดำเนินงานแล้ว เป็นเงินสดที่ใช้จ่ายหนี้ ปันผล ซื้อหุ้นคืน หรือลงทุนต่อได้"
+        : "Free cash flow is cash remaining after operating expenses, taxes, and maintenance investment. It can be used for debt repayment, dividends, buybacks, or reinvestment.",
+    },
+    {
+      q: lang === "th" ? "WACC ควรใส่เท่าไร?" : "What WACC should I use?",
+      a: lang === "th"
+        ? "ไม่มีเลขเดียวที่ถูกเสมอ หุ้นใหญ่กำไรมั่นคงอาจอยู่แถว 7-9% ส่วนหุ้นเติบโตสูง วัฏจักร หนี้เยอะ หรือคาดการณ์ยากควรใช้สูงกว่า เช่น 10-14% เพื่อสะท้อนความเสี่ยง"
+        : "There is no universal number. Stable large caps may use 7-9%, while high-growth, cyclical, leveraged, or uncertain companies may require 10-14% or more.",
+    },
+    {
+      q: lang === "th" ? "ทำไม Terminal Value มีผลต่อราคาเหมาะสมมาก?" : "Why does terminal value matter so much?",
+      a: lang === "th"
+        ? "เพราะ DCF ประเมินธุรกิจที่ดำเนินต่อเนื่องหลังช่วงประมาณการ 10 ปี มูลค่าหลังปีสุดท้ายจึงมักเป็นสัดส่วนใหญ่ หากตั้ง Terminal Growth สูงเกินไป ราคาเหมาะสมจะสูงเกินจริงทันที"
+        : "DCF values a business beyond the explicit forecast period, so terminal value often represents a large share of total value. Overstating terminal growth can inflate fair value quickly.",
+    },
+    {
+      q: lang === "th" ? "DCF เหมาะกับหุ้นแบบไหน?" : "Which stocks are best for DCF?",
+      a: lang === "th"
+        ? "DCF เหมาะกับธุรกิจที่คาดการณ์กระแสเงินสดได้พอสมควร เช่น กำไรสม่ำเสมอ มี FCF เป็นบวก และมีโมเดลธุรกิจชัดเจน หุ้นขาดทุนหรือกำไรผันผวนมากควรใช้สมมติฐานอนุรักษ์นิยม"
+        : "DCF is best for companies with reasonably predictable cash flows, positive FCF, and clear business models. Loss-making or highly cyclical companies need conservative assumptions.",
+    },
+  ];
 
   useEffect(() => {
     document.title = `${lang === "th" ? titleTH : titleEN} | ValuStock`;
@@ -99,6 +184,43 @@ export default function DcfCalculatorPage() {
 
   return (
     <div className="mx-auto max-w-5xl space-y-6 py-6 animate-fade-up px-4 sm:px-6">
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{
+          __html: JSON.stringify({
+            "@context": "https://schema.org",
+            "@graph": [
+              {
+                "@type": "SoftwareApplication",
+                "@id": "https://valustock.com/dcf-calculator#calculator",
+                "name": "ValuStock DCF Calculator",
+                "applicationCategory": "FinanceApplication",
+                "operatingSystem": "All",
+                "url": "https://valustock.com/dcf-calculator",
+                "description": "เครื่องคำนวณมูลค่าหุ้นด้วย Discounted Cash Flow, Free Cash Flow, WACC, Terminal Value และ Margin of Safety",
+                "offers": {
+                  "@type": "Offer",
+                  "price": "0",
+                  "priceCurrency": "THB"
+                }
+              },
+              {
+                "@type": "FAQPage",
+                "@id": "https://valustock.com/dcf-calculator#faq",
+                "mainEntity": faqItems.map((faq) => ({
+                  "@type": "Question",
+                  "name": faq.q,
+                  "acceptedAnswer": {
+                    "@type": "Answer",
+                    "text": faq.a
+                  }
+                }))
+              }
+            ]
+          })
+        }}
+      />
+
       {/* HEADER */}
       <div className="surface rounded-2xl p-6 border border-line bg-surface/40 backdrop-blur-md relative overflow-hidden">
         <div className="absolute top-0 right-0 -translate-y-1/3 translate-x-1/3 w-36 h-36 bg-brand/10 rounded-full blur-2xl pointer-events-none" />
@@ -111,6 +233,19 @@ export default function DcfCalculatorPage() {
         <p className="text-xs sm:text-sm text-muted mt-1 font-semibold leading-relaxed">
           {lang === "th" ? descTH : descEN}
         </p>
+        <div className="mt-5 flex flex-wrap gap-2">
+          {[
+            "DCF Calculator",
+            "Free Cash Flow",
+            "WACC",
+            "Terminal Value",
+            "Margin of Safety",
+          ].map((item) => (
+            <span key={item} className="rounded-full border border-line bg-bg/70 px-3 py-1 text-[11px] font-bold text-muted">
+              {item}
+            </span>
+          ))}
+        </div>
       </div>
 
       <div className="grid gap-6 md:grid-cols-3">
@@ -277,6 +412,148 @@ export default function DcfCalculatorPage() {
           </p>
         </div>
       </div>
+
+      {/* SEO CONTENT */}
+      <section className="space-y-5 border-t border-line/60 pt-8">
+        <div className="text-center">
+          <span className="chip border-brand/35 bg-brand/10 text-brand text-xs font-bold">
+            <Target className="h-3.5 w-3.5" /> {lang === "th" ? "คู่มือ DCF สำหรับนักลงทุน" : "DCF investor guide"}
+          </span>
+          <h2 className="mt-3 font-display text-2xl font-black leading-tight text-ink">
+            {lang === "th" ? "DCF Calculator ใช้ประเมินราคาเหมาะสมของหุ้นอย่างไร" : "How to use a DCF Calculator"}
+          </h2>
+          <p className="mx-auto mt-2 max-w-2xl text-sm font-medium leading-relaxed text-muted">
+            {lang === "th"
+              ? "DCF เป็นวิธีประเมินมูลค่าหุ้นจากเงินสดที่ธุรกิจน่าจะสร้างได้ในอนาคต เหมาะกับนักลงทุนระยะยาวที่ต้องการเข้าใจว่าราคาหุ้นปัจจุบันถูกหรือแพงเมื่อเทียบกับกระแสเงินสดจริง"
+              : "DCF values a stock from the cash a business may generate in the future, helping long-term investors compare today's market price with fundamental value."}
+          </p>
+        </div>
+
+        <div className="grid gap-3 sm:grid-cols-2">
+          {howToSteps.map((step, idx) => (
+            <Card key={step.title} className="border border-line bg-surface/25 p-5">
+              <div className="flex gap-3">
+                <span className="grid h-8 w-8 shrink-0 place-items-center rounded-lg bg-brand/10 font-mono text-xs font-black text-brand">
+                  {idx + 1}
+                </span>
+                <div>
+                  <h3 className="font-display text-sm font-bold text-ink">{step.title}</h3>
+                  <p className="mt-1 text-xs font-medium leading-relaxed text-muted">{step.desc}</p>
+                </div>
+              </div>
+            </Card>
+          ))}
+        </div>
+      </section>
+
+      <section className="space-y-5 border-t border-line/60 pt-8">
+        <div>
+          <h2 className="font-display text-2xl font-black leading-tight text-ink">
+            {lang === "th" ? "สูตร DCF ที่ใช้คำนวณมูลค่าหุ้น" : "DCF formulas used on this page"}
+          </h2>
+          <p className="mt-2 text-sm font-medium leading-relaxed text-muted">
+            {lang === "th"
+              ? "หัวใจของ DCF คือการประมาณการ Free Cash Flow ในอนาคต คิดลดกลับด้วย WACC รวม Terminal Value หักหนี้สินสุทธิ แล้วหารด้วยจำนวนหุ้นเพื่อหา Fair Value ต่อหุ้น"
+              : "DCF projects future free cash flow, discounts it by WACC, adds terminal value, subtracts net debt, and divides by shares to estimate fair value per share."}
+          </p>
+        </div>
+
+        <div className="grid gap-4 md:grid-cols-3">
+          {formulaCards.map((item) => (
+            <Card key={item.title} className="border border-line bg-surface/25 p-5">
+              <h3 className="font-display text-base font-black text-ink">{item.title}</h3>
+              <div className="mt-3 rounded-xl border border-line bg-bg p-3 font-mono text-[11px] font-bold text-gold">
+                {item.formula}
+              </div>
+              <p className="mt-3 text-xs font-medium leading-relaxed text-muted">{item.desc}</p>
+            </Card>
+          ))}
+        </div>
+      </section>
+
+      <section className="grid gap-5 border-t border-line/60 pt-8 md:grid-cols-[1fr_0.9fr]">
+        <Card className="border border-line bg-surface/25 p-5">
+          <span className="chip border-up/30 bg-up/10 text-up text-[10px] font-bold">
+            <Shield className="h-3.5 w-3.5" /> {lang === "th" ? "การอ่านผล DCF" : "Reading DCF output"}
+          </span>
+          <h2 className="mt-3 font-display text-xl font-black text-ink">
+            {lang === "th" ? "อย่าใช้ DCF แบบดูตัวเลขเดียว" : "Do not rely on a single DCF number"}
+          </h2>
+          <p className="mt-2 text-sm font-medium leading-relaxed text-muted">
+            {lang === "th"
+              ? "DCF อ่อนไหวต่อ Growth Rate, WACC และ Terminal Growth มาก นักลงทุนควรลองหลาย scenario เช่น conservative, base case และ optimistic เพื่อดูช่วงมูลค่าที่เป็นไปได้ ไม่ควรยึดราคาเหมาะสมตัวเดียวเป็นคำตอบสุดท้าย"
+              : "DCF is highly sensitive to growth, WACC, and terminal growth assumptions. Investors should compare conservative, base, and optimistic scenarios instead of relying on one precise number."}
+          </p>
+          <div className="mt-4 grid gap-2 text-xs font-bold text-muted">
+            {[
+              lang === "th" ? "เพิ่ม WACC: มูลค่าเหมาะสมมักลดลง" : "Higher WACC usually lowers fair value",
+              lang === "th" ? "เพิ่ม Terminal Growth: มูลค่าเหมาะสมเพิ่มขึ้นเร็ว" : "Higher terminal growth can raise value quickly",
+              lang === "th" ? "FCF ผันผวน: ควรใช้ค่าเฉลี่ยและ MOS สูงขึ้น" : "Volatile FCF needs averages and a wider MOS",
+            ].map((item) => (
+              <div key={item} className="flex items-start gap-2">
+                <CheckCircle className="mt-0.5 h-4 w-4 shrink-0 text-brand" />
+                <span>{item}</span>
+              </div>
+            ))}
+          </div>
+        </Card>
+
+        <Card className="border border-line bg-surface/25 p-5">
+          <h2 className="font-display text-xl font-black text-ink">
+            {lang === "th" ? "เครื่องมือที่ควรใช้ต่อ" : "Related tools"}
+          </h2>
+          <div className="mt-4 space-y-2">
+            {[
+              { href: "/intrinsic-value-calculator", label: lang === "th" ? "Intrinsic Value Calculator และ Graham Number" : "Intrinsic Value Calculator" },
+              { href: "/stock-valuation", label: lang === "th" ? "คู่มือวิธีประเมินมูลค่าหุ้น" : "Stock valuation guide" },
+              { href: "/undervalued-stocks", label: lang === "th" ? "หุ้น undervalue จากระบบคัดกรอง" : "Undervalued stocks screener" },
+              { href: "/stocks", label: lang === "th" ? "โปรแกรมคัดกรองหุ้นพื้นฐานดี" : "Stock screener" },
+            ].map((item) => (
+              <Link
+                key={item.href}
+                href={item.href}
+                className="flex items-center justify-between rounded-xl border border-line bg-bg px-3 py-2.5 text-xs font-bold text-muted transition hover:border-brand/40 hover:text-brand"
+              >
+                {item.label}
+                <ChevronRight className="h-4 w-4" />
+              </Link>
+            ))}
+          </div>
+        </Card>
+      </section>
+
+      <section className="space-y-4 border-t border-line/60 pt-8">
+        <div className="text-center">
+          <span className="chip border-amber-500/30 bg-amber-500/10 text-amber-400 text-xs font-bold">
+            <Info className="h-3.5 w-3.5" /> FAQ
+          </span>
+          <h2 className="mt-3 font-display text-2xl font-black text-ink">
+            {lang === "th" ? "คำถามที่พบบ่อยเกี่ยวกับ DCF Calculator" : "DCF Calculator FAQ"}
+          </h2>
+        </div>
+
+        <div className="space-y-3">
+          {faqItems.map((faq, idx) => {
+            const isOpen = openFaq === idx;
+            return (
+              <div key={faq.q} className="overflow-hidden rounded-2xl border border-line bg-bg/40">
+                <button
+                  onClick={() => setOpenFaq(isOpen ? null : idx)}
+                  className="flex w-full items-center justify-between gap-4 px-5 py-4 text-left text-sm font-bold text-ink transition hover:bg-elevate/45"
+                >
+                  <span>{faq.q}</span>
+                  <span className="shrink-0 font-mono text-xs text-brand">{isOpen ? "−" : "+"}</span>
+                </button>
+                {isOpen && (
+                  <div className="border-t border-line/30 px-5 pb-4 pt-3 text-xs font-medium leading-relaxed text-muted">
+                    {faq.a}
+                  </div>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      </section>
     </div>
   );
 }

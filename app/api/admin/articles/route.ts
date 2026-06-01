@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { isDbConnected, query } from "@/lib/db";
-import { readFlatArticles, saveFlatArticle, deleteFlatArticle } from "@/lib/flatdb";
+import { readFlatArticles } from "@/lib/flatdb";
 
 // Seed articles for database initialization and Mock Mode fallbacks
 const MOCK_ARTICLES = [
@@ -72,6 +72,27 @@ export async function GET() {
 
   try {
     if (connected) {
+      const flatArticles = readFlatArticles();
+      const seedArticles = flatArticles.length > 0 ? flatArticles : MOCK_ARTICLES;
+
+      for (const a of seedArticles) {
+        const createdAt = "created_at" in a ? (a.created_at as string | undefined) : undefined;
+        await query(
+          "INSERT IGNORE INTO articles (slug, title, category, read_time, summary, content, tag, lang, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
+          [
+            a.slug,
+            a.title,
+            a.category || "General",
+            a.read_time || "5 mins",
+            a.summary || "",
+            a.content || "",
+            a.tag || "",
+            a.lang || "th",
+            createdAt ? new Date(createdAt) : new Date(),
+          ]
+        );
+      }
+
       const rows = await query("SELECT slug, title, category, read_time, summary, content, tag, lang, created_at FROM articles ORDER BY created_at DESC");
       
       // If table is empty, auto-seed with standard articles
@@ -120,21 +141,16 @@ export async function POST(req: Request) {
     }
   } catch (err: any) {
     console.error("Database article upsert error:", err.message);
+    return NextResponse.json(
+      { error: "Database article upsert failed", detail: err.message, mockMode: true },
+      { status: 500 }
+    );
   }
 
-  // Fallback to local Flat-Files database if offline
-  const saved = saveFlatArticle({
-    slug,
-    title,
-    category: category || "General",
-    read_time: read_time || "5 mins",
-    summary: summary || "",
-    content: content || "",
-    tag: tag || "",
-    lang: lang || "th",
-  });
-
-  return NextResponse.json({ success: saved, mockMode: true });
+  return NextResponse.json(
+    { error: "Database is not connected. Article was not saved to the real database.", mockMode: true },
+    { status: 503 }
+  );
 }
 
 export async function DELETE(req: Request) {
@@ -152,10 +168,14 @@ export async function DELETE(req: Request) {
     }
   } catch (err: any) {
     console.error("Database article delete error:", err.message);
+    return NextResponse.json(
+      { error: "Database article delete failed", detail: err.message, mockMode: true },
+      { status: 500 }
+    );
   }
 
-  // Fallback to local Flat-Files database if offline
-  const deleted = deleteFlatArticle(slug);
-  return NextResponse.json({ success: deleted, mockMode: true });
+  return NextResponse.json(
+    { error: "Database is not connected. Article was not deleted from the real database.", mockMode: true },
+    { status: 503 }
+  );
 }
-

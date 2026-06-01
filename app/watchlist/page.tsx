@@ -24,7 +24,9 @@ import {
   ChevronDown,
   ChevronUp,
   AlertTriangle,
-  Calendar
+  Calendar,
+  Shield,
+  CheckCircle,
 } from "@/lib/icons";
 
 interface IntradaySession {
@@ -524,6 +526,64 @@ export default function WatchlistPage() {
     ? `${stocks.length}${limit !== "unlimited" ? ` / ${limit}` : ""} ตัว`
     : `${stocks.length}${limit !== "unlimited" ? ` / ${limit}` : ""} items`;
 
+  const faqItems = [
+    {
+      q: lang === "th" ? "Watchlist หุ้นคืออะไร?" : "What is a stock watchlist?",
+      a:
+        lang === "th"
+          ? "Watchlist คือรายการหุ้นหรือสินทรัพย์ที่คุณสนใจติดตาม เพื่อดูราคา มูลค่าเหมาะสม Margin of Safety และสัญญาณว่าหุ้นเริ่มน่าสนใจหรือแพงเกินไป"
+          : "A watchlist is a set of stocks or assets you track to monitor price, fair value, margin of safety, and valuation signals.",
+    },
+    {
+      q: lang === "th" ? "ควรใส่หุ้นกี่ตัวใน Watchlist?" : "How many stocks should I track?",
+      a:
+        lang === "th"
+          ? "สำหรับนักลงทุนทั่วไป 10-30 ตัวกำลังดี แบ่งเป็นหุ้นที่ถืออยู่ หุ้นที่รอซื้อ และหุ้นที่อยากศึกษาเพิ่มเติม เพื่อไม่ให้ข้อมูลเยอะจนตัดสินใจยาก"
+          : "For most investors, 10-30 tickers is a good range across current holdings, buy candidates, and research ideas.",
+    },
+    {
+      q: lang === "th" ? "Margin of Safety ใน Watchlist ใช้อย่างไร?" : "How should I use margin of safety here?",
+      a:
+        lang === "th"
+          ? "MOS ช่วยบอกส่วนลดระหว่างราคาตลาดกับมูลค่าที่ประเมินได้ ค่าเป็นบวกมากขึ้นแปลว่ามีส่วนเผื่อความปลอดภัยมากขึ้น แต่ยังต้องดูคุณภาพธุรกิจ งบการเงิน และข่าวประกอบ"
+          : "MOS measures the discount between market price and estimated value. A larger positive MOS can be attractive, but business quality and news still matter.",
+    },
+    {
+      q: lang === "th" ? "แผนจังหวะเข้าซื้อเป็นคำแนะนำลงทุนไหม?" : "Is the timing plan investment advice?",
+      a:
+        lang === "th"
+          ? "ไม่ใช่ครับ เป็นเครื่องมือช่วยจัดลำดับและวางแผนเบื้องต้นตามประเภทสินทรัพย์กับ MOS นักลงทุนควรตรวจข้อมูลจริงและบริหารความเสี่ยงด้วยตัวเองก่อนตัดสินใจ"
+          : "No. It is a planning tool based on asset type and MOS. Investors should verify data and manage risk before making decisions.",
+    },
+  ];
+
+  const watchlistTips = [
+    {
+      title: lang === "th" ? "ติดตาม MOS ทุกตัว" : "Track MOS",
+      desc:
+        lang === "th"
+          ? "ดูว่าหุ้นที่สนใจเริ่มมีส่วนเผื่อความปลอดภัยพอหรือยัง"
+          : "See whether your target stocks have enough margin of safety.",
+      icon: <Shield className="h-4.5 w-4.5" />,
+    },
+    {
+      title: lang === "th" ? "แยกตามประเภทสินทรัพย์" : "Group by asset",
+      desc:
+        lang === "th"
+          ? "ดูหุ้นไทย หุ้นสหรัฐ กองทุน ETF และสินทรัพย์ทางเลือกเป็นหมวด"
+          : "Organize Thai stocks, US stocks, funds, ETFs, and alternatives.",
+      icon: <Star className="h-4.5 w-4.5" />,
+    },
+    {
+      title: lang === "th" ? "วางแผนจังหวะสะสม" : "Plan entries",
+      desc:
+        lang === "th"
+          ? "ใช้ Timing View เพื่อจัดคิว DCA และดูช่วงเวลาที่เหมาะกับแต่ละสินทรัพย์"
+          : "Use Timing View to plan DCA windows and entry timing by asset type.",
+      icon: <Clock className="h-4.5 w-4.5" />,
+    },
+  ];
+
   // Pre-calculate valuations and advice
   const analyzedStocks = useMemo(() => {
     return visible.map((s) => {
@@ -533,6 +593,56 @@ export default function WatchlistPage() {
       return { s, v, advice };
     }).filter(Boolean) as { s: Stock; v: any; advice: TimingAdvice }[];
   }, [visible, lang]);
+
+  const structuredData = {
+    "@context": "https://schema.org",
+    "@graph": [
+      {
+        "@type": "WebApplication",
+        name: "ValuStock Watchlist",
+        applicationCategory: "FinanceApplication",
+        operatingSystem: "Web",
+        url: "https://valustock.com/watchlist",
+        description:
+          lang === "th"
+            ? "เครื่องมือติดตามหุ้นและสินทรัพย์ที่สนใจ พร้อม Margin of Safety, ราคาเหมาะสม และแผนจังหวะเข้าซื้อ"
+            : "A stock watchlist tool for tracking margin of safety, fair value, and entry timing plans.",
+        offers: {
+          "@type": "Offer",
+          price: "0",
+          priceCurrency: "THB",
+        },
+      },
+      {
+        "@type": "ItemList",
+        "@id": "https://valustock.com/watchlist#tracked-assets",
+        name: lang === "th" ? "รายการสินทรัพย์ที่ติดตาม" : "Tracked assets",
+        numberOfItems: analyzedStocks.length,
+        itemListElement: analyzedStocks.slice(0, 20).map(({ s }, index) => ({
+          "@type": "ListItem",
+          position: index + 1,
+          item: {
+            "@type": "FinancialProduct",
+            name: lang === "th" ? s.name : s.enName || s.name,
+            tickerSymbol: s.symbol,
+            url: `https://valustock.com/stocks/${s.symbol}`,
+          },
+        })),
+      },
+      {
+        "@type": "FAQPage",
+        "@id": "https://valustock.com/watchlist#faq",
+        mainEntity: faqItems.map((faq) => ({
+          "@type": "Question",
+          name: faq.q,
+          acceptedAnswer: {
+            "@type": "Answer",
+            text: faq.a,
+          },
+        })),
+      },
+    ],
+  };
 
   // Dynamic Category state and group collapsible state
   const [selectedCategory, setSelectedCategory] = useState<string>("all");
@@ -826,6 +936,10 @@ export default function WatchlistPage() {
 
   return (
     <div className="mx-auto max-w-6xl space-y-6">
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredData) }}
+      />
       
       {/* Printable page layout style element */}
       <style dangerouslySetInnerHTML={{ __html: `
@@ -859,10 +973,12 @@ export default function WatchlistPage() {
         <div>
           <h1 className="font-display text-2xl font-bold md:text-3xl flex items-center gap-2">
             <Star className="h-7 w-7 text-brand fill-brand" />
-            {t("watchlist.title")}
+            {lang === "th" ? "Watchlist หุ้นและสินทรัพย์ที่ติดตาม" : t("watchlist.title")}
           </h1>
           <p className="mt-1 text-sm text-muted">
-            {t("watchlist.subtitle")}
+            {lang === "th"
+              ? "ติดตามหุ้นที่สนใจพร้อมราคาเหมาะสม Margin of Safety และแผนจังหวะสะสมแบบเป็นระบบ"
+              : t("watchlist.subtitle")}
           </p>
         </div>
         
@@ -878,7 +994,7 @@ export default function WatchlistPage() {
                     : "text-muted hover:text-ink"
                 }`}
               >
-                {lang === "th" ? "📇 รายการหลัก" : "Grid List"}
+                {lang === "th" ? "รายการหลัก" : "Grid List"}
               </button>
               <button
                 onClick={() => setActiveView("timing")}
@@ -887,9 +1003,9 @@ export default function WatchlistPage() {
                     ? "bg-brand/10 text-brand font-extrabold"
                     : "text-muted hover:text-ink"
                 }`}
-              >
+                >
                 <Clock className="h-3.5 w-3.5" />
-                {lang === "th" ? "⏱️ จังหวะเข้าซื้อ" : "Best Buy Windows"}
+                {lang === "th" ? "จังหวะเข้าซื้อ" : "Best Buy Windows"}
               </button>
             </div>
           )}
@@ -898,6 +1014,22 @@ export default function WatchlistPage() {
           </span>
         </div>
       </div>
+
+      <section className="grid gap-3 md:grid-cols-3 no-print">
+        {watchlistTips.map((item) => (
+          <Card key={item.title} className="border border-line bg-surface/35 p-4">
+            <div className="flex items-start gap-3">
+              <span className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-brand-soft text-brand">
+                {item.icon}
+              </span>
+              <div>
+                <h2 className="font-display text-sm font-black text-ink">{item.title}</h2>
+                <p className="mt-1 text-xs font-semibold leading-relaxed text-muted">{item.desc}</p>
+              </div>
+            </div>
+          </Card>
+        ))}
+      </section>
 
       {stocks.length === 0 ? (
         <Card className="p-12 text-center border border-line bg-surface/40 backdrop-blur-md no-print">
@@ -913,6 +1045,18 @@ export default function WatchlistPage() {
               <Search className="h-4 w-4" /> {t("common.searchStocks")}
             </Button>
           </Link>
+          <div className="mx-auto mt-6 grid max-w-2xl gap-2 text-left sm:grid-cols-3">
+            {[
+              lang === "th" ? "เพิ่มหุ้นที่ถืออยู่" : "Add holdings",
+              lang === "th" ? "เพิ่มหุ้นที่รอซื้อ" : "Add buy candidates",
+              lang === "th" ? "ติดตาม MOS รายสัปดาห์" : "Track MOS weekly",
+            ].map((step) => (
+              <div key={step} className="flex items-center gap-2 rounded-xl border border-line bg-bg/45 px-3 py-2 text-xs font-bold text-muted">
+                <CheckCircle className="h-3.5 w-3.5 shrink-0 text-brand" />
+                {step}
+              </div>
+            ))}
+          </div>
         </Card>
       ) : (
         <>
@@ -1576,6 +1720,27 @@ export default function WatchlistPage() {
               </Link>
             </div>
           )}
+
+          <Card className="p-5 border border-line bg-surface/35 no-print">
+            <div className="mb-4">
+              <h3 className="font-display text-lg font-black text-ink">
+                {lang === "th" ? "คำถามที่พบบ่อยเกี่ยวกับ Watchlist หุ้น" : "Watchlist FAQ"}
+              </h3>
+              <p className="mt-1 text-xs font-semibold text-muted">
+                {lang === "th"
+                  ? "แนวทางใช้ Watchlist เพื่อคัดกรองหุ้นที่สนใจและรอจังหวะเข้าซื้ออย่างมีวินัย"
+                  : "How to use your watchlist to track opportunities and plan disciplined entries."}
+              </p>
+            </div>
+            <div className="grid gap-3 md:grid-cols-2">
+              {faqItems.map((item) => (
+                <div key={item.q} className="rounded-xl border border-line bg-bg/35 p-4">
+                  <h4 className="font-display text-sm font-black text-ink">{item.q}</h4>
+                  <p className="mt-2 text-xs font-semibold leading-relaxed text-muted">{item.a}</p>
+                </div>
+              ))}
+            </div>
+          </Card>
         </>
       )}
     </div>

@@ -1,17 +1,19 @@
 "use client";
 
-import { useState } from "react";
-import { useRouter } from "next/navigation";
+import { useState, Suspense } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { useStore } from "@/lib/store";
 import { Button } from "@/components/ui/Button";
 import { Field } from "@/components/ui/Modal";
 import { useTranslation } from "@/lib/translations";
-import { LineChart, Shield } from "@/lib/icons";
+import { LineChart, Shield, AlertTriangle } from "@/lib/icons";
 
-export default function LoginPage() {
+function LoginContent() {
   const { login } = useStore();
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const errorParam = searchParams.get("error");
   const { t, lang } = useTranslation();
   const [mode, setMode] = useState<"login" | "register">("login");
   const [name, setName] = useState("");
@@ -41,6 +43,20 @@ export default function LoginPage() {
               ? (lang === "th" ? "ยินดีต้อนรับกลับสู่ ValuStock" : "Welcome back to ValuStock")
               : (lang === "th" ? "เริ่มประเมินมูลค่าหุ้นได้ฟรีทันที" : "Start evaluating global stock valuations instantly")}
           </p>
+
+          {/* OAuth Error Notification */}
+          {errorParam && (
+            <div className="mt-4 flex items-start gap-2.5 rounded-xl border border-rose-500/20 bg-rose-500/10 px-4 py-3 text-sm text-rose-400">
+              <AlertTriangle className="h-5 w-5 shrink-0 mt-0.5" />
+              <span>
+                {errorParam === "oauth_failed"
+                  ? (lang === "th" ? "การยืนยันตัวตนผ่าน Google ล้มเหลว กรุณาลองใหม่อีกครั้ง" : "Google authentication failed. Please try again.")
+                  : errorParam === "missing_code"
+                  ? (lang === "th" ? "ไม่พบรหัสยืนยันตัวตนจาก Google" : "Authorization code from Google was missing.")
+                  : (lang === "th" ? "เกิดข้อผิดพลาดในการล็อกอิน กรุณาลองใหม่อีกครั้ง" : "An authentication error occurred. Please try again.")}
+              </span>
+            </div>
+          )}
 
           <div className="mt-6 space-y-4">
             {mode === "register" && (
@@ -74,13 +90,45 @@ export default function LoginPage() {
             <Button className="w-full text-white bg-brand hover:bg-brand/90" onClick={submit} size="lg">
               {mode === "login" ? t("common.logIn") : t("common.signUp")}
             </Button>
+
+            {/* Separator */}
+            <div className="relative flex py-2 items-center">
+              <div className="flex-grow border-t border-line"></div>
+              <span className="flex-shrink mx-4 text-xs text-muted uppercase tracking-wider font-semibold">
+                {lang === "th" ? "หรือ" : "or"}
+              </span>
+              <div className="flex-grow border-t border-line"></div>
+            </div>
+
+            {/* Google OAuth Button */}
+            <button
+              onClick={() => {
+                window.location.href = "/api/auth/google";
+              }}
+              type="button"
+              className="w-full h-12 px-6 text-sm font-semibold rounded-xl border border-line bg-elevate hover:bg-line/40 text-ink transition-all active:scale-[0.98] flex items-center justify-center gap-3 shadow-sm"
+            >
+              <svg className="h-5 w-5" viewBox="0 0 24 24" width="24" height="24" xmlns="http://www.w3.org/2000/svg">
+                <g transform="matrix(1, 0, 0, 1, 0, 0)">
+                  <path d="M21.35,11.1H12v2.7h5.38c-0.24,1.28 -0.96,2.37 -2.04,3.1v2.6h3.3c1.93,-1.78 3.04,-4.4 3.04,-7.4C21.68,11.83 21.56,11.45 21.35,11.1z" fill="#4285F4" />
+                  <path d="M12,20.6c2.43,0 4.47,-0.8 5.96,-2.2l-3.3,-2.6c-0.9,0.6 -2.07,0.98 -3.3,0.98 -2.34,0 -4.33,-1.58 -5.03,-3.7H2.93v2.7C4.42,18.78 8.02,20.6 12,20.6z" fill="#34A853" />
+                  <path d="M6.97,13.08a5.13,5.13 0 0 1 0,-3.16V7.22H2.93a8.99,8.99 0 0 0 0,9.56l4.04,-3.7z" fill="#FBBC05" />
+                  <path d="M12,7.38c1.32,0 2.5,0.45 3.44,1.35l2.58,-2.58C16.46,4.72 14.43,3.9 12,3.9c-3.98,0 -7.58,1.82 -9.07,4.82l4.04,3.16c0.7,-2.12 2.69,-3.7 5.03,-3.7z" fill="#EA4335" />
+                </g>
+              </svg>
+              <span>
+                {mode === "login"
+                  ? (lang === "th" ? "เข้าสู่ระบบด้วย Google" : "Sign in with Google")
+                  : (lang === "th" ? "สมัครสมาชิกด้วย Google" : "Sign up with Google")}
+              </span>
+            </button>
           </div>
 
           <div className="mt-5 flex items-center gap-2 rounded-xl border border-line bg-elevate px-3 py-2.5 text-xs text-muted">
             <Shield className="h-4 w-4 shrink-0 text-brand" />
             {lang === "th" 
-              ? "เดโม: ระบบล็อกอินจำลอง (เก็บข้อมูลในเครื่อง) — สามารถเชื่อมต่อ OAuth / NextAuth ได้ทีหลัง"
-              : "Demo Mode: local sandboxed credentials saved to memory. Supports OAuth integrations."}
+              ? "เดโม: สามารถเข้าสู่ระบบด้วยบัญชีใดก็ได้ หรือคลิกปุ่มด้านบนเพื่อเชื่อมต่อบัญชี Google ของคุณ"
+              : "Demo Mode: type any email to test, or click above to link your real Google account."}
           </div>
 
           <p className="mt-5 text-center text-sm text-muted">
@@ -103,5 +151,19 @@ export default function LoginPage() {
         </Link>
       </div>
     </div>
+  );
+}
+
+export default function LoginPage() {
+  return (
+    <Suspense fallback={
+      <div className="relative min-h-[calc(100vh-4rem)] overflow-hidden flex items-center justify-center">
+        <div className="aurora absolute inset-0 -z-10 opacity-70" />
+        <div className="grid-lines absolute inset-0 -z-10 opacity-50" />
+        <div className="text-muted animate-pulse">Loading login screen...</div>
+      </div>
+    }>
+      <LoginContent />
+    </Suspense>
   );
 }

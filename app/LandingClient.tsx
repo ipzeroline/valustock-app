@@ -199,7 +199,7 @@ export default function Landing() {
         {
           title: lang === "th" ? "Intrinsic Value คืออะไร?" : "What is Intrinsic Value?",
           desc: lang === "th" ? "ทำความเข้าใจพื้นฐานมูลค่าที่แท้จริงเพื่อไม่ซื้อของแพง" : "Learn the absolute baseline of valuation targets to guard capital assets.",
-          link: "/insights?article=dcf-for-beginners"
+          link: "/insights/dcf-calculator-stock-valuation"
         },
         {
           title: lang === "th" ? "DCF คืออะไร?" : "What is a DCF Model?",
@@ -772,7 +772,7 @@ export default function Landing() {
                   </div>
 
                   <h3 className="font-display text-sm sm:text-base font-bold text-ink leading-snug group-hover:text-brand transition duration-200">
-                    <Link href={`/insights?article=${art.id}`}>
+                    <Link href={art.id === "dcf-for-beginners" ? "/insights/dcf-calculator-stock-valuation" : `/insights?article=${art.id}`}>
                       {art.title}
                     </Link>
                   </h3>
@@ -786,7 +786,7 @@ export default function Landing() {
                   <span className="text-[10px] text-muted font-bold tracking-wider font-mono">
                     📅 {art.date}
                   </span>
-                  <Link href={`/insights?article=${art.id}`} className="text-xs text-brand font-extrabold flex items-center gap-1 hover:underline">
+                  <Link href={art.id === "dcf-for-beginners" ? "/insights/dcf-calculator-stock-valuation" : `/insights?article=${art.id}`} className="text-xs text-brand font-extrabold flex items-center gap-1 hover:underline">
                     {lang === "th" ? "อ่านต่อบทความ" : "Read Full"} 
                     <ChevronRight className="h-3.5 w-3.5 group-hover:translate-x-1 transition duration-200" />
                   </Link>
@@ -813,19 +813,22 @@ export default function Landing() {
 
         <div className="grid gap-6 md:grid-cols-3">
           {investmentGuides.map((guide, idx) => (
-            <Card key={idx} className="border border-line p-5.5 bg-surface/20 flex flex-col justify-between space-y-4">
+            <Card key={idx} className="border border-line p-5.5 bg-surface/20 flex flex-col justify-between space-y-4 text-center">
               <div>
-                <span className={`chip border text-[10px] font-bold uppercase tracking-wider ${guide.badgeColor}`}>
+                <span className={`chip mx-auto justify-center border text-[10px] font-bold uppercase tracking-wider ${guide.badgeColor}`}>
                   {guide.level} Syllabus
                 </span>
                 
                 <div className="mt-4 space-y-4">
                   {guide.topics.map((t, tIdx) => (
-                    <div key={tIdx} className="space-y-1 group">
-                      <Link href={t.link} className="font-display text-xs sm:text-sm font-bold text-ink hover:text-brand transition block">
-                        • {t.title}
+                    <div key={tIdx} className="group rounded-xl border border-line/45 bg-bg/35 p-3 text-center transition hover:border-brand/35 hover:bg-brand/5">
+                      <span className="mx-auto mb-2 grid h-6 w-6 place-items-center rounded-full bg-brand/10 font-mono text-[10px] font-black text-brand">
+                        {String(tIdx + 1).padStart(2, "0")}
+                      </span>
+                      <Link href={t.link} className="font-display text-xs sm:text-sm font-bold text-ink hover:text-brand transition block leading-snug">
+                        {t.title}
                       </Link>
-                      <p className="text-[11px] text-muted leading-relaxed font-medium pl-2 [overflow-wrap:anywhere]">
+                      <p className="mx-auto mt-1.5 max-w-[240px] text-[11px] text-muted leading-relaxed font-medium [overflow-wrap:anywhere]">
                         {t.desc}
                       </p>
                     </div>

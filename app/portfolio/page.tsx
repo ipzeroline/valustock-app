@@ -27,6 +27,7 @@ import {
   Shield,
   Layers,
   X,
+  ChevronRight,
 } from "@/lib/icons";
 
 type TabType = "ledger" | "backtest" | "alerts";
@@ -44,6 +45,7 @@ export default function PortfolioPage() {
   const plan = useCurrentPlan();
   const { lang, t } = useTranslation();
   const [activeTab, setActiveTab] = useState<TabType>("ledger");
+  const [openFaq, setOpenFaq] = useState<number | null>(0);
 
   // Pre-seed mock transactions for a robust beginner showcase
   const [transactions, setTransactions] = useState<Transaction[]>([
@@ -72,6 +74,66 @@ export default function PortfolioPage() {
     { id: "al-2", symbol: "AAPL", type: "mos_above", value: 15, active: true },
   ]);
   const [simulatedToast, setSimulatedToast] = useState<string | null>(null);
+
+  const portfolioGuides = [
+    {
+      title: lang === "th" ? "บันทึกซื้อขายให้เห็นต้นทุนจริง" : "Track real cost basis",
+      desc: lang === "th"
+        ? "บันทึกรายการซื้อขายแต่ละครั้งเพื่อคำนวณต้นทุนเฉลี่ย จำนวนหุ้นคงเหลือ มูลค่าปัจจุบัน และกำไรขาดทุนที่ยังไม่รับรู้"
+        : "Record each buy and sell to calculate average cost, remaining shares, market value, and unrealized gains.",
+    },
+    {
+      title: lang === "th" ? "ดูพอร์ตเป็นภาพรวม ไม่ดูหุ้นเดี่ยวอย่างเดียว" : "Review portfolio-level exposure",
+      desc: lang === "th"
+        ? "การติดตามมูลค่ารวมช่วยให้เห็นว่าน้ำหนักลงทุนกระจุกตัวหรือไม่ และกำไรขาดทุนรวมของพอร์ตเป็นอย่างไร"
+        : "Portfolio-level tracking helps reveal concentration risk and total return, not just individual stock movement.",
+    },
+    {
+      title: lang === "th" ? "ทดสอบย้อนหลังโมเดลมูลค่า" : "Backtest valuation signals",
+      desc: lang === "th"
+        ? "ใช้ Backtest เพื่อตรวจว่าจังหวะที่หุ้นเข้าโซนถูกกว่ามูลค่ามีโอกาสฟื้นตัวอย่างไรในอดีต"
+        : "Use backtesting to inspect how prior fair-value signals behaved historically.",
+    },
+    {
+      title: lang === "th" ? "ตั้งแจ้งเตือนราคาและ MOS" : "Set price and MOS alerts",
+      desc: lang === "th"
+        ? "ติดตามราคาเป้าหมายหรือ Margin of Safety เพื่อไม่พลาดจังหวะที่หุ้นเข้าสู่โซนน่าสนใจ"
+        : "Track target prices or Margin of Safety thresholds so attractive opportunities are easier to notice.",
+    },
+  ];
+
+  const faqItems = [
+    {
+      q: lang === "th" ? "Portfolio Tracker คืออะไร?" : "What is a portfolio tracker?",
+      a: lang === "th"
+        ? "Portfolio Tracker คือเครื่องมือติดตามพอร์ตลงทุนที่ช่วยบันทึกซื้อขาย คำนวณต้นทุนเฉลี่ย มูลค่าพอร์ต กำไรขาดทุน และสถานะการถือครองของหุ้นแต่ละตัว"
+        : "A portfolio tracker records trades and calculates cost basis, portfolio value, profit/loss, and active holdings.",
+    },
+    {
+      q: lang === "th" ? "ต้นทุนเฉลี่ยหุ้นคำนวณอย่างไร?" : "How is average cost calculated?",
+      a: lang === "th"
+        ? "ต้นทุนเฉลี่ยคำนวณจากเงินลงทุนรวมของหุ้นตัวนั้น หารด้วยจำนวนหุ้นที่ยังถืออยู่ ระบบจะอัปเดตเมื่อเพิ่มรายการซื้อหรือขายใหม่"
+        : "Average cost is total cost for a holding divided by remaining shares. It updates when buy or sell records are added.",
+    },
+    {
+      q: lang === "th" ? "กำไรขาดทุนในหน้านี้คือ realized หรือ unrealized?" : "Is the return realized or unrealized?",
+      a: lang === "th"
+        ? "ตาราง Holdings แสดงกำไรขาดทุนที่ยังไม่รับรู้ตามราคาตลาดปัจจุบัน ส่วน Transaction Ledger ใช้เก็บประวัติรายการซื้อขายเพื่อวิเคราะห์ย้อนหลังหรือส่งออก CSV"
+        : "The holdings table shows unrealized return based on current market price, while the ledger stores transaction history for auditing or CSV export.",
+    },
+    {
+      q: lang === "th" ? "Backtest ในพอร์ตใช้ทำอะไร?" : "What is portfolio backtesting for?",
+      a: lang === "th"
+        ? "Backtest ใช้จำลองว่าหากซื้อหุ้นเมื่อโมเดลประเมินว่าราคาต่ำกว่ามูลค่า ผลลัพธ์ในอดีตมีแนวโน้มเป็นอย่างไร ช่วยตรวจสอบสมมติฐาน แต่ไม่รับประกันผลตอบแทนอนาคต"
+        : "Backtesting simulates how valuation signals behaved historically. It helps test assumptions but never guarantees future returns.",
+    },
+    {
+      q: lang === "th" ? "ควรตั้งแจ้งเตือนราคาแบบไหน?" : "What alerts should I set?",
+      a: lang === "th"
+        ? "นักลงทุนระยะยาวมักตั้งแจ้งเตือนเมื่อราคาต่ำกว่าระดับที่สนใจ หรือเมื่อ Margin of Safety สูงกว่าเกณฑ์ เช่น 15-30% เพื่อใช้เป็นจุดเริ่มต้นในการศึกษาหุ้นต่อ"
+        : "Long-term investors often set alerts when price falls below a target or Margin of Safety exceeds a chosen threshold such as 15-30%.",
+    },
+  ];
 
   const formatPrice = (s: any, p: number) => {
     if (s.assetType === "US_STOCK" || s.currency === "USD") return dollar(p);
@@ -294,6 +356,42 @@ export default function PortfolioPage() {
 
   return (
     <div className="mx-auto w-full max-w-[calc(100vw-24px)] space-y-5 overflow-x-hidden pb-24 pt-1 animate-fade-up sm:max-w-full sm:space-y-6 lg:max-w-7xl lg:pb-2">
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{
+          __html: JSON.stringify({
+            "@context": "https://schema.org",
+            "@graph": [
+              {
+                "@type": "SoftwareApplication",
+                "@id": "https://valustock.com/portfolio#tracker",
+                "name": "ValuStock Portfolio Tracker",
+                "applicationCategory": "FinanceApplication",
+                "operatingSystem": "All",
+                "url": "https://valustock.com/portfolio",
+                "description": "เครื่องมือติดตามพอร์ตหุ้น บันทึกซื้อขาย คำนวณต้นทุนเฉลี่ย กำไรขาดทุน Backtest และตั้งแจ้งเตือนราคา/Margin of Safety",
+                "offers": {
+                  "@type": "Offer",
+                  "price": "0",
+                  "priceCurrency": "THB"
+                }
+              },
+              {
+                "@type": "FAQPage",
+                "@id": "https://valustock.com/portfolio#faq",
+                "mainEntity": faqItems.map((faq) => ({
+                  "@type": "Question",
+                  "name": faq.q,
+                  "acceptedAnswer": {
+                    "@type": "Answer",
+                    "text": faq.a
+                  }
+                }))
+              }
+            ]
+          })
+        }}
+      />
       {/* 🚨 SIMULATED LIVE NOTIFICATION TOAST POPUP */}
       {simulatedToast && (
         <div className="fixed left-3 right-3 top-5 z-50 flex max-w-md items-start gap-3 rounded-2xl border-2 border-brand bg-surface/95 p-4 text-ink shadow-glow-brand backdrop-blur-md animate-fade-up sm:left-auto sm:right-5 sm:p-4.5">
@@ -1085,6 +1183,120 @@ export default function PortfolioPage() {
           </div>
         </div>
       )}
+
+      {/* SEO GUIDE CONTENT */}
+      <section className="space-y-6 border-t border-line/60 pt-8">
+        <div className="mx-auto max-w-3xl text-center">
+          <span className="chip border-brand/35 bg-brand/10 text-brand text-xs font-bold">
+            <Wallet className="h-3.5 w-3.5" /> {lang === "th" ? "คู่มือจัดพอร์ตหุ้น" : "Portfolio tracker guide"}
+          </span>
+          <h2 className="mt-3 font-display text-2xl font-black leading-tight text-ink sm:text-3xl">
+            {lang === "th" ? "Portfolio Tracker สำหรับจัดพอร์ตหุ้น คำนวณต้นทุน และติดตามกำไรขาดทุน" : "Portfolio Tracker for cost basis, returns, and alerts"}
+          </h2>
+          <p className="mx-auto mt-3 max-w-2xl text-sm font-medium leading-relaxed text-muted [overflow-wrap:anywhere]">
+            {lang === "th"
+              ? "หน้า Portfolio ของ ValuStock ช่วยให้นักลงทุนบันทึกซื้อขายหุ้น ติดตามมูลค่าพอร์ต คำนวณต้นทุนเฉลี่ย กำไรขาดทุน Backtest กลยุทธ์ และตั้งแจ้งเตือนราคาเมื่อหุ้นเข้าโซนที่น่าสนใจ"
+              : "ValuStock Portfolio helps investors record trades, track portfolio value, calculate cost basis, backtest valuation signals, and set price or Margin of Safety alerts."}
+          </p>
+        </div>
+
+        <div className="grid gap-4 md:grid-cols-4">
+          {portfolioGuides.map((item, idx) => (
+            <Card key={item.title} className="border border-line bg-surface/25 p-5">
+              <span className="grid h-8 w-8 place-items-center rounded-lg bg-brand/10 font-mono text-xs font-black text-brand">
+                {idx + 1}
+              </span>
+              <h3 className="mt-4 font-display text-sm font-bold leading-snug text-ink">{item.title}</h3>
+              <p className="mt-2 text-xs font-medium leading-relaxed text-muted">{item.desc}</p>
+            </Card>
+          ))}
+        </div>
+      </section>
+
+      <section className="grid gap-5 border-t border-line/60 pt-8 md:grid-cols-[1fr_0.9fr]">
+        <Card className="border border-line bg-surface/25 p-5">
+          <span className="chip border-up/30 bg-up/10 text-up text-[10px] font-bold">
+            <Shield className="h-3.5 w-3.5" /> {lang === "th" ? "หลักคิดจัดพอร์ต" : "Portfolio principles"}
+          </span>
+          <h2 className="mt-3 font-display text-xl font-black text-ink">
+            {lang === "th" ? "ดูพอร์ตให้ครบกว่ากำไรขาดทุนรายตัว" : "Look beyond single-position returns"}
+          </h2>
+          <p className="mt-2 text-sm font-medium leading-relaxed text-muted">
+            {lang === "th"
+              ? "การจัดพอร์ตที่ดีไม่ได้ดูแค่ว่าหุ้นตัวไหนกำไรหรือขาดทุน แต่ต้องดูน้ำหนักรวม ความกระจุกตัว ความเสี่ยง sector เงินสดสำรอง และว่าราคาปัจจุบันยังมี Margin of Safety พอหรือไม่"
+              : "A good portfolio view is not just per-stock profit. It should include allocation, concentration, sector risk, cash buffer, and whether current prices still offer enough Margin of Safety."}
+          </p>
+          <div className="mt-4 grid gap-2 text-xs font-bold text-muted">
+            {[
+              lang === "th" ? "ต้นทุนเฉลี่ยช่วยวัดจุดคุ้มทุนของหุ้นแต่ละตัว" : "Average cost shows each holding's breakeven level",
+              lang === "th" ? "มูลค่าพอร์ตช่วยดูน้ำหนักและความกระจุกตัว" : "Portfolio value reveals allocation and concentration",
+              lang === "th" ? "Backtest และ alerts ช่วยวางแผนก่อนตัดสินใจเพิ่มเงิน" : "Backtests and alerts help plan before adding capital",
+            ].map((item) => (
+              <div key={item} className="flex items-start gap-2">
+                <CheckCircle className="mt-0.5 h-4 w-4 shrink-0 text-brand" />
+                <span>{item}</span>
+              </div>
+            ))}
+          </div>
+        </Card>
+
+        <Card className="border border-line bg-surface/25 p-5">
+          <h2 className="font-display text-xl font-black text-ink">
+            {lang === "th" ? "เครื่องมือที่ใช้ร่วมกับพอร์ต" : "Related portfolio tools"}
+          </h2>
+          <div className="mt-4 space-y-2">
+            {[
+              { href: "/stocks", label: lang === "th" ? "โปรแกรมคัดกรองหุ้นพื้นฐานดี" : "Stock screener" },
+              { href: "/compare", label: lang === "th" ? "เปรียบเทียบหุ้นและ ETF ก่อนเข้าพอร์ต" : "Compare stocks and ETFs" },
+              { href: "/dcf-calculator", label: lang === "th" ? "DCF Calculator สำหรับประเมินราคาเหมาะสม" : "DCF Calculator" },
+              { href: "/intrinsic-value-calculator", label: lang === "th" ? "Intrinsic Value Calculator และ Graham Number" : "Intrinsic Value Calculator" },
+              { href: "/watchlist", label: lang === "th" ? "Watchlist สำหรับติดตามหุ้นที่สนใจ" : "Watchlist tracker" },
+            ].map((item) => (
+              <a
+                key={item.href}
+                href={item.href}
+                className="flex items-center justify-between rounded-xl border border-line bg-bg px-3 py-2.5 text-xs font-bold text-muted transition hover:border-brand/40 hover:text-brand"
+              >
+                {item.label}
+                <ChevronRight className="h-4 w-4" />
+              </a>
+            ))}
+          </div>
+        </Card>
+      </section>
+
+      <section className="space-y-4 border-t border-line/60 pt-8">
+        <div className="mx-auto max-w-2xl text-center">
+          <span className="chip border-amber-500/30 bg-amber-500/10 text-amber-400 text-xs font-bold">
+            <Info className="h-3.5 w-3.5" /> FAQ
+          </span>
+          <h2 className="mt-3 font-display text-2xl font-black text-ink">
+            {lang === "th" ? "คำถามที่พบบ่อยเกี่ยวกับ Portfolio Tracker" : "Portfolio Tracker FAQ"}
+          </h2>
+        </div>
+
+        <div className="mx-auto max-w-4xl space-y-3">
+          {faqItems.map((faq, idx) => {
+            const isOpen = openFaq === idx;
+            return (
+              <div key={faq.q} className="overflow-hidden rounded-2xl border border-line bg-bg/40">
+                <button
+                  onClick={() => setOpenFaq(isOpen ? null : idx)}
+                  className="flex w-full items-center justify-between gap-4 px-5 py-4 text-left text-sm font-bold text-ink transition hover:bg-elevate/45"
+                >
+                  <span>{faq.q}</span>
+                  <span className="shrink-0 font-mono text-xs text-brand">{isOpen ? "−" : "+"}</span>
+                </button>
+                {isOpen && (
+                  <div className="border-t border-line/30 px-5 pb-4 pt-3 text-xs font-medium leading-relaxed text-muted">
+                    {faq.a}
+                  </div>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      </section>
 
       {/* 🚀 F. SYSTEM FOOTER */}
       <div className="flex max-w-4xl items-start gap-2 rounded-xl border border-line bg-elevate/45 p-3.5 text-[10px] text-muted">

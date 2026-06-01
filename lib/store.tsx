@@ -26,7 +26,7 @@ interface Ctx {
   theme: "dark" | "light";
   lang: "th" | "en";
   // auth
-  login: (email: string, name?: string) => void;
+  login: (email: string, name?: string, plan?: PlanId, billing?: "monthly" | "yearly") => void;
   logout: () => void;
   // membership
   setPlan: (plan: PlanId, billing?: "monthly" | "yearly") => void;
@@ -66,6 +66,42 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     }
   }, [data, ready]);
 
+  useEffect(() => {
+    if (!ready || !data.user?.email) return;
+
+    const email = data.user.email.trim().toLowerCase();
+    const localSymbols = data.watchlist.map((symbol) => symbol.toUpperCase());
+
+    fetch(`/api/watchlist?email=${encodeURIComponent(email)}`)
+      .then((res) => (res.ok ? res.json() : null))
+      .then((payload) => {
+        if (!payload || !Array.isArray(payload.watchlist)) return;
+        const dbSymbols = payload.watchlist.map((symbol: string) => symbol.toUpperCase());
+        const merged = Array.from(new Set([...dbSymbols, ...localSymbols]));
+
+        setData((current) => {
+          if (current.user?.email.trim().toLowerCase() !== email) return current;
+          if (JSON.stringify(current.watchlist) === JSON.stringify(merged)) return current;
+          return { ...current, watchlist: merged };
+        });
+
+        localSymbols
+          .filter((symbol) => !dbSymbols.includes(symbol))
+          .forEach((symbol) => {
+            fetch("/api/watchlist", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ email, symbol }),
+            }).catch(() => {
+              /* keep local optimistic state */
+            });
+          });
+      })
+      .catch(() => {
+        /* keep local optimistic state if the database is unavailable */
+      });
+  }, [ready, data.user?.email]);
+
   // apply theme class
   useEffect(() => {
     const root = document.documentElement;
@@ -78,20 +114,35 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     "tayasit.pea@gmail.com",
   ]);
 
-  const login = useCallback((email: string, name?: string) => {
-    const isPremium = PREMIUM_EMAILS.has(email.toLowerCase().trim());
+  const login = useCallback((email: string, name?: string, plan?: PlanId, billing?: "monthly" | "yearly") => {
+    const normalizedEmail = email.toLowerCase().trim();
+    const isPremium = PREMIUM_EMAILS.has(normalizedEmail);
+    const nextUser = {
+      name: isPremium
+        ? (normalizedEmail === "zeroline@live.com" ? "Zeroline VIP" : (name || email.split("@")[0] || "นักลงทุน"))
+        : (name || email.split("@")[0] || "นักลงทุน"),
+      email,
+      plan: plan || (isPremium ? "premium" as const : "free" as const),
+      billing: billing || (isPremium ? "yearly" as const : "monthly" as const),
+      joinedAt: new Date().toISOString(),
+    };
     setData((d) => ({
       ...d,
-      user: {
-        name: isPremium
-          ? (email.toLowerCase().trim() === "zeroline@live.com" ? "Zeroline VIP" : (name || email.split("@")[0] || "นักลงทุน"))
-          : (name || email.split("@")[0] || "นักลงทุน"),
-        email,
-        plan: isPremium ? "premium" : "free",
-        billing: isPremium ? "yearly" : "monthly",
-        joinedAt: new Date().toISOString(),
-      },
+      user: nextUser,
     }));
+
+    fetch("/api/admin/users", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        email: normalizedEmail,
+        name: nextUser.name,
+        plan: nextUser.plan,
+        billing: nextUser.billing,
+      }),
+    }).catch(() => {
+      /* local login remains available while offline */
+    });
   }, []);
 
   const logout = useCallback(() => {
@@ -100,47 +151,83 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
 
   const setPlan = useCallback(
     (plan: PlanId, billing: "monthly" | "yearly" = "monthly") => {
+      let nextUserForSync: User | null = null;
       setData((d) => {
         if (!d.user) {
+          nextUserForSync = {
+            name: "นักลงทุน",
+            email: "guest@valustock.app",
+            plan,
+            billing,
+            joinedAt: new Date().toISOString(),
+          };
           return {
             ...d,
-            user: {
-              name: "นักลงทุน",
-              email: "guest@valustock.app",
-              plan,
-              billing,
-              joinedAt: new Date().toISOString(),
-            },
+            user: nextUserForSync,
           };
         }
         const isPremium = PREMIUM_EMAILS.has(d.user.email.toLowerCase().trim());
+        nextUserForSync = {
+          ...d.user,
+          plan: isPremium ? "premium" : plan,
+          billing: isPremium ? "yearly" : billing,
+        };
         return {
           ...d,
-          user: {
-            ...d.user,
-            plan: isPremium ? "premium" : plan,
-            billing: isPremium ? "yearly" : billing,
-          },
+          user: nextUserForSync,
         };
       });
+
+      setTimeout(() => {
+        if (!nextUserForSync) return;
+        fetch("/api/admin/users", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            email: nextUserForSync.email.trim().toLowerCase(),
+            name: nextUserForSync.name,
+            plan: nextUserForSync.plan,
+            billing: nextUserForSync.billing,
+          }),
+        }).catch(() => {
+          /* local membership remains available while offline */
+        });
+      }, 0);
     },
     []
   );
 
   const toggleWatch = useCallback((symbol: string) => {
+    const normalizedSymbol = symbol.toUpperCase();
+    let nextAction: "add" | "remove" = "add";
+    let emailForSync: string | null = null;
+
     setData((d) => {
-      const exists = d.watchlist.includes(symbol);
+      const exists = d.watchlist.includes(normalizedSymbol);
+      nextAction = exists ? "remove" : "add";
+      emailForSync = d.user?.email.trim().toLowerCase() ?? null;
       return {
         ...d,
         watchlist: exists
-          ? d.watchlist.filter((s) => s !== symbol)
-          : [...d.watchlist, symbol],
+          ? d.watchlist.filter((s) => s !== normalizedSymbol)
+          : [...d.watchlist, normalizedSymbol],
       };
     });
+
+    setTimeout(() => {
+      if (!emailForSync) return;
+      fetch("/api/watchlist", {
+        method: nextAction === "add" ? "POST" : "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: emailForSync, symbol: normalizedSymbol }),
+      }).catch(() => {
+        /* local optimistic state remains available while offline */
+      });
+    }, 0);
   }, []);
 
   const isWatched = useCallback(
-    (symbol: string) => data.watchlist.includes(symbol),
+    (symbol: string) => data.watchlist.includes(symbol.toUpperCase()),
     [data.watchlist]
   );
 

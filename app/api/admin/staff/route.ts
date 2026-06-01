@@ -98,9 +98,16 @@ export async function POST(req: Request) {
     }
   } catch (err: any) {
     console.error("Database staff write error:", err.message);
+    return NextResponse.json(
+      { error: "Database staff write failed", detail: err.message, mockMode: true },
+      { status: 500 }
+    );
   }
 
-  return NextResponse.json({ success: true, mockMode: true });
+  return NextResponse.json(
+    { error: "Database is not connected. Staff member was not saved.", mockMode: true },
+    { status: 503 }
+  );
 }
 
 export async function DELETE(req: Request) {
@@ -118,7 +125,14 @@ export async function DELETE(req: Request) {
     }
   } catch (err: any) {
     console.error("Database staff delete error:", err.message);
+    return NextResponse.json(
+      { error: "Database staff delete failed", detail: err.message, mockMode: true },
+      { status: 500 }
+    );
   }
 
-  return NextResponse.json({ success: true, mockMode: true });
+  return NextResponse.json(
+    { error: "Database is not connected. Staff member was not deleted.", mockMode: true },
+    { status: 503 }
+  );
 }

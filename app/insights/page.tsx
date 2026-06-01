@@ -224,6 +224,7 @@ export default function InsightsPage() {
   const [aiReport, setAiReport] = useState<string | null>(null);
   const [generating, setGenerating] = useState(false);
   const [progress, setProgress] = useState(0);
+  const [openFaq, setOpenFaq] = useState<number | null>(0);
 
   const [dbArticles, setDbArticles] = useState<Article[]>([]);
   const [loadingDb, setLoadingDb] = useState(true);
@@ -277,11 +278,144 @@ export default function InsightsPage() {
     return unique;
   }, [dbArticles, lang]);
 
+  const seoPillars = [
+    {
+      href: "/insights/dcf-calculator-stock-valuation",
+      title: lang === "th" ? "DCF คืออะไร?" : "What is DCF?",
+      desc:
+        lang === "th"
+          ? "เรียนรู้การคำนวณมูลค่าหุ้นด้วย Free Cash Flow, WACC และ Terminal Value"
+          : "Learn stock valuation with free cash flow, WACC, and terminal value.",
+      icon: <Calculator className="h-4.5 w-4.5" />,
+    },
+    {
+      href: "/intrinsic-value-calculator",
+      title: lang === "th" ? "Intrinsic Value คืออะไร?" : "What is Intrinsic Value?",
+      desc:
+        lang === "th"
+          ? "เข้าใจมูลค่าที่แท้จริงของหุ้นและวิธีใช้ Graham Number ประเมินราคาเหมาะสม"
+          : "Understand true business value and Graham Number valuation.",
+      icon: <Target className="h-4.5 w-4.5" />,
+    },
+    {
+      href: "/value-investing",
+      title: lang === "th" ? "ลงทุนแบบ VI เริ่มยังไง?" : "How to Start Value Investing?",
+      desc:
+        lang === "th"
+          ? "วางกรอบเลือกหุ้นคุณค่า Margin of Safety และการถือระยะยาวแบบมีวินัย"
+          : "Build a value investing framework with margin of safety and discipline.",
+      icon: <Shield className="h-4.5 w-4.5" />,
+    },
+  ];
+
+  const faqItems = [
+    {
+      q: lang === "th" ? "ValuStock Insights เหมาะกับใคร?" : "Who is ValuStock Insights for?",
+      a:
+        lang === "th"
+          ? "เหมาะกับนักลงทุนไทยที่ต้องการอ่านบทวิเคราะห์หุ้นไทย หุ้นสหรัฐ แนวคิด Value Investing, DCF, Intrinsic Value, Margin of Safety, กองทุนต่างประเทศ และภาษีลงทุนแบบเข้าใจง่าย"
+          : "It is built for investors who want practical explainers on Thai and US stocks, value investing, DCF, intrinsic value, margin of safety, offshore funds, and tax topics.",
+    },
+    {
+      q: lang === "th" ? "บทวิเคราะห์ในหน้านี้เป็นคำแนะนำซื้อขายไหม?" : "Is this investment advice?",
+      a:
+        lang === "th"
+          ? "ไม่ใช่ครับ เนื้อหาเป็นข้อมูลเพื่อการศึกษาและช่วยวิเคราะห์ นักลงทุนควรตรวจงบการเงิน ข่าว ความเสี่ยง และเป้าหมายของตัวเองก่อนตัดสินใจลงทุน"
+          : "No. The content is for education and research. Investors should review filings, news, risks, and personal objectives before investing.",
+    },
+    {
+      q: lang === "th" ? "ควรเริ่มอ่านหัวข้อไหนก่อน?" : "Where should I start?",
+      a:
+        lang === "th"
+          ? "ถ้าเป็นมือใหม่ แนะนำเริ่มจาก Intrinsic Value, Margin of Safety และ DCF ก่อน เพราะเป็นแกนหลักของการประเมินว่าหุ้นถูกหรือแพงเมื่อเทียบกับพื้นฐาน"
+          : "Start with intrinsic value, margin of safety, and DCF because they form the core of judging whether a stock is cheap or expensive versus fundamentals.",
+    },
+    {
+      q: lang === "th" ? "มีเนื้อหาเกี่ยวกับภาษีหุ้นต่างประเทศไหม?" : "Does this cover international investment tax?",
+      a:
+        lang === "th"
+          ? "มีครับ มีหัวข้อ W-8BEN, ภาษีปันผลหุ้นสหรัฐ และการวางแผนนำเงินลงทุนต่างประเทศกลับไทย แต่เนื้อหาภาษีเป็นข้อมูลเบื้องต้น ไม่ใช่คำปรึกษาภาษีอย่างเป็นทางการ"
+          : "Yes. It covers W-8BEN, US dividend withholding tax, and Thai inbound tax planning at a high level, but it is not formal tax advice.",
+    },
+  ];
+
+  const structuredData = {
+    "@context": "https://schema.org",
+    "@graph": [
+      {
+        "@type": "CollectionPage",
+        "@id": "https://valustock.com/insights#collection",
+        name: lang === "th" ? "ValuStock Insights บทวิเคราะห์หุ้นและคู่มือลงทุน" : "ValuStock Insights",
+        url: "https://valustock.com/insights",
+        description:
+          lang === "th"
+            ? "ศูนย์บทวิเคราะห์หุ้นไทย หุ้นสหรัฐ Value Investing, DCF, Intrinsic Value, Margin of Safety และภาษีนักลงทุนไทย"
+            : "A research hub for Thai and US stocks, value investing, DCF, intrinsic value, margin of safety, and investor tax topics.",
+        inLanguage: lang === "th" ? "th-TH" : "en-US",
+      },
+      {
+        "@type": "ItemList",
+        "@id": "https://valustock.com/insights#articles",
+        itemListElement: ARTICLES.slice(0, 10).map((article, index) => ({
+          "@type": "ListItem",
+          position: index + 1,
+          item: {
+            "@type": "Article",
+            headline: article.title,
+            description: article.summary,
+            url:
+              article.id === "dcf-for-beginners"
+                ? "https://valustock.com/insights/dcf-calculator-stock-valuation"
+                : `https://valustock.com/insights?article=${article.id}`,
+            datePublished: article.date,
+            author: {
+              "@type": "Organization",
+              name: "ValuStock",
+            },
+          },
+        })),
+      },
+      {
+        "@type": "FAQPage",
+        "@id": "https://valustock.com/insights#faq",
+        mainEntity: faqItems.map((faq) => ({
+          "@type": "Question",
+          name: faq.q,
+          acceptedAnswer: {
+            "@type": "Answer",
+            text: faq.a,
+          },
+        })),
+      },
+      {
+        "@type": "BreadcrumbList",
+        itemListElement: [
+          {
+            "@type": "ListItem",
+            position: 1,
+            name: "ValuStock",
+            item: "https://valustock.com",
+          },
+          {
+            "@type": "ListItem",
+            position: 2,
+            name: "Insights",
+            item: "https://valustock.com/insights",
+          },
+        ],
+      },
+    ],
+  };
+
   // Pre-select article from URL query param (e.g. ?article=tech-vs-dividend)
   useEffect(() => {
     if (typeof window !== "undefined" && ARTICLES.length > 0) {
       const params = new URLSearchParams(window.location.search);
       const slug = params.get("article");
+      if (slug === "dcf-for-beginners") {
+        window.location.replace("/insights/dcf-calculator-stock-valuation");
+        return;
+      }
       if (slug) {
         const found = ARTICLES.find((a) => a.id === slug);
         if (found) {
@@ -531,16 +665,20 @@ export default function InsightsPage() {
 
   return (
     <div className="mx-auto max-w-6xl space-y-8 animate-fade-up">
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredData) }}
+      />
       {/* A. HEADER WITH TABS CONTROLS */}
       <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 border-b border-line pb-6">
         <div>
           <h1 className="font-display text-2xl font-bold md:text-3xl flex items-center gap-2 text-ink">
-            <Sparkles className="h-6 w-6 text-brand" /> {lang === "th" ? "ห้องข่าววิเคราะห์ & พอร์ทัลนักพัฒนา" : "ValuStock Intel & Developer Suite"}
+            <Sparkles className="h-6 w-6 text-brand" /> {lang === "th" ? "บทวิเคราะห์หุ้นและคู่มือลงทุน" : "Stock Insights & Investing Guides"}
           </h1>
           <p className="mt-1.5 text-sm text-muted">
             {lang === "th" 
-              ? "ศูนย์รวบรวมเครื่องมือวิเคราะห์ตลาดเชิงรุก ระบบแปลภาษา SEO และ API Sandbox สำหรับเทรดเดอร์สากล" 
-              : "Advanced intelligence hub presenting AI report aggregates, interactive API explorers, and derivative simulators."}
+              ? "ศูนย์ความรู้สำหรับนักลงทุนไทย ครอบคลุมหุ้นไทย หุ้นสหรัฐ Value Investing, DCF, Intrinsic Value, Margin of Safety, กองทุนต่างประเทศ และภาษีลงทุน" 
+              : "Research hub for Thai and US stocks, value investing, DCF, intrinsic value, margin of safety, offshore funds, and investor tax topics."}
           </p>
         </div>
 
@@ -554,7 +692,7 @@ export default function InsightsPage() {
                 : "text-muted hover:text-ink"
             }`}
           >
-            📰 {lang === "th" ? "บทวิเคราะห์ & AI" : "Insights & AI Report"}
+            {lang === "th" ? "บทวิเคราะห์" : "Insights"}
           </button>
           <button
             onClick={() => setActiveSegment("dev_portal")}
@@ -564,7 +702,7 @@ export default function InsightsPage() {
                 : "text-muted hover:text-ink"
             }`}
           >
-            ⚡ {lang === "th" ? "Dev API Sandbox" : "API Developer Portal"}
+            {lang === "th" ? "API Sandbox" : "API Developer Portal"}
           </button>
           <button
             onClick={() => setActiveSegment("futures_sandbox")}
@@ -574,10 +712,33 @@ export default function InsightsPage() {
                 : "text-muted hover:text-ink"
             }`}
           >
-            📈 {lang === "th" ? "Futures & Tax Simulator" : "Derivative & Tax Hub"}
+            {lang === "th" ? "Futures & Tax" : "Derivative & Tax Hub"}
           </button>
         </div>
       </div>
+
+      <section className="grid gap-3 md:grid-cols-3">
+        {seoPillars.map((item) => (
+          <Link
+            key={item.href}
+            href={item.href}
+            className="group rounded-2xl border border-line bg-surface/35 p-4 transition hover:border-brand/45 hover:bg-brand/5"
+          >
+            <div className="flex items-start justify-between gap-3">
+              <span className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-brand-soft text-brand">
+                {item.icon}
+              </span>
+              <ArrowRight className="h-4 w-4 shrink-0 text-muted transition group-hover:translate-x-0.5 group-hover:text-brand" />
+            </div>
+            <h2 className="mt-3 font-display text-sm font-black text-ink group-hover:text-brand">
+              {item.title}
+            </h2>
+            <p className="mt-1 text-xs font-semibold leading-relaxed text-muted">
+              {item.desc}
+            </p>
+          </Link>
+        ))}
+      </section>
 
       {/* ==================== SEGMENT 1: ARTICLES & AI REPORT ==================== */}
       {activeSegment === "articles" && (
@@ -588,7 +749,7 @@ export default function InsightsPage() {
             <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
               <div className="space-y-1">
                 <span className="chip border-brand/40 bg-brand/10 text-brand text-xs font-semibold uppercase">
-                  {lang === "th" ? "ฟีเจอร์เด่น" : "Premium Feature"}
+                  {lang === "th" ? "สรุปตลาด" : "Market Brief"}
                 </span>
                 <h2 className="font-display text-lg font-bold text-ink">
                   {lang === "th" 
@@ -757,6 +918,41 @@ export default function InsightsPage() {
                   : "Combined Feeder and Master fees should ideally not exceed 1.5% - 2.0% annually to preserve compounding long-term returns."}
               </li>
             </ul>
+          </Card>
+
+          <Card className="p-5 border border-line bg-surface/35">
+            <div className="mb-4">
+              <h3 className="font-display text-lg font-black text-ink">
+                {lang === "th" ? "คำถามที่พบบ่อยเกี่ยวกับ ValuStock Insights" : "ValuStock Insights FAQ"}
+              </h3>
+              <p className="mt-1 text-xs font-semibold text-muted">
+                {lang === "th"
+                  ? "คำตอบสั้น ๆ สำหรับผู้อ่านที่เริ่มศึกษาการประเมินมูลค่าหุ้นและการลงทุนต่างประเทศ"
+                  : "Quick answers for readers learning stock valuation and international investing."}
+              </p>
+            </div>
+            <div className="space-y-3">
+              {faqItems.map((item, index) => {
+                const isOpen = openFaq === index;
+                return (
+                  <div key={item.q} className="rounded-xl border border-line bg-bg/35">
+                    <button
+                      type="button"
+                      onClick={() => setOpenFaq(isOpen ? null : index)}
+                      className="flex w-full items-center justify-between gap-3 p-4 text-left"
+                    >
+                      <span className="font-display text-sm font-black text-ink">{item.q}</span>
+                      <span className="text-brand">{isOpen ? <Minus className="h-4 w-4" /> : <Plus className="h-4 w-4" />}</span>
+                    </button>
+                    {isOpen ? (
+                      <div className="px-4 pb-4 text-xs font-semibold leading-relaxed text-muted">
+                        {item.a}
+                      </div>
+                    ) : null}
+                  </div>
+                );
+              })}
+            </div>
           </Card>
         </div>
       )}
