@@ -21,10 +21,11 @@ import {
   Sparkles,
   Shield,
   Wallet,
+  Mail,
 } from "@/lib/icons";
 import { Button } from "./ui/Button";
 
-const MARKETING = ["/", "/pricing", "/login"];
+const MARKETING = ["/", "/pricing", "/login", "/contact"];
 function Logo({ compact = false }: { compact?: boolean }) {
   return (
     <Link href="/" className="flex shrink-0 items-center gap-2.5">
@@ -83,6 +84,7 @@ function MarketingHeader() {
           <Link href="/#features" className="hover:text-ink">{t("common.features")}</Link>
           <Link href="/stocks" className="hover:text-ink">{t("common.searchStocks")}</Link>
           <Link href="/pricing" className="hover:text-ink">{t("common.pricing")}</Link>
+          <Link href="/contact" className="hover:text-ink">ติดต่อทีมงาน</Link>
         </nav>
         <div className="flex items-center gap-2.5">
           <LangToggle />
@@ -116,6 +118,7 @@ function MarketingHeader() {
             <Link href="/#features" onClick={() => setOpen(false)} className="rounded-lg px-3 py-2.5 hover:bg-elevate">{t("common.features")}</Link>
             <Link href="/stocks" onClick={() => setOpen(false)} className="rounded-lg px-3 py-2.5 hover:bg-elevate">{t("common.searchStocks")}</Link>
             <Link href="/pricing" onClick={() => setOpen(false)} className="rounded-lg px-3 py-2.5 hover:bg-elevate">{t("common.pricing")}</Link>
+            <Link href="/contact" onClick={() => setOpen(false)} className="rounded-lg px-3 py-2.5 hover:bg-elevate">ติดต่อทีมงาน</Link>
             <Link href="/login" onClick={() => setOpen(false)} className="rounded-lg px-3 py-2.5 hover:bg-elevate">{t("common.logIn")}</Link>
           </div>
         </div>
@@ -132,6 +135,7 @@ const NAV = [
   { href: "/watchlist", key: "watchlist", icon: Star },
   { href: "/compare", key: "compare", icon: Layers },
   { href: "/pricing", key: "pricing", icon: Crown },
+  { href: "/contact", key: "contact", icon: Mail },
   { href: "/account", key: "account", icon: User },
 ];
 
@@ -169,7 +173,7 @@ function AppSidebar({ pathname }: { pathname: string }) {
           <Crown className="h-3.5 w-3.5 text-gold" /> {t("common.currentPlan")}
         </div>
         <div className="mt-1 font-display font-semibold">{plan.name}</div>
-        {plan.id !== "premium" && (
+        {plan.id !== "premium" && plan.id !== "lifetime" && (
           <Link href="/pricing">
             <Button variant="gold" size="sm" className="mt-3 w-full">
               {t("common.upgrade")}
@@ -185,6 +189,8 @@ function AppSidebar({ pathname }: { pathname: string }) {
         <Link href="/privacy" className="hover:text-brand transition">{lang === "th" ? "ส่วนตัว" : "Privacy"}</Link>
         <span>•</span>
         <Link href="/terms" className="hover:text-brand transition">{lang === "th" ? "เงื่อนไข" : "Terms"}</Link>
+        <span>•</span>
+        <Link href="/contact" className="hover:text-brand transition">{lang === "th" ? "ติดต่อ" : "Contact"}</Link>
       </div>
     </aside>
   );

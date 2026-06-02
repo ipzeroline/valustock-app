@@ -49,6 +49,7 @@ import {
   ChevronDown,
   ChevronUp,
   AlertTriangle,
+  Database,
 } from "lucide-react";
 
 export {
@@ -101,4 +102,5 @@ export {
   ChevronDown,
   ChevronUp,
   AlertTriangle,
+  Database,
 };

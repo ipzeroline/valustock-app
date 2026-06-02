@@ -69,6 +69,7 @@ interface Raw {
   tickSize?: string;
   cryptoCirculating?: string;
   cryptoConsensus?: string;
+  totalAssets?: number;
 }
 
 function build(r: Raw): Stock {
@@ -99,6 +100,7 @@ function build(r: Raw): Stock {
       cash: r.cash,
       dividendPerShare: r.dps,
       growthRate: r.growth,
+      totalAssets: r.totalAssets || Math.round(r.equity * 1.8),
     },
     assetType: r.assetType || (r.market === "NASDAQ" || r.market === "NYSE" ? "US_STOCK" : r.market === "MUTUAL_FUND" ? "FUND" : "TH_STOCK"),
     currency: r.currency || (r.market === "NASDAQ" || r.market === "NYSE" ? "USD" : "THB"),

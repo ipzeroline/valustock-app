@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { getDbConnectionStatus, query } from "@/lib/db";
+import { getPlanForEmail } from "@/lib/entitlements";
 
 function normalizeEmail(email: unknown) {
   return typeof email === "string" ? email.trim().toLowerCase() : "";
@@ -26,11 +27,15 @@ export async function GET(req: Request) {
   }
 
   try {
+    const plan = await getPlanForEmail(email);
+    if (!plan.limits.alerts) {
+      return NextResponse.json({ error: "Portfolio alerts require Premium plan or higher", requiredPlan: "premium" }, { status: 403 });
+    }
     const rows = await query<any[]>(
       "SELECT id, symbol, type, value, active FROM portfolio_alerts WHERE user_email = ? ORDER BY created_at DESC",
       [email]
     );
-    return NextResponse.json({ alerts: rows.map((row) => ({ ...row, active: !!row.active })) });
+    return NextResponse.json({ alerts: rows.map((row) => ({ ...row, value: Number(row.value), active: !!row.active })) });
   } catch (err: any) {
     console.error("Database portfolio alerts fetch error:", err.message);
     return NextResponse.json(
@@ -62,6 +67,10 @@ export async function POST(req: Request) {
   }
 
   try {
+    const plan = await getPlanForEmail(email);
+    if (!plan.limits.alerts) {
+      return NextResponse.json({ error: "Portfolio alerts require Premium plan or higher", requiredPlan: "premium" }, { status: 403 });
+    }
     await query(
       `INSERT INTO portfolio_alerts (id, user_email, symbol, type, value, active)
        VALUES (?, ?, ?, ?, ?, ?)
@@ -95,6 +104,10 @@ export async function DELETE(req: Request) {
   }
 
   try {
+    const plan = await getPlanForEmail(email);
+    if (!plan.limits.alerts) {
+      return NextResponse.json({ error: "Portfolio alerts require Premium plan or higher", requiredPlan: "premium" }, { status: 403 });
+    }
     await query("DELETE FROM portfolio_alerts WHERE user_email = ? AND id = ?", [email, id]);
     return NextResponse.json({ success: true });
   } catch (err: any) {

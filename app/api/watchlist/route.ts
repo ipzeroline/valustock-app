@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { getDbConnectionStatus, query } from "@/lib/db";
+import { getPlanForEmail } from "@/lib/entitlements";
 
 function normalizeEmail(email: unknown) {
   return typeof email === "string" ? email.trim().toLowerCase() : "";
@@ -61,6 +62,26 @@ export async function POST(req: Request) {
   }
 
   try {
+    const plan = await getPlanForEmail(email);
+    const limit = plan.limits.watchlist;
+    if (limit !== "unlimited") {
+      const existing = await query<{ symbol: string }[]>(
+        "SELECT symbol FROM watchlists WHERE user_email = ?",
+        [email]
+      );
+      const alreadySaved = existing.some((row) => row.symbol.toUpperCase() === symbol);
+      if (!alreadySaved && existing.length >= limit) {
+        return NextResponse.json(
+          {
+            error: `Watchlist limit reached for ${plan.id} plan`,
+            limit,
+            requiredPlan: "pro",
+            mockMode: false,
+          },
+          { status: 403 }
+        );
+      }
+    }
     await query(
       "INSERT IGNORE INTO watchlists (user_email, symbol) VALUES (?, ?)",
       [email, symbol]

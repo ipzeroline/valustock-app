@@ -78,6 +78,7 @@ export async function GET(
     let ebitda = 2000;
     let totalDebt = 3000;
     let cash = 2000;
+    let totalAssets = 15000;
     let growthRate = 0.08;
 
     if (finResults.length > 0) {
@@ -107,6 +108,13 @@ export async function GET(
         bookValue = f.balance_sheet.equity.value / 1_000_000;
       } else if (f.balance_sheet?.equity_attributable_to_parent) {
         bookValue = f.balance_sheet.equity_attributable_to_parent.value / 1_000_000;
+      }
+
+      // Total Assets
+      if (f.balance_sheet?.assets) {
+        totalAssets = f.balance_sheet.assets.value / 1_000_000;
+      } else if (f.balance_sheet?.total_assets) {
+        totalAssets = f.balance_sheet.total_assets.value / 1_000_000;
       }
       
       // Total Debt
@@ -160,6 +168,38 @@ export async function GET(
     const mCapInMillions = (tResults.market_cap || (latestPrice * (tResults.weighted_shares_outstanding || 100000000))) / 1_000_000;
     const sharesOutstanding = mCapInMillions / latestPrice;
 
+    // Calculate FCF CAGR dynamically from 5 Years history
+    let calculatedGrowthRate = 0.08; // default
+    if (fcfHistory && fcfHistory.length >= 2) {
+      const firstFcf = fcfHistory[0].value;
+      const lastFcf = fcfHistory[fcfHistory.length - 1].value;
+      if (firstFcf > 0 && lastFcf > 0) {
+        const n = fcfHistory.length;
+        const cagr = Math.pow(lastFcf / firstFcf, 1 / (n - 1)) - 1;
+        if (!isNaN(cagr) && isFinite(cagr)) {
+          // Clamp growth rate between 2% and 15% for conservative valuation
+          calculatedGrowthRate = Math.max(0.02, Math.min(0.15, cagr));
+        }
+      }
+    }
+
+    // Parse and estimate dividends
+    let parsedDividendPerShare = 0;
+    if (finResults.length > 0) {
+      const f = finResults[0].financials;
+      if (f.cash_flow_statement?.payments_for_dividends) {
+        const totalDividendsPaid = Math.abs(f.cash_flow_statement.payments_for_dividends.value / 1_000_000);
+        parsedDividendPerShare = totalDividendsPaid / sharesOutstanding;
+      } else if (f.cash_flow_statement?.dividends_paid) {
+        const totalDividendsPaid = Math.abs(f.cash_flow_statement.dividends_paid.value / 1_000_000);
+        parsedDividendPerShare = totalDividendsPaid / sharesOutstanding;
+      } else {
+        parsedDividendPerShare = latestPrice * (0.015 + (symbol.charCodeAt(0) % 4) * 0.005);
+      }
+    } else {
+      parsedDividendPerShare = latestPrice * (0.015 + (symbol.charCodeAt(0) % 4) * 0.005);
+    }
+
     // Standardize Sector
     let sector = "เทคโนโลยี";
     if (tResults.sic_description) {
@@ -190,8 +230,9 @@ export async function GET(
         ebitda: Math.round(ebitda),
         totalDebt: Math.round(totalDebt),
         cash: Math.round(cash),
-        dividendPerShare: 0.5 + (symbol.charCodeAt(0) % 5) * 0.25, // Yield proxy
-        growthRate: growthRate,
+        dividendPerShare: Math.round(parsedDividendPerShare * 100) / 100,
+        growthRate: calculatedGrowthRate,
+        totalAssets: Math.round(totalAssets),
       },
       assetType: "US_STOCK",
       currency: "USD"
@@ -272,6 +313,7 @@ function getSimulatedStock(symbol: string): any {
   const ebitda = price * shares * 0.28;
   const totalDebt = price * shares * 0.35;
   const cash = price * shares * 0.15;
+  const totalAssets = price * shares * 2.2;
   const growthRate = 0.06 + ((sym.charCodeAt(0) * 3) % 12) / 100;
 
   const YEARS = [2021, 2022, 2023, 2024, 2025];
@@ -309,6 +351,7 @@ function getSimulatedStock(symbol: string): any {
       cash: Math.round(cash),
       dividendPerShare: assetType === "FUND" ? 0 : price * 0.02,
       growthRate,
+      totalAssets: Math.round(totalAssets),
     },
     assetType,
     currency,

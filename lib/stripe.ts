@@ -3,7 +3,7 @@ import { isDbConnected, query } from "@/lib/db";
 import { getPlan } from "@/lib/plans";
 import { PlanId } from "@/lib/types";
 
-export type BillingInterval = "monthly" | "yearly";
+export type BillingInterval = "monthly" | "yearly" | "lifetime";
 
 type StripeSession = {
   id: string;
@@ -22,7 +22,7 @@ type StripeSession = {
 };
 
 const STRIPE_API_BASE = "https://api.stripe.com/v1";
-const PAID_PLANS: PlanId[] = ["pro", "premium"];
+const PAID_PLANS: PlanId[] = ["pro", "premium", "lifetime"];
 
 function getStripeSecretKey() {
   const key = process.env.STRIPE_SECRET_KEY;
@@ -30,12 +30,13 @@ function getStripeSecretKey() {
   return key;
 }
 
-export function isPaidPlan(plan: PlanId): plan is "pro" | "premium" {
+export function isPaidPlan(plan: PlanId): plan is "pro" | "premium" | "lifetime" {
   return PAID_PLANS.includes(plan);
 }
 
 export function getPlanPrice(planId: PlanId, billing: BillingInterval) {
   const plan = getPlan(planId);
+  if (planId === "lifetime" || billing === "lifetime") return plan.priceMonthly;
   return billing === "monthly" ? plan.priceMonthly : plan.priceYearly;
 }
 
@@ -120,13 +121,14 @@ export async function createCheckoutSession({
   }
 
   const plan = getPlan(planId);
+  const isLifetime = planId === "lifetime" || billing === "lifetime";
   const interval = billing === "monthly" ? "month" : "year";
   const normalizedEmail = email.trim().toLowerCase();
   const successUrl = `${origin}/pricing/success?session_id={CHECKOUT_SESSION_ID}`;
   const cancelUrl = `${origin}/pricing/cancel`;
 
   const body = new URLSearchParams({
-    mode: "subscription",
+    mode: isLifetime ? "payment" : "subscription",
     success_url: successUrl,
     cancel_url: cancelUrl,
     customer_email: normalizedEmail,
@@ -136,17 +138,25 @@ export async function createCheckoutSession({
     "metadata[name]": name || normalizedEmail.split("@")[0] || "นักลงทุน",
     "metadata[plan]": planId,
     "metadata[billing]": billing,
-    "subscription_data[metadata][email]": normalizedEmail,
-    "subscription_data[metadata][name]": name || normalizedEmail.split("@")[0] || "นักลงทุน",
-    "subscription_data[metadata][plan]": planId,
-    "subscription_data[metadata][billing]": billing,
     "line_items[0][quantity]": "1",
     "line_items[0][price_data][currency]": "thb",
     "line_items[0][price_data][unit_amount]": String(amount * 100),
-    "line_items[0][price_data][recurring][interval]": interval,
     "line_items[0][price_data][product_data][name]": `ValuStock ${plan.name}`,
     "line_items[0][price_data][product_data][description]": plan.tagline,
   });
+
+  if (isLifetime) {
+    body.set("payment_intent_data[metadata][email]", normalizedEmail);
+    body.set("payment_intent_data[metadata][name]", name || normalizedEmail.split("@")[0] || "นักลงทุน");
+    body.set("payment_intent_data[metadata][plan]", planId);
+    body.set("payment_intent_data[metadata][billing]", "lifetime");
+  } else {
+    body.set("subscription_data[metadata][email]", normalizedEmail);
+    body.set("subscription_data[metadata][name]", name || normalizedEmail.split("@")[0] || "นักลงทุน");
+    body.set("subscription_data[metadata][plan]", planId);
+    body.set("subscription_data[metadata][billing]", billing);
+    body.set("line_items[0][price_data][recurring][interval]", interval);
+  }
 
   const response = await fetch(`${STRIPE_API_BASE}/checkout/sessions`, {
     method: "POST",
@@ -214,7 +224,7 @@ export async function syncStripeCheckoutSession(session: StripeSession) {
     ? session.amount_total / 100
     : getPlanPrice(plan, billing);
   const sessionRef = session.id;
-  const transactionRef = getSubscriptionId(session);
+  const transactionRef = billing === "lifetime" ? (session.payment_intent || session.id) : getSubscriptionId(session);
   const connected = await isDbConnected();
 
   if (connected) {

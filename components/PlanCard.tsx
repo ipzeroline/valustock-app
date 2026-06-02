@@ -9,6 +9,7 @@ const planIcon = {
   free: Shield,
   pro: Zap,
   premium: Crown,
+  lifetime: Crown,
 } as const;
 
 export const PLAN_TRANS = {
@@ -29,11 +30,12 @@ export const PLAN_TRANS = {
       tagline: "เครื่องมือครบสำหรับนักลงทุนเน้นคุณค่า",
       badge: "ยอดนิยม",
       features: [
-        "ดูหุ้นได้ทั้งหมดในตลาด",
+        "ดูหุ้นไทย/สหรัฐฯ + ETF/กองทุน",
         "เครื่องคำนวณ DCF แบบปรับค่าได้",
         "Graham Number & มูลค่าเหมาะสม",
         "สกรีนเนอร์คัดกรองหุ้นถูก",
         "รายการโปรดไม่จำกัด",
+        "Portfolio Tracker ไม่จำกัด",
         "อัตราส่วนการเงินครบทุกตัว",
       ]
     },
@@ -43,11 +45,25 @@ export const PLAN_TRANS = {
       badge: "ครบทุกฟีเจอร์",
       features: [
         "ทุกอย่างในแพ็กเกจโปร",
+        "ข้อมูล Crypto & Futures",
         "เปรียบเทียบหุ้นหลายตัวพร้อมกัน",
         "แจ้งเตือนเมื่อราคาต่ำกว่ามูลค่า",
         "ส่งออกข้อมูลเป็น CSV",
         "สมมติฐานการประเมินขั้นสูง",
         "สนับสนุนแบบเร่งด่วน",
+      ]
+    },
+    lifetime: {
+      name: "ตลอดชีพ",
+      tagline: "จ่ายครั้งเดียว ใช้งานครบระยะยาว",
+      badge: "จ่ายครั้งเดียว",
+      features: [
+        "ทุกอย่างใน Premium",
+        "สิทธิ์ใช้งานตลอดชีพ",
+        "รองรับ Bulk historical/Flat Files workflow",
+        "ส่งออกข้อมูล CSV สำหรับ backtest",
+        "แจ้งเตือนและเปรียบเทียบหุ้นครบ",
+        "เหมาะกับคนใช้ต่อเนื่องเกิน 10 เดือน",
       ]
     }
   },
@@ -68,11 +84,12 @@ export const PLAN_TRANS = {
       tagline: "Advanced tools for value investors",
       badge: "Most Popular",
       features: [
-        "Unlimited asset research capacity",
+        "Thai/US stocks plus ETFs and funds",
         "Interactive DCF modeling engine",
         "Graham Number & Fair Value calculations",
         "High Margin-of-Safety stock screener",
         "Unlimited synced watchlist tracking",
+        "Unlimited Portfolio Tracker",
         "Full institutional financial ratios",
       ]
     },
@@ -82,11 +99,25 @@ export const PLAN_TRANS = {
       badge: "Full Access",
       features: [
         "Everything in the Pro plan",
+        "Crypto & Futures data access",
         "Side-by-side asset comparison tool",
         "Under-intrinsic-value price alert triggers",
         "Prism direct exports (Excel & CSV)",
         "Advanced valuation growth constraints",
         "Institutional priority support",
+      ]
+    },
+    lifetime: {
+      name: "Lifetime",
+      tagline: "One-time payment for long-term access",
+      badge: "One-time",
+      features: [
+        "Everything in Premium",
+        "Lifetime access",
+        "Bulk historical / Flat Files workflow",
+        "CSV exports for backtesting",
+        "Full alerts and comparison tools",
+        "Best if you use it beyond 10 months",
       ]
     }
   }
@@ -105,8 +136,11 @@ export function PlanCard({
 }) {
   const { lang, t } = useTranslation();
   const Icon = planIcon[plan.id];
-  const price = billing === "monthly" ? plan.priceMonthly : plan.priceYearly;
-  const per = billing === "monthly" 
+  const isLifetime = plan.id === "lifetime";
+  const price = isLifetime ? plan.priceMonthly : billing === "monthly" ? plan.priceMonthly : plan.priceYearly;
+  const per = isLifetime
+    ? (lang === "th" ? "/ครั้งเดียว" : "/once")
+    : billing === "monthly" 
     ? (lang === "th" ? "/เดือน" : "/mo") 
     : (lang === "th" ? "/ปี" : "/yr");
   const highlight = plan.highlight;
@@ -135,7 +169,7 @@ export function PlanCard({
       <div className="flex items-center gap-2.5">
         <span
           className={`grid h-10 w-10 place-items-center rounded-xl ${
-            plan.id === "premium"
+            plan.id === "premium" || plan.id === "lifetime"
               ? "bg-gold/15 text-gold"
               : "bg-brand-soft text-brand"
           }`}
@@ -156,7 +190,7 @@ export function PlanCard({
           {lang === "th" ? "บาท" : "THB"}{per}
         </span>
       </div>
-      {billing === "yearly" && plan.priceMonthly > 0 && (
+      {billing === "yearly" && plan.priceMonthly > 0 && !isLifetime && (
         <div className="num mt-1 text-xs text-up font-medium">
           {lang === "th" 
             ? `ประหยัด ${num(plan.priceMonthly * 12 - plan.priceYearly, 0)} บาท/ปี` 
@@ -174,7 +208,7 @@ export function PlanCard({
       </ul>
 
       <Button
-        variant={highlight ? "primary" : plan.id === "premium" ? "gold" : "outline"}
+        variant={highlight ? "primary" : plan.id === "premium" || plan.id === "lifetime" ? "gold" : "outline"}
         className="mt-6 w-full"
         onClick={onSelect}
         disabled={current}

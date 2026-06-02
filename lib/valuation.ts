@@ -25,6 +25,7 @@ export function computeRatios(s: Stock): Ratios {
   const evEbitda = f.ebitda > 0 ? ev / f.ebitda : NaN;
   const equity = f.bookValuePerShare * s.sharesOutstanding;
   const roe = equity > 0 ? (f.netIncome / equity) * 100 : NaN;
+  const roa = f.totalAssets && f.totalAssets > 0 ? (f.netIncome / f.totalAssets) * 100 : null;
   const dividendYield = s.price > 0 ? (f.dividendPerShare / s.price) * 100 : 0;
   const growthPct = f.growthRate * 100;
   const peg = growthPct > 0 && pe > 0 ? pe / growthPct : NaN;
@@ -35,7 +36,7 @@ export function computeRatios(s: Stock): Ratios {
     ps,
     evEbitda,
     roe,
-    roa: null,
+    roa,
     dividendYield,
     peg,
     netMargin,

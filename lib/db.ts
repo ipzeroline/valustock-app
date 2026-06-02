@@ -45,17 +45,19 @@ export async function getDbConnectionStatus(): Promise<{
   }
 }
 
-async function ensureColumn(table: string, column: string, definition: string) {
+export async function ensureColumn(table: string, column: string, definition: string) {
   const allowedTables = new Set([
     "users",
     "watchlists",
     "user_preferences",
     "portfolio_transactions",
     "portfolio_alerts",
+    "portfolio_settings",
     "articles",
     "payments",
     "staff",
     "active_sessions",
+    "comparison_sets",
   ]);
 
   if (!allowedTables.has(table)) {
@@ -143,6 +145,17 @@ export async function initDatabase(): Promise<boolean> {
       ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
     `);
 
+    // 5.1 Portfolio settings: user UI/workflow preferences only, not computed results
+    await query(`
+      CREATE TABLE IF NOT EXISTS portfolio_settings (
+        user_email VARCHAR(255) PRIMARY KEY,
+        active_tab VARCHAR(50) DEFAULT 'ledger',
+        backtest_symbol VARCHAR(50) DEFAULT 'PTT',
+        backtest_years INT DEFAULT 3,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+    `);
+
     // 6. Articles table (Insights)
     await query(`
       CREATE TABLE IF NOT EXISTS articles (
@@ -200,6 +213,20 @@ export async function initDatabase(): Promise<boolean> {
       ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
     `);
 
+    // 10. Saved comparison sets: store user-selected tickers/preferences only
+    await query(`
+      CREATE TABLE IF NOT EXISTS comparison_sets (
+        id VARCHAR(64) PRIMARY KEY,
+        user_email VARCHAR(255) NOT NULL,
+        name VARCHAR(255) NOT NULL,
+        symbols TEXT NOT NULL,
+        chart_metric VARCHAR(50) DEFAULT 'mos',
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+        INDEX idx_comparison_user (user_email, updated_at)
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+    `);
+
     await ensureColumn("users", "email", "VARCHAR(255) UNIQUE NOT NULL");
     await ensureColumn("users", "name", "VARCHAR(255)");
     await ensureColumn("users", "plan", "VARCHAR(50) DEFAULT 'free'");
@@ -209,6 +236,32 @@ export async function initDatabase(): Promise<boolean> {
     await ensureColumn("watchlists", "user_email", "VARCHAR(255) NOT NULL");
     await ensureColumn("watchlists", "symbol", "VARCHAR(50) NOT NULL");
     await ensureColumn("watchlists", "created_at", "TIMESTAMP DEFAULT CURRENT_TIMESTAMP");
+
+    await ensureColumn("portfolio_transactions", "id", "VARCHAR(64) PRIMARY KEY");
+    await ensureColumn("portfolio_transactions", "user_email", "VARCHAR(255) NOT NULL");
+    await ensureColumn("portfolio_transactions", "symbol", "VARCHAR(50) NOT NULL");
+    await ensureColumn("portfolio_transactions", "action", "VARCHAR(10) NOT NULL");
+    await ensureColumn("portfolio_transactions", "price", "DECIMAL(18,6) NOT NULL DEFAULT 0");
+    await ensureColumn("portfolio_transactions", "shares", "DECIMAL(18,6) NOT NULL DEFAULT 0");
+    await ensureColumn("portfolio_transactions", "trade_date", "DATE NOT NULL");
+    await ensureColumn("portfolio_transactions", "fee", "DECIMAL(18,6) NOT NULL DEFAULT 0");
+    await ensureColumn("portfolio_transactions", "currency", "VARCHAR(10) DEFAULT 'THB'");
+    await ensureColumn("portfolio_transactions", "notes", "TEXT");
+    await ensureColumn("portfolio_transactions", "created_at", "TIMESTAMP DEFAULT CURRENT_TIMESTAMP");
+
+    await ensureColumn("portfolio_alerts", "id", "VARCHAR(64) PRIMARY KEY");
+    await ensureColumn("portfolio_alerts", "user_email", "VARCHAR(255) NOT NULL");
+    await ensureColumn("portfolio_alerts", "symbol", "VARCHAR(50) NOT NULL");
+    await ensureColumn("portfolio_alerts", "type", "VARCHAR(50) NOT NULL");
+    await ensureColumn("portfolio_alerts", "value", "DECIMAL(18,6) NOT NULL DEFAULT 0");
+    await ensureColumn("portfolio_alerts", "active", "BOOLEAN DEFAULT TRUE");
+    await ensureColumn("portfolio_alerts", "created_at", "TIMESTAMP DEFAULT CURRENT_TIMESTAMP");
+
+    await ensureColumn("portfolio_settings", "user_email", "VARCHAR(255) PRIMARY KEY");
+    await ensureColumn("portfolio_settings", "active_tab", "VARCHAR(50) DEFAULT 'ledger'");
+    await ensureColumn("portfolio_settings", "backtest_symbol", "VARCHAR(50) DEFAULT 'PTT'");
+    await ensureColumn("portfolio_settings", "backtest_years", "INT DEFAULT 3");
+    await ensureColumn("portfolio_settings", "updated_at", "TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP");
 
     await ensureColumn("articles", "slug", "VARCHAR(255) UNIQUE NOT NULL");
     await ensureColumn("articles", "title", "VARCHAR(255) NOT NULL");
@@ -241,6 +294,14 @@ export async function initDatabase(): Promise<boolean> {
     await ensureColumn("active_sessions", "session_id", "VARCHAR(64) NOT NULL");
     await ensureColumn("active_sessions", "created_at", "TIMESTAMP DEFAULT CURRENT_TIMESTAMP");
     await ensureColumn("active_sessions", "updated_at", "TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP");
+
+    await ensureColumn("comparison_sets", "id", "VARCHAR(64) PRIMARY KEY");
+    await ensureColumn("comparison_sets", "user_email", "VARCHAR(255) NOT NULL");
+    await ensureColumn("comparison_sets", "name", "VARCHAR(255) NOT NULL");
+    await ensureColumn("comparison_sets", "symbols", "TEXT NOT NULL");
+    await ensureColumn("comparison_sets", "chart_metric", "VARCHAR(50) DEFAULT 'mos'");
+    await ensureColumn("comparison_sets", "created_at", "TIMESTAMP DEFAULT CURRENT_TIMESTAMP");
+    await ensureColumn("comparison_sets", "updated_at", "TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP");
 
     console.log("🎉 Database tables successfully initialized!");
     return true;

@@ -17,7 +17,11 @@ export async function POST(req: Request) {
   try {
     const body = await req.json();
     const plan = body.plan as PlanId;
-    const billing = body.billing === "yearly" ? "yearly" : "monthly";
+    const billing = plan === "lifetime" || body.billing === "lifetime"
+      ? "lifetime"
+      : body.billing === "yearly"
+        ? "yearly"
+        : "monthly";
     const email = String(body.email || "").trim().toLowerCase();
     const name = String(body.name || "").trim();
 

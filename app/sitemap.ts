@@ -7,6 +7,7 @@ const staticRoutes = [
   "",
   "/stocks",
   "/pricing",
+  "/contact",
   "/compare",
   "/insights",
   "/insights/dcf-calculator-stock-valuation",

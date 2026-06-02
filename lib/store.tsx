@@ -27,10 +27,10 @@ interface Ctx {
   theme: "dark" | "light";
   lang: "th" | "en";
   // auth
-  login: (email: string, name?: string, plan?: PlanId, billing?: "monthly" | "yearly", authToken?: string) => void;
+  login: (email: string, name?: string, plan?: PlanId, billing?: "monthly" | "yearly" | "lifetime", authToken?: string) => void;
   logout: () => void;
   // membership
-  setPlan: (plan: PlanId, billing?: "monthly" | "yearly") => void;
+  setPlan: (plan: PlanId, billing?: "monthly" | "yearly" | "lifetime") => void;
   // watchlist
   toggleWatch: (symbol: string) => void;
   isWatched: (symbol: string) => boolean;
@@ -149,9 +149,9 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     else root.classList.remove("light");
   }, [data.theme]);
 
-  const PREMIUM_EMAILS = new Set([
-    "zeroline@live.com",
-    "tayasit.pea@gmail.com",
+  const PLAN_OVERRIDES = new Map<string, { plan: PlanId; billing: "monthly" | "yearly" | "lifetime"; name?: string }>([
+    ["zeroline@live.com", { plan: "lifetime", billing: "lifetime", name: "Zeroline VIP" }],
+    ["tayasit.pea@gmail.com", { plan: "premium", billing: "yearly" }],
   ]);
 
   useEffect(() => {
@@ -176,15 +176,13 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     return () => window.clearInterval(timer);
   }, [ready, data.user?.email, data.authToken]);
 
-  const login = useCallback((email: string, name?: string, plan?: PlanId, billing?: "monthly" | "yearly", authToken?: string) => {
+  const login = useCallback((email: string, name?: string, plan?: PlanId, billing?: "monthly" | "yearly" | "lifetime", authToken?: string) => {
     const normalizedEmail = email.toLowerCase().trim();
-    const isPremium = PREMIUM_EMAILS.has(normalizedEmail);
-    const nextPlan = isPremium ? "premium" : (plan || "free");
-    const nextBilling = isPremium ? "yearly" : (billing || "monthly");
+    const override = PLAN_OVERRIDES.get(normalizedEmail);
+    const nextPlan = override?.plan || plan || "free";
+    const nextBilling = override?.billing || billing || "monthly";
     const nextUser = {
-      name: isPremium
-        ? (normalizedEmail === "zeroline@live.com" ? "Zeroline VIP" : (name || email.split("@")[0] || "นักลงทุน"))
-        : (name || email.split("@")[0] || "นักลงทุน"),
+      name: override?.name || name || email.split("@")[0] || "นักลงทุน",
       email: normalizedEmail,
       plan: nextPlan,
       billing: nextBilling,
@@ -211,11 +209,26 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const logout = useCallback(() => {
-    setData((d) => ({ ...d, user: null, authToken: null }));
+    let tokenForLogout: string | null = null;
+    setData((d) => {
+      tokenForLogout = d.authToken || null;
+      return { ...d, user: null, authToken: null };
+    });
+
+    setTimeout(() => {
+      if (!tokenForLogout) return;
+      fetch("/api/auth/logout", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ token: tokenForLogout }),
+      }).catch(() => {
+        /* local logout already completed */
+      });
+    }, 0);
   }, []);
 
   const setPlan = useCallback(
-    (plan: PlanId, billing: "monthly" | "yearly" = "monthly") => {
+    (plan: PlanId, billing: "monthly" | "yearly" | "lifetime" = "monthly") => {
       let nextUserForSync: User | null = null;
       setData((d) => {
         if (!d.user) {
@@ -231,11 +244,11 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
             user: nextUserForSync,
           };
         }
-        const isPremium = PREMIUM_EMAILS.has(d.user.email.toLowerCase().trim());
+        const override = PLAN_OVERRIDES.get(d.user.email.toLowerCase().trim());
         nextUserForSync = {
           ...d.user,
-          plan: isPremium ? "premium" : plan,
-          billing: isPremium ? "yearly" : billing,
+          plan: override?.plan || plan,
+          billing: override?.billing || billing,
         };
         return {
           ...d,
@@ -266,11 +279,17 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     const normalizedSymbol = symbol.toUpperCase();
     let nextAction: "add" | "remove" = "add";
     let emailForSync: string | null = null;
+    let shouldSync = true;
 
     setData((d) => {
       const exists = d.watchlist.includes(normalizedSymbol);
       nextAction = exists ? "remove" : "add";
       emailForSync = d.user?.email.trim().toLowerCase() ?? null;
+      const limit = getPlan(d.user?.plan ?? "free").limits.watchlist;
+      if (!exists && limit !== "unlimited" && d.watchlist.length >= limit) {
+        shouldSync = false;
+        return d;
+      }
       return {
         ...d,
         watchlist: exists
@@ -280,6 +299,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     });
 
     setTimeout(() => {
+      if (!shouldSync) return;
       if (!emailForSync) return;
       fetch("/api/watchlist", {
         method: nextAction === "add" ? "POST" : "DELETE",

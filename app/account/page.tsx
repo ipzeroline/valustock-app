@@ -26,6 +26,7 @@ export default function AccountPage() {
   const plan = useCurrentPlan();
   const router = useRouter();
   const { t, lang } = useTranslation();
+  const showLocalPlanControls = process.env.NODE_ENV !== "production";
 
   if (!user) {
     return (
@@ -42,8 +43,12 @@ export default function AccountPage() {
     );
   }
 
-  const price =
-    user.billing === "monthly" ? plan.priceMonthly : plan.priceYearly;
+  const isLifetimePlan = plan.id === "lifetime" || user.billing === "lifetime";
+  const price = isLifetimePlan
+    ? plan.priceMonthly
+    : user.billing === "monthly"
+      ? plan.priceMonthly
+      : plan.priceYearly;
 
   const currentLocalPlan = PLAN_TRANS[lang || "th"][plan.id];
 
@@ -107,7 +112,11 @@ export default function AccountPage() {
                   </div>
                   {price > 0 && (
                     <div className="text-xs text-muted">
-                      {user.billing === "monthly" ? (lang === "th" ? "/เดือน" : "/mo") : (lang === "th" ? "/ปี" : "/yr")}
+                      {isLifetimePlan
+                        ? (lang === "th" ? "/ครั้งเดียว" : "/once")
+                        : user.billing === "monthly"
+                          ? (lang === "th" ? "/เดือน" : "/mo")
+                          : (lang === "th" ? "/ปี" : "/yr")}
                     </div>
                   )}
                 </>
@@ -126,7 +135,7 @@ export default function AccountPage() {
           </ul>
 
           {/* billing toggle for paid plans */}
-          {plan.id !== "free" && (
+          {showLocalPlanControls && plan.id !== "free" && !isLifetimePlan && (
             <div className="mt-5 flex items-center justify-between rounded-xl border border-line px-4 py-3">
               <span className="text-sm">{t("account.billingLabel")}</span>
               <div className="inline-flex items-center gap-1 rounded-full border border-line p-1">
@@ -149,16 +158,22 @@ export default function AccountPage() {
               </div>
             </div>
           )}
+          {isLifetimePlan && (
+            <div className="mt-5 flex items-center justify-between rounded-xl border border-gold/25 bg-gold/5 px-4 py-3">
+              <span className="text-sm font-semibold text-ink">{t("account.billingLabel")}</span>
+              <Badge tone="gold">{lang === "th" ? "จ่ายครั้งเดียว ตลอดชีพ" : "One-time Lifetime"}</Badge>
+            </div>
+          )}
 
           <div className="mt-5 flex flex-wrap gap-3">
-            {plan.id !== "premium" && (
+            {plan.id !== "premium" && plan.id !== "lifetime" && (
               <Link href="/pricing">
                 <Button variant="gold" size="sm">
                   <Crown className="h-4 w-4" /> {t("common.upgrade")}
                 </Button>
               </Link>
             )}
-            {plan.id !== "free" && (
+            {showLocalPlanControls && plan.id !== "free" && (
               <Button
                 variant="outline"
                 size="sm"
@@ -172,36 +187,41 @@ export default function AccountPage() {
       </Card>
 
       {/* quick plan switch (demo convenience) */}
-      <Card>
-        <CardHeader
-          title={lang === "th" ? "เปลี่ยนแพ็กเกจอย่างรวดเร็ว" : "Instant Demo Role Swapper"}
-          subtitle={lang === "th" ? "เดโม: ทดลองสลับสิทธิ์เพื่อดูฟีเจอร์ที่ปลดล็อก" : "Demo Mode: swap roles instantly to verify locked capabilities."}
-          icon={<Shield className="h-4 w-4" />}
-        />
-        <div className="grid gap-3 p-5 sm:grid-cols-3">
-          {PLANS.map((p) => {
-            const tr = PLAN_TRANS[lang || "th"][p.id];
-            return (
-              <button
-                key={p.id}
-                onClick={() => setPlan(p.id, user.billing)}
-                className={`rounded-xl border p-4 text-left transition ${
-                  plan.id === p.id
-                    ? "border-brand bg-brand-soft"
-                    : "border-line hover:border-brand/40"
-                }`}
-              >
-                <div className="font-display font-semibold">{tr.name}</div>
-                <div className="num text-xs text-muted">
-                  {p.priceMonthly === 0 
-                    ? (lang === "th" ? "ฟรี" : "Free") 
-                    : `${num(p.priceMonthly, 0)} ${lang === "th" ? "฿/ด." : "THB/mo"}`}
-                </div>
-              </button>
-            );
-          })}
-        </div>
-      </Card>
+      {showLocalPlanControls && (
+        <Card>
+          <CardHeader
+            title={lang === "th" ? "เปลี่ยนแพ็กเกจอย่างรวดเร็ว" : "Instant Demo Role Swapper"}
+            subtitle={lang === "th" ? "เดโม: ทดลองสลับสิทธิ์เพื่อดูฟีเจอร์ที่ปลดล็อก" : "Demo Mode: swap roles instantly to verify locked capabilities."}
+            icon={<Shield className="h-4 w-4" />}
+          />
+          <div className="grid gap-3 p-5 sm:grid-cols-2 lg:grid-cols-4">
+            {PLANS.map((p) => {
+              const tr = PLAN_TRANS[lang || "th"][p.id];
+              const nextBilling = p.id === "lifetime" ? "lifetime" : user.billing === "yearly" ? "yearly" : "monthly";
+              return (
+                <button
+                  key={p.id}
+                  onClick={() => setPlan(p.id, nextBilling)}
+                  className={`rounded-xl border p-4 text-left transition ${
+                    plan.id === p.id
+                      ? "border-brand bg-brand-soft"
+                      : "border-line hover:border-brand/40"
+                  }`}
+                >
+                  <div className="font-display font-semibold">{tr.name}</div>
+                  <div className="num text-xs text-muted">
+                    {p.priceMonthly === 0 
+                      ? (lang === "th" ? "ฟรี" : "Free") 
+                      : p.id === "lifetime"
+                        ? `${num(p.priceMonthly, 0)} ${lang === "th" ? "฿/ครั้งเดียว" : "THB/once"}`
+                        : `${num(p.priceMonthly, 0)} ${lang === "th" ? "฿/ด." : "THB/mo"}`}
+                  </div>
+                </button>
+              );
+            })}
+          </div>
+        </Card>
+      )}
 
       {/* preferences */}
       <Card>

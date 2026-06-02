@@ -88,7 +88,7 @@ export default function AdminUsers() {
           {lang === "th" ? "จัดการสมาชิกระบบ" : "Manage Members"}
         </h1>
         <p className="text-xs text-muted mt-1.5">
-          สมัครสมาชิกใหม่ อัปเกรดระดับแผนผู้ใช้ (Free / Pro / Premium) และลบบัญชีผู้ใช้งานระบบ
+          สมัครสมาชิกใหม่ อัปเกรดระดับแผนผู้ใช้ (Free / Pro / Premium / Lifetime) และลบบัญชีผู้ใช้งานระบบ
         </p>
       </div>
 
@@ -140,6 +140,7 @@ export default function AdminUsers() {
                   <option value="free">Free</option>
                   <option value="pro">Pro</option>
                   <option value="premium">Premium</option>
+                  <option value="lifetime">Lifetime</option>
                 </select>
               </div>
               <div>
@@ -153,6 +154,7 @@ export default function AdminUsers() {
                 >
                   <option value="monthly">{lang === "th" ? "รายเดือน" : "Monthly"}</option>
                   <option value="yearly">{lang === "th" ? "รายปี" : "Annually"}</option>
+                  <option value="lifetime">{lang === "th" ? "ตลอดชีพ" : "Lifetime"}</option>
                 </select>
               </div>
             </div>
@@ -193,8 +195,8 @@ export default function AdminUsers() {
                         <div className="text-[10px] text-muted">{u.email}</div>
                       </td>
                       <td className="p-3.5">
-                        <Badge tone={u.plan === "premium" ? "gold" : u.plan === "pro" ? "brand" : "muted"} className="capitalize font-bold text-[10px]">
-                          {u.plan} ({u.billing === "monthly" ? "mo" : "yr"})
+                        <Badge tone={u.plan === "premium" || u.plan === "lifetime" ? "gold" : u.plan === "pro" ? "brand" : "muted"} className="capitalize font-bold text-[10px]">
+                          {u.plan} ({u.billing === "lifetime" ? "life" : u.billing === "monthly" ? "mo" : "yr"})
                         </Badge>
                       </td>
                       <td className="p-3.5 text-muted">

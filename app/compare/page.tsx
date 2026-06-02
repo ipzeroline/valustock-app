@@ -1,15 +1,16 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { STOCKS, getStock } from "@/lib/stocks";
 import {
   computeValuation,
   defaultDCFParams,
 } from "@/lib/valuation";
-import { useCurrentPlan } from "@/lib/store";
+import { useCurrentPlan, useStore } from "@/lib/store";
 import { baht, num, pct, dollar, nav } from "@/lib/format";
 import { Card, CardHeader, Badge } from "@/components/ui/Card";
+import { Button } from "@/components/ui/Button";
 import { LockedCard } from "@/components/Paywall";
 import { useTranslation } from "@/lib/translations";
 import { AssetLogo } from "@/components/AssetLogo";
@@ -26,6 +27,7 @@ import {
   Zap,
   Shield,
   CheckCircle,
+  Trash2,
 } from "@/lib/icons";
 
 const verdictTone = {
@@ -36,20 +38,54 @@ const verdictTone = {
 
 type ChartMetric = "mos" | "yield" | "roe" | "margin";
 
+type SavedComparisonSet = {
+  id: string;
+  name: string;
+  symbols: string[];
+  chartMetric: ChartMetric;
+  updatedAt?: string;
+};
+
 export default function ComparePage() {
   const plan = useCurrentPlan();
+  const { user } = useStore();
   const { t, lang } = useTranslation();
 
   // Picked stocks (up to 4)
   const [picked, setPicked] = useState<string[]>(["PTT", "AOT", "KBANK"]);
   const [searchQuery, setSearchQuery] = useState("");
   const [activeChartMetric, setActiveChartMetric] = useState<ChartMetric>("mos");
+  const [savedSets, setSavedSets] = useState<SavedComparisonSet[]>([]);
+  const [setName, setSetName] = useState("");
+  const [savingSet, setSavingSet] = useState(false);
+  const [setsLoading, setSetsLoading] = useState(false);
+  const [setMessage, setSetMessage] = useState("");
   const [openSections, setOpenSections] = useState<Record<string, boolean>>({
     valuation: true,
     profitability: true,
     solvency: true,
     funds: false,
   });
+
+  const loadSavedSets = async () => {
+    if (!user?.email) return;
+    setSetsLoading(true);
+    setSetMessage("");
+    try {
+      const res = await fetch(`/api/compare?email=${encodeURIComponent(user.email)}`);
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Could not load comparison sets");
+      setSavedSets(Array.isArray(data.sets) ? data.sets : []);
+    } catch (err: any) {
+      setSetMessage(err.message || (lang === "th" ? "โหลดชุดเปรียบเทียบไม่สำเร็จ" : "Unable to load saved sets"));
+    } finally {
+      setSetsLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    loadSavedSets();
+  }, [user?.email]);
 
   const faqItems = [
     {
@@ -212,6 +248,65 @@ export default function ComparePage() {
     setOpenSections((prev) => ({ ...prev, [sec]: !prev[sec] }));
   };
 
+  const saveCurrentSet = async () => {
+    if (!user?.email) {
+      setSetMessage(lang === "th" ? "กรุณา login ก่อนบันทึกชุดเปรียบเทียบ" : "Please log in before saving a comparison set.");
+      return;
+    }
+    if (picked.length < 2) {
+      setSetMessage(lang === "th" ? "เลือกอย่างน้อย 2 หลักทรัพย์ก่อนบันทึก" : "Pick at least 2 assets before saving.");
+      return;
+    }
+
+    setSavingSet(true);
+    setSetMessage("");
+    try {
+      const res = await fetch("/api/compare", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          email: user.email,
+          name: setName || picked.join(" vs "),
+          symbols: picked,
+          chartMetric: activeChartMetric,
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Could not save comparison set");
+      setSetName("");
+      setSetMessage(lang === "th" ? "บันทึกชุดเปรียบเทียบแล้ว" : "Comparison set saved.");
+      await loadSavedSets();
+    } catch (err: any) {
+      setSetMessage(err.message || (lang === "th" ? "บันทึกไม่สำเร็จ" : "Unable to save comparison set"));
+    } finally {
+      setSavingSet(false);
+    }
+  };
+
+  const loadSet = (set: SavedComparisonSet) => {
+    setPicked(set.symbols.slice(0, 4));
+    setActiveChartMetric(set.chartMetric || "mos");
+    setSetMessage(lang === "th" ? `โหลดชุด ${set.name} แล้ว` : `Loaded ${set.name}.`);
+  };
+
+  const deleteSet = async (id: string) => {
+    if (!user?.email) return;
+    setSetMessage("");
+    try {
+      const res = await fetch("/api/compare", {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: user.email, id }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Could not delete comparison set");
+      setSavedSets((sets) => sets.filter((set) => set.id !== id));
+      setSetMessage(lang === "th" ? "ลบชุดเปรียบเทียบแล้ว" : "Comparison set deleted.");
+    } catch (err: any) {
+      setSetMessage(err.message || (lang === "th" ? "ลบไม่สำเร็จ" : "Unable to delete comparison set"));
+    }
+  };
+
   const formatPrice = (s: any, p: number) => {
     if (s.assetType === "US_STOCK" || s.currency === "USD") return dollar(p);
     if (s.assetType === "FUND") return nav(p);
@@ -362,6 +457,101 @@ export default function ComparePage() {
           )}
         </div>
       </div>
+
+      <Card className="border border-line/80 bg-surface/35 p-4">
+        <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(320px,420px)] lg:items-start">
+          <div>
+            <div className="flex items-start gap-3">
+              <span className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-brand-soft text-brand">
+                <Star className="h-4.5 w-4.5" />
+              </span>
+              <div className="min-w-0">
+                <h2 className="font-display text-sm font-black text-ink">
+                  {lang === "th" ? "บันทึกชุดเปรียบเทียบลงบัญชี" : "Save Comparison Set"}
+                </h2>
+                <p className="mt-1 text-xs font-semibold leading-relaxed text-muted">
+                  {lang === "th"
+                    ? "ระบบจะเก็บเฉพาะชื่อชุด หุ้นที่เลือก และ metric ของกราฟ ไม่เก็บผลคำนวณถาวร เพื่อให้เปิดครั้งหน้าคำนวณจากข้อมูลล่าสุด"
+                    : "We store only the set name, selected tickers, and chart metric. Calculations are refreshed from the latest data whenever you reopen it."}
+                </p>
+              </div>
+            </div>
+
+            <div className="mt-4 grid gap-2 sm:grid-cols-[minmax(0,1fr)_auto]">
+              <input
+                className="input-base text-sm"
+                value={setName}
+                onChange={(e) => setSetName(e.target.value)}
+                placeholder={lang === "th" ? `เช่น ${picked.join(" vs ")}` : `e.g. ${picked.join(" vs ")}`}
+              />
+              <Button
+                type="button"
+                size="sm"
+                onClick={saveCurrentSet}
+                disabled={savingSet || picked.length < 2}
+                className="w-full sm:w-auto"
+              >
+                <CheckCircle className="h-4 w-4" />
+                {savingSet
+                  ? (lang === "th" ? "กำลังบันทึก..." : "Saving...")
+                  : (lang === "th" ? "บันทึกชุดนี้" : "Save Set")}
+              </Button>
+            </div>
+            {!user?.email && (
+              <p className="mt-2 text-[11px] font-semibold text-gold">
+                {lang === "th" ? "ต้อง login ก่อนจึงจะบันทึกลง database ได้" : "Log in to save comparison sets to the database."}
+              </p>
+            )}
+            {setMessage && (
+              <p className="mt-2 text-[11px] font-semibold text-muted">{setMessage}</p>
+            )}
+          </div>
+
+          <div className="rounded-xl border border-line bg-elevate/35 p-3">
+            <div className="flex items-center justify-between gap-3">
+              <div className="font-display text-xs font-black text-ink">
+                {lang === "th" ? "ชุดที่บันทึกไว้" : "Saved Sets"}
+              </div>
+              <Badge tone="brand" className="text-[9px]">{savedSets.length}</Badge>
+            </div>
+
+            <div className="mt-3 max-h-44 space-y-2 overflow-y-auto pr-1">
+              {setsLoading ? (
+                <div className="py-6 text-center text-[11px] font-semibold text-muted">
+                  {lang === "th" ? "กำลังโหลด..." : "Loading..."}
+                </div>
+              ) : savedSets.length === 0 ? (
+                <div className="py-6 text-center text-[11px] font-semibold text-muted">
+                  {lang === "th" ? "ยังไม่มีชุดที่บันทึก" : "No saved sets yet"}
+                </div>
+              ) : (
+                savedSets.map((set) => (
+                  <div key={set.id} className="flex items-center gap-2 rounded-lg border border-line bg-surface/60 p-2">
+                    <button
+                      type="button"
+                      onClick={() => loadSet(set)}
+                      className="min-w-0 flex-1 text-left"
+                    >
+                      <div className="truncate text-xs font-black text-ink">{set.name}</div>
+                      <div className="mt-0.5 truncate font-mono text-[10px] font-semibold text-muted">
+                        {set.symbols.join(" / ")} · {set.chartMetric.toUpperCase()}
+                      </div>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => deleteSet(set.id)}
+                      className="grid h-8 w-8 shrink-0 place-items-center rounded-lg text-muted transition hover:bg-down-soft hover:text-down"
+                      title={lang === "th" ? "ลบชุดนี้" : "Delete set"}
+                    >
+                      <Trash2 className="h-3.5 w-3.5" />
+                    </button>
+                  </div>
+                ))
+              )}
+            </div>
+          </div>
+        </div>
+      </Card>
 
       <section className="grid gap-3 md:grid-cols-3">
         {compareSteps.map((item) => (

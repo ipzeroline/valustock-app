@@ -35,6 +35,7 @@ export interface Financials {
   cash: number; // ล้านบาท หรือ ล้านดอลลาร์
   dividendPerShare: number; // ต่อหุ้น
   growthRate: number; // อัตราเติบโต FCF คาดการณ์ (ทศนิยม เช่น 0.08)
+  totalAssets?: number; // สินทรัพย์รวม (ล้านบาท หรือ ล้านดอลลาร์)
 }
 
 export interface Stock {
@@ -118,7 +119,7 @@ export interface Valuation {
 }
 
 // ---- Membership ----
-export type PlanId = "free" | "pro" | "premium";
+export type PlanId = "free" | "pro" | "premium" | "lifetime";
 
 export interface Plan {
   id: PlanId;
@@ -133,10 +134,15 @@ export interface Plan {
     maxStocks: number | "unlimited";
     dcf: boolean;
     screener: boolean;
+    portfolio: boolean;
     watchlist: number | "unlimited";
     compare: boolean;
     exportData: boolean;
     alerts: boolean;
+    aiInsights: number | "unlimited";
+    scenarioDcf: boolean;
+    alertChannels: string[];
+    assetClasses: string[];
   };
 }
 
@@ -144,7 +150,7 @@ export interface User {
   name: string;
   email: string;
   plan: PlanId;
-  billing: "monthly" | "yearly";
+  billing: "monthly" | "yearly" | "lifetime";
   joinedAt: string;
 }
 

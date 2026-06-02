@@ -23,6 +23,7 @@ import {
   ChevronDown,
   ChevronUp,
   ArrowRight,
+  Database,
 } from "@/lib/icons";
 
 export default function PricingPage() {
@@ -38,7 +39,9 @@ export default function PricingPage() {
 
   const choose = (id: PlanId) => {
     if (id === "free") {
-      setPlan("free", billing);
+      if (process.env.NODE_ENV !== "production") {
+        setPlan("free", billing);
+      }
       router.push("/dashboard");
       return;
     }
@@ -50,6 +53,7 @@ export default function PricingPage() {
   const confirm = async () => {
     if (!checkout) return;
     const normalizedEmail = (user?.email || checkoutEmail).trim().toLowerCase();
+    const checkoutBilling = checkout === "lifetime" ? "lifetime" : billing;
 
     if (!normalizedEmail || !normalizedEmail.includes("@")) {
       setCheckoutError(lang === "th" ? "กรุณากรอกอีเมลที่ถูกต้อง" : "Please enter a valid email address.");
@@ -65,7 +69,7 @@ export default function PricingPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           plan: checkout,
-          billing,
+          billing: checkoutBilling,
           email: normalizedEmail,
           name: user?.name,
         }),
@@ -88,7 +92,9 @@ export default function PricingPage() {
 
   const plan = checkout ? getPlan(checkout) : null;
   const price = plan
-    ? billing === "monthly"
+    ? plan.id === "lifetime"
+      ? plan.priceMonthly
+      : billing === "monthly"
       ? plan.priceMonthly
       : plan.priceYearly
     : 0;
@@ -100,7 +106,7 @@ export default function PricingPage() {
         "ธีมสว่าง/มืด",
         "ใช้งานบนมือถือและเดสก์ท็อป",
         "อัปเดตข้อมูลสม่ำเสมอ",
-        "ยกเลิกได้ทุกเมื่อ",
+        "รายเดือน/รายปีเปลี่ยนหรือยกเลิกได้",
       ]
     : [
         "SET Thai & US stock databases",
@@ -108,12 +114,12 @@ export default function PricingPage() {
         "Light & Dark UI options",
         "Mobile & Desktop responsive layout",
         "Prism continuous data sync",
-        "Cancel subscription anytime",
+        "Change or cancel monthly/yearly plans anytime",
       ];
 
   const paymentMethods = lang === "th"
-    ? ["ชำระผ่าน Stripe Checkout", "รองรับบัตรเครดิต/เดบิตและ Link", "ใบเสร็จและข้อมูลสมาชิกซิงก์อัตโนมัติ"]
-    : ["Secured by Stripe Checkout", "Supports credit/debit cards and Link", "Receipts and membership sync automatically"];
+    ? ["ชำระผ่าน Stripe Checkout", "รองรับบัตรเครดิต/เดบิตและ Link", "รายเดือน/รายปีเป็นสมาชิกต่ออายุ ส่วน Lifetime ชำระครั้งเดียว", "ใบเสร็จและข้อมูลสมาชิกซิงก์อัตโนมัติ"]
+    : ["Secured by Stripe Checkout", "Supports credit/debit cards and Link", "Monthly/yearly plans renew; Lifetime is one-time", "Receipts and membership sync automatically"];
 
   const planGuides = [
     {
@@ -155,8 +161,22 @@ export default function PricingPage() {
           : "Best for active portfolios that need comparisons, margin-of-safety alerts, and data exports.",
       points:
         lang === "th"
-          ? ["เปรียบเทียบหุ้นหลายตัว", "แจ้งเตือนราคาต่ำกว่ามูลค่า", "ส่งออก CSV"]
-          : ["Multi-stock comparison", "Below-value price alerts", "CSV export"],
+          ? ["แนวคิดข้อมูลสดแบบ WebSocket", "แจ้งเตือนราคาต่ำกว่ามูลค่า", "ส่งออก CSV"]
+          : ["WebSocket-style live signals", "Below-value price alerts", "CSV export"],
+    },
+    {
+      id: "lifetime" as PlanId,
+      icon: Database,
+      title: lang === "th" ? "Lifetime เหมาะกับใคร" : "Who Lifetime Is For",
+      badge: lang === "th" ? "จ่ายครั้งเดียว" : "One-time",
+      desc:
+        lang === "th"
+          ? "เหมาะกับผู้ใช้ระยะยาวที่ต้องการ Premium ครบ พร้อมงาน export/backtest และแนวคิด bulk historical data จาก Flat Files"
+          : "Best for long-term users who want Premium access plus export/backtest workflows inspired by bulk historical flat files.",
+      points:
+        lang === "th"
+          ? ["จ่ายครั้งเดียว 888 บาท", "เหมาะกับใช้งานเกิน 10 เดือน", "รองรับงานข้อมูลย้อนหลังจำนวนมาก"]
+          : ["One-time 888 THB", "Best beyond 10 months", "Bulk historical workflow"],
     },
   ];
 
@@ -166,12 +186,12 @@ export default function PricingPage() {
       desc: lang === "th" ? "ทดลองใช้ได้ทันที ไม่ต้องใส่บัตรเครดิต" : "Try instantly with no credit card required.",
     },
     {
-      title: lang === "th" ? "ยกเลิกได้ทุกเมื่อ" : "Cancel anytime",
-      desc: lang === "th" ? "เปลี่ยนแผนหรือยกเลิกได้ตามรอบบิล" : "Change or cancel your plan based on billing cycle.",
+      title: lang === "th" ? "ยืดหยุ่นตามรอบบิล" : "Flexible billing",
+      desc: lang === "th" ? "รายเดือน/รายปีเปลี่ยนหรือยกเลิกได้ ส่วน Lifetime จ่ายครั้งเดียว" : "Change or cancel monthly/yearly plans; Lifetime is one-time.",
     },
     {
       title: lang === "th" ? "จ่ายปลอดภัยผ่าน Stripe" : "Secure Stripe billing",
-      desc: lang === "th" ? "ชำระแบบสมาชิกด้วยบัตรเครดิต/เดบิตและ Link ผ่าน Stripe Checkout" : "Recurring card and Link subscriptions are handled by Stripe Checkout.",
+      desc: lang === "th" ? "ชำระแบบสมาชิกหรือจ่ายครั้งเดียวด้วยบัตรเครดิต/เดบิตและ Link ผ่าน Stripe Checkout" : "Card and Link subscriptions or one-time payments are handled by Stripe Checkout.",
     },
     {
       title: lang === "th" ? "ข้อมูลเพื่อการวิเคราะห์" : "Research focused",
@@ -232,7 +252,7 @@ export default function PricingPage() {
       offers: PLANS.map((p) => ({
         "@type": "Offer",
         name: PLAN_TRANS[lang][p.id].name,
-        price: billing === "monthly" ? p.priceMonthly : p.priceYearly,
+        price: p.id === "lifetime" ? p.priceMonthly : billing === "monthly" ? p.priceMonthly : p.priceYearly,
         priceCurrency: "THB",
         url: "https://valustock.com/pricing",
         availability: "https://schema.org/InStock",
@@ -297,7 +317,7 @@ export default function PricingPage() {
       </div>
 
       {/* SECTION 2: PLANS CARD GRID */}
-      <div className="grid gap-5 md:grid-cols-3 animate-fade-up [animation-delay:80ms]">
+      <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-4 animate-fade-up [animation-delay:80ms]">
         {PLANS.map((p) => (
           <PlanCard
             key={p.id}
@@ -321,7 +341,7 @@ export default function PricingPage() {
               : "Start from your investing workflow and upgrade later whenever you need more tools."}
           </p>
         </div>
-        <div className="grid gap-4 md:grid-cols-3">
+        <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
           {planGuides.map((guide) => {
             const Icon = guide.icon;
             return (
@@ -336,7 +356,7 @@ export default function PricingPage() {
                 <div className="flex items-start gap-3">
                   <span
                     className={`grid h-10 w-10 shrink-0 place-items-center rounded-xl ${
-                      guide.id === "premium" ? "bg-gold/15 text-gold" : "bg-brand-soft text-brand"
+                      guide.id === "premium" || guide.id === "lifetime" ? "bg-gold/15 text-gold" : "bg-brand-soft text-brand"
                     }`}
                   >
                     <Icon className="h-5 w-5" />
@@ -359,7 +379,7 @@ export default function PricingPage() {
                 </ul>
                 <Button
                   className="mt-5 w-full"
-                  variant={guide.id === "pro" ? "primary" : guide.id === "premium" ? "gold" : "outline"}
+                  variant={guide.id === "pro" ? "primary" : guide.id === "premium" || guide.id === "lifetime" ? "gold" : "outline"}
                   onClick={() => choose(guide.id)}
                 >
                   {guide.id === "free"
@@ -385,6 +405,54 @@ export default function PricingPage() {
         ))}
       </section>
 
+      <section className="grid gap-4 md:grid-cols-3 animate-fade-up [animation-delay:115ms]">
+        {[
+          {
+            icon: Layers,
+            title: lang === "th" ? "REST API Data" : "REST API Data",
+            plan: "Pro 49",
+            desc:
+              lang === "th"
+                ? "เหมาะกับการเรียกข้อมูลรายหุ้น ข่าว งบการเงิน และกราฟย้อนหลังแบบ on-demand ตามแนวทาง Massive REST Quickstart"
+                : "On-demand ticker, news, financial, and historical chart data aligned with Massive REST workflows.",
+          },
+          {
+            icon: Zap,
+            title: lang === "th" ? "WebSocket Signals" : "WebSocket Signals",
+            plan: "Premium 88",
+            desc:
+              lang === "th"
+                ? "เหมาะกับ dashboard สด การแจ้งเตือนราคา และสัญญาณพอร์ตแบบใกล้ real-time ตามแนวทาง Massive WebSocket"
+                : "Built for live dashboards, price alerts, and near real-time portfolio signals inspired by Massive WebSocket.",
+          },
+          {
+            icon: Database,
+            title: lang === "th" ? "Flat Files Workflow" : "Flat Files Workflow",
+            plan: "Lifetime 888",
+            desc:
+              lang === "th"
+                ? "เหมาะกับงานข้อมูลย้อนหลังจำนวนมาก export/backtest และ workflow แบบ bulk historical data ตามแนวทาง Massive Flat Files"
+                : "For bulk historical exports, backtesting, and flat-file style research workflows.",
+          },
+        ].map((item) => {
+          const Icon = item.icon;
+          return (
+            <Card key={item.title} className="border border-line bg-surface/35 p-5">
+              <div className="flex items-start gap-3">
+                <span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-brand-soft text-brand">
+                  <Icon className="h-5 w-5" />
+                </span>
+                <div>
+                  <span className="text-[10px] font-black uppercase tracking-wide text-brand">{item.plan}</span>
+                  <h3 className="font-display text-base font-black text-ink">{item.title}</h3>
+                </div>
+              </div>
+              <p className="mt-3 text-xs font-semibold leading-relaxed text-muted">{item.desc}</p>
+            </Card>
+          );
+        })}
+      </section>
+
       {/* SECTION 5: 🏆 HIGH-DENSITY MONETIZATION FEATURE MATRIX */}
       <Card className="border border-line/80 overflow-hidden animate-fade-up [animation-delay:120ms] bg-surface/30">
         <CardHeader
@@ -400,12 +468,13 @@ export default function PricingPage() {
                 <th className="px-5 py-3.5 text-center w-40">FREE</th>
                 <th className="px-5 py-3.5 text-center w-40 text-brand">PRO</th>
                 <th className="px-5 py-3.5 text-center w-40 text-gold">PREMIUM</th>
+                <th className="px-5 py-3.5 text-center w-40 text-gold">LIFETIME</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-line/60 bg-surface/30">
               {/* Category Header 1 */}
               <tr className="bg-elevate/25">
-                <td colSpan={4} className="px-5 py-2 font-display font-extrabold text-[10px] uppercase text-muted tracking-wider">
+                <td colSpan={5} className="px-5 py-2 font-display font-extrabold text-[10px] uppercase text-muted tracking-wider">
                   📈 {lang === "th" ? "ความแข็งแกร่งทางการเงิน & การประเมินมูลค่า" : "Core Valuation & Financial Analysis"}
                 </td>
               </tr>
@@ -445,7 +514,7 @@ export default function PricingPage() {
 
               {/* Category Header 2 */}
               <tr className="bg-elevate/25">
-                <td colSpan={4} className="px-5 py-2 font-display font-extrabold text-[10px] uppercase text-muted tracking-wider">
+                <td colSpan={5} className="px-5 py-2 font-display font-extrabold text-[10px] uppercase text-muted tracking-wider">
                   🔔 {lang === "th" ? "การแจ้งเตือนราคาและความปลอดภัยพอร์ต" : "Notifications & Dynamic Price Alerts"}
                 </td>
               </tr>
@@ -473,7 +542,7 @@ export default function PricingPage() {
 
               {/* Category Header 3 */}
               <tr className="bg-elevate/25">
-                <td colSpan={4} className="px-5 py-2 font-display font-extrabold text-[10px] uppercase text-muted tracking-wider">
+                <td colSpan={5} className="px-5 py-2 font-display font-extrabold text-[10px] uppercase text-muted tracking-wider">
                   💼 {lang === "th" ? "การจัดการพอร์ตและข่าวกระแสเงินสด" : "Portfolios, Watchlists & Inbound News"}
                 </td>
               </tr>
@@ -491,9 +560,9 @@ export default function PricingPage() {
               />
               <MatrixRow
                 label={lang === "th" ? "11. จำนวน Watchlist" : "11. Watchlists Folder Capacity"}
-                free={lang === "th" ? "สร้างได้สูงสุด 1 แผง" : "Max 1 Watchlist"}
-                pro={lang === "th" ? "สร้างได้สูงสุด 3 แผง" : "Max 3 Watchlists"}
-                premium={lang === "th" ? "สร้างได้ไม่จำกัดจำนวน" : "Unlimited watchlists"}
+                free={lang === "th" ? "บันทึกได้ 3 รายการ" : "Track 3 items"}
+                pro={lang === "th" ? "ไม่จำกัดรายการ" : "Unlimited items"}
+                premium={lang === "th" ? "ไม่จำกัดรายการ" : "Unlimited items"}
                 premiumStyle="gold"
               />
               <MatrixRow
@@ -523,8 +592,8 @@ export default function PricingPage() {
 
       <p className="text-center text-xs text-muted animate-fade-up [animation-delay:160ms]">
         {lang === "th" 
-          ? "ราคารวมภาษีมูลค่าเพิ่มแล้ว · ชำระแบบสมาชิกอย่างปลอดภัยผ่าน Stripe Checkout" 
-          : "Prices include VAT. Secured by Stripe Checkout for recurring card subscriptions."}
+          ? "ราคารวมภาษีมูลค่าเพิ่มแล้ว · ชำระรายเดือน/รายปีหรือจ่ายครั้งเดียวอย่างปลอดภัยผ่าน Stripe Checkout" 
+          : "Prices include VAT. Secured by Stripe Checkout for recurring subscriptions and one-time payments."}
       </p>
 
       {/* SECTION 7: FAQ */}
@@ -606,9 +675,11 @@ export default function PricingPage() {
                   {lang === "th" ? `แพ็กเกจ ${PLAN_TRANS[lang][plan.id].name}` : `${PLAN_TRANS[lang][plan.id].name} Tier`}
                 </div>
                 <div className="text-xs text-muted">
-                  {billing === "monthly" 
-                    ? (lang === "th" ? "ชำระรายเดือน" : "Billed Monthly") 
-                    : (lang === "th" ? "ชำระรายปี" : "Billed Annually")}
+                  {plan.id === "lifetime"
+                    ? (lang === "th" ? "ชำระครั้งเดียว ใช้งานตลอดชีพ" : "One-time lifetime payment")
+                    : billing === "monthly"
+                      ? (lang === "th" ? "ชำระรายเดือน" : "Billed Monthly")
+                      : (lang === "th" ? "ชำระรายปี" : "Billed Annually")}
                 </div>
               </div>
               <div className="num font-display text-xl font-bold text-ink">
@@ -677,6 +748,7 @@ function MatrixRow({
   free,
   pro,
   premium,
+  lifetime,
   freeStyle = "normal",
   proStyle = "normal",
   premiumStyle = "normal",
@@ -685,10 +757,12 @@ function MatrixRow({
   free: string;
   pro: string;
   premium: string;
+  lifetime?: string;
   freeStyle?: "normal" | "muted";
   proStyle?: "normal" | "muted" | "brand";
   premiumStyle?: "normal" | "muted" | "gold";
 }) {
+  const lifetimeValue = lifetime || premium;
   return (
     <tr className="hover:bg-elevate/25 transition">
       <td className="px-5 py-3 font-semibold text-ink/90 border-r border-line/40">{label}</td>
@@ -701,6 +775,7 @@ function MatrixRow({
       <td className={`px-5 py-3 text-center font-mono font-bold ${
         premium === "❌" ? "text-down text-sm" : premiumStyle === "muted" ? "text-muted" : "text-gold"
       }`}>{premium}</td>
+      <td className="px-5 py-3 text-center font-mono font-bold text-gold">{lifetimeValue}</td>
     </tr>
   );
 }

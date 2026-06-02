@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState, useMemo } from "react";
+import Link from "next/link";
 import { STOCKS, getStock } from "@/lib/stocks";
 import { computeValuation, defaultDCFParams } from "@/lib/valuation";
 import { useCurrentPlan, useStore } from "@/lib/store";
@@ -27,6 +28,7 @@ import {
   Shield,
   Layers,
   X,
+  Crown,
   ChevronRight,
 } from "@/lib/icons";
 
@@ -38,6 +40,9 @@ interface Transaction {
   action: "BUY" | "SELL";
   price: number;
   shares: number;
+  fee?: number;
+  currency?: string;
+  notes?: string;
   date: string;
 }
 
@@ -56,6 +61,9 @@ export default function PortfolioPage() {
   const [txAction, setTxAction] = useState<"BUY" | "SELL">("BUY");
   const [txPrice, setTxPrice] = useState<string>("32.5");
   const [txShares, setTxShares] = useState<string>("500");
+  const [txFee, setTxFee] = useState<string>("0");
+  const [txCurrency, setTxCurrency] = useState<string>("THB");
+  const [txNotes, setTxNotes] = useState<string>("");
   const [txDate, setTxDate] = useState("2026-05-30");
 
   // Backtest target states
@@ -82,19 +90,53 @@ export default function PortfolioPage() {
     Promise.all([
       fetch(`/api/portfolio/transactions?email=${encodeURIComponent(email)}`)
         .then((res) => res.json().then((data) => ({ ok: res.ok, data }))),
-      fetch(`/api/portfolio/alerts?email=${encodeURIComponent(email)}`)
+      plan.limits.alerts
+        ? fetch(`/api/portfolio/alerts?email=${encodeURIComponent(email)}`)
+          .then((res) => res.json().then((data) => ({ ok: res.ok, data })))
+        : Promise.resolve({ ok: true, data: { alerts: [] } }),
+      fetch(`/api/portfolio/settings?email=${encodeURIComponent(email)}`)
         .then((res) => res.json().then((data) => ({ ok: res.ok, data }))),
     ])
-      .then(([txRes, alertRes]) => {
+      .then(([txRes, alertRes, settingsRes]) => {
         if (!txRes.ok) throw new Error(txRes.data.detail || txRes.data.error || "Unable to load portfolio transactions");
         if (!alertRes.ok) throw new Error(alertRes.data.detail || alertRes.data.error || "Unable to load portfolio alerts");
         setTransactions(txRes.data.transactions || []);
         setAlerts(alertRes.data.alerts || []);
+        if (settingsRes.ok && settingsRes.data.settings) {
+          const settings = settingsRes.data.settings;
+          if (settings.activeTab === "ledger" || settings.activeTab === "backtest" || settings.activeTab === "alerts") {
+            setActiveTab(settings.activeTab);
+          }
+          if (settings.backtestSymbol) setBacktestSymbol(settings.backtestSymbol);
+          if (Number(settings.backtestYears) === 3 || Number(settings.backtestYears) === 5) {
+            setBacktestYears(Number(settings.backtestYears));
+          }
+        }
       })
       .catch((err) => {
         setPortfolioError(err.message || (lang === "th" ? "โหลดพอร์ตจากฐานข้อมูลไม่สำเร็จ" : "Unable to load portfolio from database"));
       });
-  }, [user?.email, lang]);
+  }, [user?.email, lang, plan.limits.alerts]);
+
+  useEffect(() => {
+    if (!user?.email) return;
+    const email = user.email.trim().toLowerCase();
+    const timer = window.setTimeout(() => {
+      fetch("/api/portfolio/settings", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          email,
+          activeTab,
+          backtestSymbol,
+          backtestYears,
+        }),
+      }).catch(() => {
+        /* portfolio settings are convenience-only */
+      });
+    }, 500);
+    return () => window.clearTimeout(timer);
+  }, [user?.email, activeTab, backtestSymbol, backtestYears]);
 
   const portfolioGuides = [
     {
@@ -162,6 +204,17 @@ export default function PortfolioPage() {
     return baht(p);
   };
 
+  const formatCurrencyAmount = (currency: string | undefined, amount: number) => {
+    if (currency === "USD") return dollar(amount);
+    if (currency === "THB" || !currency) return baht(amount);
+    return `${num(amount, 2)} ${currency}`;
+  };
+
+  const getDefaultCurrency = (symbol: string) => {
+    const s = getStock(symbol);
+    return s?.currency || (s?.assetType === "US_STOCK" ? "USD" : "THB");
+  };
+
   // 1. DYNAMIC LEDGER COMPUTATION
   const portfolioSummary = useMemo(() => {
     let totalCost = 0;
@@ -174,13 +227,15 @@ export default function PortfolioPage() {
         holdingsMap[tx.symbol] = { shares: 0, totalCost: 0 };
       }
       const state = holdingsMap[tx.symbol];
+      const fee = Number(tx.fee || 0);
       if (tx.action === "BUY") {
         state.shares += tx.shares;
-        state.totalCost += tx.shares * tx.price;
+        state.totalCost += tx.shares * tx.price + fee;
       } else {
+        const avgCost = state.shares > 0 ? state.totalCost / state.shares : 0;
+        const sharesSold = Math.min(state.shares, tx.shares);
         state.shares = Math.max(0, state.shares - tx.shares);
-        // Reduce cost proportionally
-        state.totalCost = Math.max(0, state.totalCost - tx.shares * tx.price);
+        state.totalCost = Math.max(0, state.totalCost - sharesSold * avgCost);
       }
     });
 
@@ -223,16 +278,26 @@ export default function PortfolioPage() {
     };
   }, [transactions]);
 
+  useEffect(() => {
+    if (activeTab === "backtest" && !plan.limits.scenarioDcf) setActiveTab("ledger");
+    if (activeTab === "alerts" && !plan.limits.alerts) setActiveTab("ledger");
+  }, [activeTab, plan.limits.alerts, plan.limits.scenarioDcf]);
+
   // Handle adding transactions
   const handleAddTransaction = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!plan.limits.portfolio) {
+      setPortfolioError(lang === "th" ? "Portfolio Tracker ใช้ได้ตั้งแต่แพ็กเกจ Pro ขึ้นไป" : "Portfolio Tracker is available from the Pro plan.");
+      return;
+    }
     if (!user?.email) {
       setPortfolioError(lang === "th" ? "กรุณาเข้าสู่ระบบก่อนบันทึกพอร์ต" : "Please log in before saving portfolio data.");
       return;
     }
     const parsedPrice = parseFloat(txPrice);
     const parsedShares = parseInt(txShares, 10);
-    if (!parsedPrice || !parsedShares || parsedPrice <= 0 || parsedShares <= 0) return;
+    const parsedFee = parseFloat(txFee || "0");
+    if (!parsedPrice || !parsedShares || parsedPrice <= 0 || parsedShares <= 0 || parsedFee < 0) return;
 
     const newTx: Transaction = {
       id: `tx-${Date.now()}`,
@@ -240,6 +305,9 @@ export default function PortfolioPage() {
       action: txAction,
       price: parsedPrice,
       shares: parsedShares,
+      fee: parsedFee,
+      currency: txCurrency,
+      notes: txNotes.trim(),
       date: txDate,
     };
 
@@ -263,6 +331,8 @@ export default function PortfolioPage() {
     const s = getStock(txSymbol)!;
     setTxPrice(s.price.toString());
     setTxShares("500");
+    setTxFee("0");
+    setTxNotes("");
   };
 
   const handleRemoveTransaction = async (id: string) => {
@@ -298,11 +368,12 @@ export default function PortfolioPage() {
     }
 
     // Generate CSV content
-    const headers = ["ID", "TICKER", "ACTION", "PRICE", "SHARES", "TOTAL", "DATE", "CURRENCY", "ASSET_TYPE"];
+    const headers = ["ID", "TICKER", "ACTION", "PRICE", "SHARES", "FEE", "TOTAL", "DATE", "CURRENCY", "ASSET_TYPE", "NOTES"];
     const rows = transactions.map((tx) => {
       const s = getStock(tx.symbol)!;
-      const total = tx.shares * tx.price;
-      const currency = s.currency || (s.market === "NASDAQ" || s.market === "NYSE" ? "USD" : "THB");
+      const fee = Number(tx.fee || 0);
+      const total = tx.shares * tx.price + (tx.action === "BUY" ? fee : -fee);
+      const currency = tx.currency || s.currency || (s.market === "NASDAQ" || s.market === "NYSE" ? "USD" : "THB");
       const assetType = s.assetType || "TH_STOCK";
       return [
         tx.id,
@@ -310,10 +381,12 @@ export default function PortfolioPage() {
         tx.action,
         tx.price,
         tx.shares,
+        fee,
         total,
         tx.date,
         currency,
         assetType,
+        `"${(tx.notes || "").replace(/"/g, '""')}"`,
       ].join(",");
     });
 
@@ -375,6 +448,10 @@ export default function PortfolioPage() {
   // 3. DYNAMIC ALERTS CONFIGURATION
   const handleAddAlert = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!plan.limits.alerts) {
+      setPortfolioError(lang === "th" ? "ระบบแจ้งเตือนใช้ได้เฉพาะ Premium และ Lifetime" : "Alerts are available on Premium and Lifetime plans.");
+      return;
+    }
     if (!user?.email) {
       setPortfolioError(lang === "th" ? "กรุณาเข้าสู่ระบบก่อนบันทึกแจ้งเตือน" : "Please log in before saving alerts.");
       return;
@@ -428,6 +505,10 @@ export default function PortfolioPage() {
 
   // Trigger simulated live toast alert block
   const triggerLiveNotificationTest = () => {
+    if (!plan.limits.alerts) {
+      setPortfolioError(lang === "th" ? "ระบบแจ้งเตือนใช้ได้เฉพาะ Premium และ Lifetime" : "Alerts are available on Premium and Lifetime plans.");
+      return;
+    }
     const s = getStock(alertSymbol)!;
     const v = computeValuation(s, defaultDCFParams(s));
     const isUS = s.assetType === "US_STOCK";
@@ -442,6 +523,22 @@ export default function PortfolioPage() {
       setSimulatedToast(null);
     }, 6500);
   };
+
+  if (!plan.limits.portfolio) {
+    return (
+      <div className="mx-auto max-w-4xl space-y-6 animate-fade-up">
+        <LockedCard
+          required="pro"
+          title={lang === "th" ? "Portfolio Tracker สำหรับสมาชิก Pro ขึ้นไป" : "Portfolio Tracker starts with Pro"}
+          desc={
+            lang === "th"
+              ? "อัปเกรดเป็น Pro เพื่อบันทึกซื้อขาย คำนวณต้นทุนเฉลี่ย ติดตามมูลค่าพอร์ต และดูผลตอบแทนรวม ส่วน Backtest, Alerts และ CSV Export จะปลดล็อกใน Premium/Lifetime"
+              : "Upgrade to Pro to save transactions, calculate cost basis, track portfolio value, and review returns. Backtest, Alerts, and CSV Export unlock on Premium/Lifetime."
+          }
+        />
+      </div>
+    );
+  }
 
   return (
     <div className="mx-auto w-full max-w-[calc(100vw-24px)] space-y-5 overflow-x-hidden pb-24 pt-1 animate-fade-up sm:max-w-full sm:space-y-6 lg:max-w-7xl lg:pb-2">
@@ -542,23 +639,45 @@ export default function PortfolioPage() {
             <span className="truncate">💼 {lang === "th" ? "บันทึกการลงทุน" : "Ledger Portfolio"}</span>
           </button>
           <button
-            onClick={() => setActiveTab("backtest")}
+            onClick={() => setActiveTab(plan.limits.scenarioDcf ? "backtest" : "ledger")}
             className={`min-w-0 px-3 py-2 rounded-lg transition ${
               activeTab === "backtest" ? "bg-surface text-brand shadow-sm" : "text-muted hover:text-ink"
             }`}
           >
-            <span className="truncate">📊 {lang === "th" ? "ทดสอบย้อนหลัง" : "Backtest"}</span>
+            <span className="truncate">📊 {lang === "th" ? "ทดสอบย้อนหลัง" : "Backtest"} {!plan.limits.scenarioDcf ? "🔒" : ""}</span>
           </button>
           <button
-            onClick={() => setActiveTab("alerts")}
+            onClick={() => setActiveTab(plan.limits.alerts ? "alerts" : "ledger")}
             className={`min-w-0 px-3 py-2 rounded-lg transition ${
               activeTab === "alerts" ? "bg-surface text-brand shadow-sm" : "text-muted hover:text-ink"
             }`}
           >
-            <span className="truncate">🔔 {lang === "th" ? "แจ้งเตือน" : "Alert Center"}</span>
+            <span className="truncate">🔔 {lang === "th" ? "แจ้งเตือน" : "Alert Center"} {!plan.limits.alerts ? "🔒" : ""}</span>
           </button>
         </div>
       </div>
+
+      {(!plan.limits.scenarioDcf || !plan.limits.alerts) && (
+        <Card className="border border-gold/35 bg-gold/5 p-4">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+              <h2 className="font-display text-sm font-bold text-ink">
+                {lang === "th" ? "สิทธิพอร์ตตามแพ็กเกจของคุณ" : "Portfolio access for your plan"}
+              </h2>
+              <p className="mt-1 text-xs font-medium leading-relaxed text-muted">
+                {lang === "th"
+                  ? "Pro ใช้ Ledger และ Portfolio Tracker ได้เต็มรูปแบบ ส่วน Backtest, Alerts และ CSV Export อยู่ใน Premium/Lifetime"
+                  : "Pro includes Ledger and Portfolio Tracker. Backtest, Alerts, and CSV Export are Premium/Lifetime features."}
+              </p>
+            </div>
+            <Link href="/pricing">
+              <Button variant="gold" size="sm">
+                <Crown className="h-4 w-4" /> {t("common.upgrade")}
+              </Button>
+            </Link>
+          </div>
+        </Card>
+      )}
 
       {/* ================== TAB 1: PORTFOLIO TRANSACTION LEDGER ================== */}
       {activeTab === "ledger" && (
@@ -617,6 +736,7 @@ export default function PortfolioPage() {
                       setTxSymbol(e.target.value);
                       const s = getStock(e.target.value)!;
                       setTxPrice(s.price.toString());
+                      setTxCurrency(getDefaultCurrency(e.target.value));
                     }}
                     className="input-base text-xs font-semibold"
                   >
@@ -681,6 +801,37 @@ export default function PortfolioPage() {
                   </div>
                 </div>
 
+                <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                  <div className="space-y-1">
+                    <label className="text-[10px] font-bold text-muted uppercase">
+                      {lang === "th" ? "ค่าธรรมเนียม" : "Broker Fee"}
+                    </label>
+                    <input
+                      type="number"
+                      step="0.01"
+                      min="0"
+                      className="input-base text-xs font-mono font-bold"
+                      value={txFee}
+                      onChange={(e) => setTxFee(e.target.value)}
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    <label className="text-[10px] font-bold text-muted uppercase">
+                      {lang === "th" ? "สกุลเงิน" : "Currency"}
+                    </label>
+                    <select
+                      value={txCurrency}
+                      onChange={(e) => setTxCurrency(e.target.value)}
+                      className="input-base text-xs font-semibold"
+                    >
+                      <option value="THB">THB</option>
+                      <option value="USD">USD</option>
+                      <option value="JPY">JPY</option>
+                      <option value="HKD">HKD</option>
+                    </select>
+                  </div>
+                </div>
+
                 {/* Transaction Date */}
                 <div className="space-y-1">
                   <label className="text-[10px] font-bold text-muted uppercase">
@@ -691,6 +842,19 @@ export default function PortfolioPage() {
                     className="input-base text-xs font-mono"
                     value={txDate}
                     onChange={(e) => setTxDate(e.target.value)}
+                  />
+                </div>
+
+                <div className="space-y-1">
+                  <label className="text-[10px] font-bold text-muted uppercase">
+                    {lang === "th" ? "บันทึกเหตุผล / หมายเหตุ" : "Trade Notes"}
+                  </label>
+                  <textarea
+                    className="input-base min-h-20 resize-y text-xs leading-relaxed"
+                    value={txNotes}
+                    onChange={(e) => setTxNotes(e.target.value)}
+                    placeholder={lang === "th" ? "เช่น ซื้อเพราะ MOS > 25%, เพิ่ม DCA, ลดน้ำหนักพอร์ต" : "e.g. MOS > 25%, DCA entry, trim position"}
+                    maxLength={500}
                   />
                 </div>
 
@@ -820,7 +984,8 @@ export default function PortfolioPage() {
                   transactions.map((tx) => {
                     const s = getStock(tx.symbol)!;
                     const isBuy = tx.action === "BUY";
-                    const total = tx.shares * tx.price;
+                    const fee = Number(tx.fee || 0);
+                    const total = tx.shares * tx.price + (isBuy ? fee : -fee);
                     return (
                       <div key={`mobile-tx-${tx.id}`} className="rounded-2xl border border-line bg-bg/45 p-4">
                         <div className="flex items-start justify-between gap-3">
@@ -833,10 +998,16 @@ export default function PortfolioPage() {
                           </span>
                         </div>
                         <div className="mt-4 grid grid-cols-1 gap-2">
-                          <MobileMetric label={lang === "th" ? "ราคาหุ้น" : "Price"} value={formatPrice(s, tx.price)} />
+                          <MobileMetric label={lang === "th" ? "ราคาหุ้น" : "Price"} value={formatCurrencyAmount(tx.currency, tx.price)} />
                           <MobileMetric label={lang === "th" ? "จำนวนหุ้น" : "Shares"} value={tx.shares.toLocaleString()} />
-                          <MobileMetric label={lang === "th" ? "รวมทำรายการ" : "Total"} value={formatPrice(s, total)} accent />
+                          <MobileMetric label={lang === "th" ? "ค่าธรรมเนียม" : "Fee"} value={formatCurrencyAmount(tx.currency, fee)} />
+                          <MobileMetric label={lang === "th" ? "รวมทำรายการ" : "Total"} value={formatCurrencyAmount(tx.currency, total)} accent />
                         </div>
+                        {tx.notes && (
+                          <div className="mt-3 rounded-xl border border-line bg-surface/70 p-3 text-[11px] leading-relaxed text-muted">
+                            {tx.notes}
+                          </div>
+                        )}
                         <button
                           onClick={() => handleRemoveTransaction(tx.id)}
                           className="mt-3 flex w-full items-center justify-center gap-1.5 rounded-xl border border-line bg-surface py-2 text-[10px] font-bold text-muted hover:text-down"
@@ -858,14 +1029,16 @@ export default function PortfolioPage() {
                       <th className="px-4 py-3 text-center">{lang === "th" ? "ประเภท" : "ACTION"}</th>
                       <th className="px-4 py-3 text-right">{lang === "th" ? "ราคาหุ้น" : "PRICE"}</th>
                       <th className="px-4 py-3 text-right">{lang === "th" ? "จำนวนหุ้น" : "SHARES"}</th>
+                      <th className="px-4 py-3 text-right">{lang === "th" ? "ค่าธรรมเนียม" : "FEE"}</th>
                       <th className="px-4 py-3 text-right">{lang === "th" ? "รวมทำรายการ" : "TOTAL"}</th>
+                      <th className="px-4 py-3">{lang === "th" ? "หมายเหตุ" : "NOTES"}</th>
                       <th className="px-4 py-3 text-right"></th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-line/60">
                     {transactions.length === 0 ? (
                       <tr>
-                        <td colSpan={7} className="p-6 text-center text-muted font-mono">
+                        <td colSpan={9} className="p-6 text-center text-muted font-mono">
                           {lang === "th" ? "ไม่มีประวัติการทำธุรกรรมในขณะนี้" : "No transaction logs recorded."}
                         </td>
                       </tr>
@@ -873,7 +1046,8 @@ export default function PortfolioPage() {
                       transactions.map((tx) => {
                         const s = getStock(tx.symbol)!;
                         const isBuy = tx.action === "BUY";
-                        const total = tx.shares * tx.price;
+                        const fee = Number(tx.fee || 0);
+                        const total = tx.shares * tx.price + (isBuy ? fee : -fee);
                         return (
                           <tr key={tx.id} className="hover:bg-elevate/20 transition text-[11px]">
                             <td className="px-4 py-3 text-muted font-mono">{tx.date}</td>
@@ -887,9 +1061,13 @@ export default function PortfolioPage() {
                                 {tx.action}
                               </span>
                             </td>
-                            <td className="px-4 py-3 text-right font-mono text-ink">{formatPrice(s, tx.price)}</td>
+                            <td className="px-4 py-3 text-right font-mono text-ink">{formatCurrencyAmount(tx.currency, tx.price)}</td>
                             <td className="px-4 py-3 text-right font-mono text-ink">{tx.shares.toLocaleString()}</td>
-                            <td className="px-4 py-3 text-right font-mono font-bold text-ink">{formatPrice(s, total)}</td>
+                            <td className="px-4 py-3 text-right font-mono text-muted">{formatCurrencyAmount(tx.currency, fee)}</td>
+                            <td className="px-4 py-3 text-right font-mono font-bold text-ink">{formatCurrencyAmount(tx.currency, total)}</td>
+                            <td className="max-w-48 px-4 py-3 text-muted">
+                              <span className="line-clamp-2">{tx.notes || "—"}</span>
+                            </td>
                             <td className="px-4 py-3 text-right shrink-0">
                               <button
                                 onClick={() => handleRemoveTransaction(tx.id)}

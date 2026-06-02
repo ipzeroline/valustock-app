@@ -3,7 +3,8 @@
 import { useState, useMemo, useEffect } from "react";
 import Link from "next/link";
 import { STOCKS, SECTORS } from "@/lib/stocks";
-import { Stock } from "@/lib/types";
+import { AssetType, Stock } from "@/lib/types";
+import { assetAllowed } from "@/lib/plan-access";
 import { computeValuation, defaultDCFParams } from "@/lib/valuation";
 import { useCurrentPlan } from "@/lib/store";
 import { AssetLogo } from "@/components/AssetLogo";
@@ -81,6 +82,7 @@ export default function StocksPage() {
 
   const canScreen = plan.limits.screener;
   const maxStocks = plan.limits.maxStocks;
+  const isAssetVisible = (assetType: AssetType | undefined) => assetAllowed(plan, assetType);
 
   // Merge static and dynamic stocks, ensuring absolutely zero duplicate keys by symbol
   const allStocks = useMemo(() => {
@@ -119,8 +121,11 @@ export default function StocksPage() {
     ];
     return prioritySymbols
       .map((symbol) => allStocks.find((stock) => stock.symbol.toUpperCase() === symbol))
-      .filter((stock): stock is Stock => Boolean(stock));
-  }, [allStocks]);
+      .filter((stock): stock is Stock => {
+        if (!stock) return false;
+        return isAssetVisible(stock.assetType);
+      });
+  }, [allStocks, plan.id]);
 
   // Selected Stock for Sandbox simulation
   const selectedStock = useMemo(() => {
@@ -266,8 +271,9 @@ export default function StocksPage() {
 
   // Top 4 High-Density KPI Cards
   const kpis = useMemo(() => {
-    const totalCovered = allStocks.length;
-    const allValuations = allStocks.map((s) => ({
+    const planStocks = allStocks.filter((s) => isAssetVisible(s.assetType));
+    const totalCovered = planStocks.length;
+    const allValuations = planStocks.map((s) => ({
       s,
       v: computeValuation(s, defaultDCFParams(s)),
     }));
@@ -277,7 +283,7 @@ export default function StocksPage() {
     const bargainRate = (bargains.length / totalCovered) * 100;
 
     // Average Dividend Yield for Equities
-    const equities = allStocks.filter((s) => s.assetType === "TH_STOCK" || s.assetType === "US_STOCK");
+    const equities = planStocks.filter((s) => s.assetType === "TH_STOCK" || s.assetType === "US_STOCK");
     const avgYield =
       equities.reduce((sum, s) => {
         const v = computeValuation(s, defaultDCFParams(s));
@@ -295,11 +301,13 @@ export default function StocksPage() {
       avgYield,
       topStar,
     };
-  }, []);
+  }, [allStocks, plan.id]);
 
   // Process rows based on filters, search query, sliders
   const processedRows = useMemo(() => {
-    let list = allStocks.map((s) => ({
+    let list = allStocks
+      .filter((s) => isAssetVisible(s.assetType))
+      .map((s) => ({
       s,
       v: computeValuation(s, defaultDCFParams(s)),
     }));
@@ -357,11 +365,13 @@ export default function StocksPage() {
     });
 
     return list;
-  }, [q, sector, selectedAssetType, selectedVerdict, minMos, maxPe, minYield, sort, canScreen, allStocks]);
+  }, [q, sector, selectedAssetType, selectedVerdict, minMos, maxPe, minYield, sort, canScreen, allStocks, plan.id]);
 
   // Handle plan indexing limits
   const visibleRows = maxStocks !== "unlimited" ? processedRows.slice(0, maxStocks) : processedRows;
   const lockedCount = processedRows.length - visibleRows.length;
+  const hiddenByAssetPlan = allStocks.filter((s) => !isAssetVisible(s.assetType)).length;
+  const nextAssetPlan = plan.id === "free" ? "pro" : plan.id === "pro" ? "premium" : "premium";
 
   const [showExportModal, setShowExportModal] = useState(false);
 
@@ -1527,11 +1537,38 @@ export default function StocksPage() {
                 </h3>
                 <p className="text-[10px] text-muted max-w-md mx-auto mt-0.5">
                   {lang === "th"
-                    ? `บัญชีทดลองฟรีจำกัดสิทธิ์เข้าถึงไม่เกิน ${maxStocks} บริษัท อัปเกรดแผนสมาชิกรายปีเพื่อคัดกรองข้อมูลแบบไม่จำกัด (Unlimited)`
-                    : `Your current tier is capped at ${maxStocks} listings. Upgrade to premium for full terminal capacity.`}
+                    ? `บัญชีทดลองฟรีจำกัดสิทธิ์เข้าถึงไม่เกิน ${maxStocks} บริษัท อัปเกรดเป็นแพ็กเกจ Pro เพื่อคัดกรองหุ้นและ ETF แบบไม่จำกัด`
+                    : `Your current tier is capped at ${maxStocks} listings. Upgrade to Pro for unlimited stock and ETF screening.`}
                 </p>
                 <Link href="/pricing" className="mt-3.5 inline-block">
                   <Button size="sm" variant="gold" className="text-[11px] font-bold px-4">
+                    {t("common.upgrade")}
+                  </Button>
+                </Link>
+              </Card>
+            )}
+
+            {hiddenByAssetPlan > 0 && plan.id !== "premium" && plan.id !== "lifetime" && (
+              <Card className="mt-3 border border-brand/30 bg-brand/5 p-4 text-center">
+                <span className="inline-flex h-8 w-8 items-center justify-center rounded-xl bg-brand/10 text-brand mb-2">
+                  <Lock className="h-4 w-4" />
+                </span>
+                <h3 className="text-xs font-bold text-ink">
+                  {lang === "th"
+                    ? `มีสินทรัพย์อีก ${hiddenByAssetPlan} รายการที่อยู่ในแพ็กเกจสูงกว่า`
+                    : `${hiddenByAssetPlan} additional assets are available on higher tiers`}
+                </h3>
+                <p className="mx-auto mt-0.5 max-w-md text-[10px] text-muted">
+                  {lang === "th"
+                    ? plan.id === "free"
+                      ? "อัปเกรดเป็น Pro เพื่อปลดล็อก ETF และกองทุนยอดนิยม หรือ Premium สำหรับ Crypto/Futures"
+                      : "อัปเกรดเป็น Premium หรือ Lifetime เพื่อปลดล็อก Crypto, Futures และสินทรัพย์ครบทุกประเภท"
+                    : plan.id === "free"
+                      ? "Upgrade to Pro for ETFs and funds, or Premium for Crypto/Futures."
+                      : "Upgrade to Premium or Lifetime to unlock Crypto, Futures, and every asset class."}
+                </p>
+                <Link href="/pricing" className="mt-3 inline-block">
+                  <Button size="sm" variant={nextAssetPlan === "premium" ? "gold" : "primary"} className="px-4 text-[11px] font-bold">
                     {t("common.upgrade")}
                   </Button>
                 </Link>

@@ -28,7 +28,7 @@ export default function AdminPayments() {
   // New payment form modal state
   const [modalOpen, setModalOpen] = useState(false);
   const [emailInput, setEmailInput] = useState("");
-  const [amountInput, setAmountInput] = useState("290");
+  const [amountInput, setAmountInput] = useState("49");
   const [planInput, setPlanInput] = useState("pro");
   const [billingInput, setBillingInput] = useState("monthly");
   const [methodInput, setMethodInput] = useState("promptpay");
@@ -52,6 +52,20 @@ export default function AdminPayments() {
   useEffect(() => {
     fetchPayments();
   }, []);
+
+  const applyPlanDefaults = (plan: string) => {
+    setPlanInput(plan);
+    if (plan === "lifetime") {
+      setBillingInput("lifetime");
+      setAmountInput("888");
+    } else if (plan === "premium") {
+      setBillingInput((current) => (current === "lifetime" ? "monthly" : current));
+      setAmountInput("88");
+    } else {
+      setBillingInput((current) => (current === "lifetime" ? "monthly" : current));
+      setAmountInput("49");
+    }
+  };
 
   const handleApprove = async (pay: AdminPayment) => {
     try {
@@ -211,7 +225,7 @@ export default function AdminPayments() {
                     </td>
                     <td className="px-5 py-3.5">
                       <div className="flex items-center gap-1.5">
-                        <Badge tone={pay.plan === "premium" ? "gold" : pay.plan === "pro" ? "brand" : "muted"}>
+                        <Badge tone={pay.plan === "premium" || pay.plan === "lifetime" ? "gold" : pay.plan === "pro" ? "brand" : "muted"}>
                           {pay.plan.toUpperCase()}
                         </Badge>
                         <span className="text-[10px] text-muted capitalize">({pay.billing})</span>
@@ -319,10 +333,11 @@ export default function AdminPayments() {
               <select
                 className="input-base text-sm"
                 value={planInput}
-                onChange={(e) => setPlanInput(e.target.value)}
+                onChange={(e) => applyPlanDefaults(e.target.value)}
               >
                 <option value="pro">Pro Plan</option>
                 <option value="premium">Premium Plan</option>
+                <option value="lifetime">Lifetime Plan</option>
               </select>
             </Field>
 
@@ -334,6 +349,7 @@ export default function AdminPayments() {
               >
                 <option value="monthly">{lang === "th" ? "รายเดือน" : "Monthly"}</option>
                 <option value="yearly">{lang === "th" ? "รายปี" : "Yearly"}</option>
+                <option value="lifetime">{lang === "th" ? "ตลอดชีพ" : "Lifetime"}</option>
               </select>
             </Field>
           </div>

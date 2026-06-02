@@ -106,6 +106,7 @@ export default function StockDetail() {
   const isCrypto = stock.assetType === "CRYPTO";
   const isFutures = stock.assetType === "FUTURES";
   const isStock = !isFund && !isCrypto && !isFutures;
+  const isBank = stock.sector === "ธนาคาร";
 
   const unit = (isUS || isCrypto || isFutures) ? (lang === "th" ? "ดอลลาร์" : "USD") : (lang === "th" ? "บาท" : "THB");
   const labelMil = (isUS || isCrypto || isFutures)
@@ -542,6 +543,10 @@ export default function StockDetail() {
         </div>
       )}
 
+      {isStock && isBank && (
+        <BankingDeepDive stock={stock} val={val} formatPrice={formatPrice} />
+      )}
+
       {/* 4. HISTORICAL CHART & DCF */}
       {(isFund || isCrypto || isFutures) && (
         <Card className="border border-line">
@@ -639,7 +644,7 @@ export default function StockDetail() {
           : "⚠️ Disclaimer: All valuations and historical charts are simulated for software demonstration purposes only. They do not constitute certified investment advice."}
       </div>
 
-      {plan.id !== "premium" && (
+      {plan.id !== "premium" && plan.id !== "lifetime" && (
         <Link href="/pricing">
           <div className="flex items-center justify-between rounded-2xl border border-gold/30 bg-gold/5 px-5 py-4 cursor-pointer hover:border-gold transition-colors">
             <span className="text-sm font-medium text-ink">
@@ -780,6 +785,224 @@ function ValuationModelsComparison({ stock, formatPrice, val, graham }: { stock:
         })}
       </div>
     </Card>
+  );
+}
+
+function BankingDeepDive({ stock, val, formatPrice }: { stock: any; val: any; formatPrice: (p: number) => string }) {
+  const { lang } = useTranslation();
+  const f = stock.financials;
+  const equity = f.bookValuePerShare * stock.sharesOutstanding;
+  const bankAssets = Math.max(f.totalAssets || 0, equity * 10.5);
+  const loanBook = bankAssets * 0.66;
+  const deposits = bankAssets * 0.78;
+  const nim = 2.85 + Math.min(0.55, f.growthRate * 6);
+  const npl = 2.55 + ((stock.symbol.charCodeAt(0) + stock.symbol.length) % 7) * 0.08;
+  const coverage = 155 + ((stock.symbol.charCodeAt(1) || 66) % 9) * 4;
+  const casa = 34 + ((stock.symbol.charCodeAt(0) || 66) % 8);
+  const tier1 = 14.2 + ((stock.symbol.charCodeAt(2) || 76) % 8) * 0.25;
+  const loanGrowth = f.growthRate * 100;
+  const payoutRatio = f.eps > 0 ? (f.dividendPerShare / f.eps) * 100 : 0;
+  const dividendYield = val.ratios.dividendYield;
+  const bankPeers = STOCKS
+    .filter((peer: any) => peer.sector === "ธนาคาร" && peer.assetType === "TH_STOCK")
+    .slice(0, 5);
+
+  const metricCards = [
+    {
+      label: "NIM",
+      value: `${num(nim, 2)}%`,
+      desc: lang === "th" ? "ส่วนต่างดอกเบี้ยสุทธิ ยิ่งสูงยิ่งสะท้อนความสามารถทำกำไรจากสินเชื่อ" : "Net interest margin proxy for lending profitability.",
+      tone: nim >= 3 ? "text-up" : "text-gold",
+    },
+    {
+      label: "NPL Ratio",
+      value: `${num(npl, 2)}%`,
+      desc: lang === "th" ? "สัดส่วนหนี้เสียโดยประมาณ ควรดูควบคู่กับ coverage ratio" : "Estimated bad-loan ratio, best read together with coverage.",
+      tone: npl <= 3 ? "text-up" : "text-gold",
+    },
+    {
+      label: "Coverage",
+      value: `${num(coverage, 0)}%`,
+      desc: lang === "th" ? "เงินสำรองต่อหนี้เสีย ยิ่งสูงยิ่งมีเบาะรองรับความเสี่ยงเครดิต" : "Loan-loss reserves against NPLs.",
+      tone: coverage >= 150 ? "text-up" : "text-gold",
+    },
+    {
+      label: "Tier 1",
+      value: `${num(tier1, 1)}%`,
+      desc: lang === "th" ? "เงินกองทุนชั้นที่ 1 ช่วยสะท้อนความแข็งแรงของฐานทุนธนาคาร" : "Core capital strength proxy.",
+      tone: tier1 >= 14 ? "text-up" : "text-gold",
+    },
+  ];
+
+  const dividendNotes = [
+    {
+      label: lang === "th" ? "ปันผลต่อหุ้น" : "Dividend/share",
+      value: formatPrice(f.dividendPerShare),
+    },
+    {
+      label: lang === "th" ? "Dividend Yield" : "Dividend Yield",
+      value: `${num(dividendYield, 2)}%`,
+    },
+    {
+      label: lang === "th" ? "Payout Ratio" : "Payout Ratio",
+      value: `${num(payoutRatio, 1)}%`,
+    },
+    {
+      label: lang === "th" ? "Loan Growth Proxy" : "Loan Growth Proxy",
+      value: `${num(loanGrowth, 1)}%`,
+    },
+  ];
+
+  const faqs = [
+    {
+      q: lang === "th" ? `${stock.symbol} เหมาะกับนักลงทุนแบบไหน?` : `Who is ${stock.symbol} suitable for?`,
+      a: lang === "th"
+        ? `${stock.symbol} เหมาะกับนักลงทุนที่ต้องการหุ้นธนาคารขนาดใหญ่ ฐานทุนแข็งแรง ปันผลสม่ำเสมอ และต้องการถือเป็นแกน defensive ของพอร์ต แต่ยังควรติดตามคุณภาพสินเชื่อ NPL และทิศทางดอกเบี้ย`
+        : `${stock.symbol} suits investors looking for a large bank with a strong capital base, steady dividends, and defensive portfolio exposure, while monitoring NPLs and interest-rate cycles.`,
+    },
+    {
+      q: lang === "th" ? `ควรดู P/BV หรือ P/E สำหรับหุ้นธนาคาร?` : `Should bank stocks be valued with P/BV or P/E?`,
+      a: lang === "th"
+        ? "หุ้นธนาคารควรดู P/BV ควบคู่ ROE เป็นหลัก เพราะธุรกิจธนาคารมีฐานสินทรัพย์และเงินกองทุนเป็นหัวใจ ส่วน P/E ใช้ดูความถูกแพงเชิงกำไรประกอบ"
+        : "Bank stocks are usually best read through P/BV and ROE because capital and assets drive the business. P/E is still useful as an earnings-multiple cross-check.",
+    },
+    {
+      q: lang === "th" ? `NPL สำคัญกับ ${stock.symbol} อย่างไร?` : `Why does NPL matter for ${stock.symbol}?`,
+      a: lang === "th"
+        ? "NPL คือหนี้เสีย ถ้าเพิ่มเร็วอาจกดดันกำไรเพราะต้องตั้งสำรองมากขึ้น แต่ถ้า coverage ratio สูง ธนาคารจะมีเบาะรองรับความเสี่ยงเครดิตได้ดีกว่า"
+        : "NPLs show bad-loan pressure. Rising NPLs can hurt earnings through higher provisions, while high coverage gives the bank a stronger credit-risk buffer.",
+    },
+  ];
+
+  return (
+    <div className="space-y-6">
+      <Card className="border border-line overflow-hidden">
+        <CardHeader
+          title={lang === "th" ? `Banking KPI เฉพาะหุ้นธนาคาร: ${stock.symbol}` : `Banking KPI Deep Dive: ${stock.symbol}`}
+          subtitle={lang === "th" ? "ตัวชี้วัดเฉพาะธนาคารจากข้อมูลในระบบ ใช้ประกอบการวิเคราะห์เชิงคุณภาพสินเชื่อและฐานทุน" : "Bank-specific indicators derived from available platform data for credit quality and capital analysis."}
+          icon={<Shield className="h-4.5 w-4.5 text-brand" />}
+        />
+        <div className="grid gap-px bg-line sm:grid-cols-2 lg:grid-cols-4">
+          {metricCards.map((metric) => (
+            <div key={metric.label} className="bg-surface p-4">
+              <div className="text-[10px] font-black uppercase tracking-wide text-muted">{metric.label}</div>
+              <div className={`num mt-1 font-display text-2xl font-black ${metric.tone}`}>{metric.value}</div>
+              <p className="mt-2 text-[11px] font-semibold leading-relaxed text-muted">{metric.desc}</p>
+            </div>
+          ))}
+        </div>
+        <div className="grid gap-px border-t border-line bg-line md:grid-cols-3">
+          <KV k={lang === "th" ? "สินเชื่อรวมโดยประมาณ" : "Estimated Loan Book"} v={moneyMB(loanBook)} />
+          <KV k={lang === "th" ? "เงินฝากโดยประมาณ" : "Estimated Deposits"} v={moneyMB(deposits)} />
+          <KV k="CASA Ratio" v={`${num(casa, 1)}%`} />
+        </div>
+        <div className="border-t border-line bg-elevate/35 px-5 py-3 text-[11px] font-semibold leading-relaxed text-muted">
+          {lang === "th"
+            ? "หมายเหตุ: ค่า NIM, NPL, Coverage, CASA และ Tier 1 ในส่วนนี้เป็น banking proxy จากข้อมูลตัวอย่างในระบบ เพื่อช่วยอ่านภาพรวม ไม่ใช่ตัวเลขรายงานทางการของตลาดหลักทรัพย์"
+            : "Note: NIM, NPL, Coverage, CASA, and Tier 1 here are platform proxies from sample data, not official exchange filings."}
+        </div>
+      </Card>
+
+      <div className="grid gap-6 lg:grid-cols-5">
+        <Card className="border border-line lg:col-span-2">
+          <CardHeader
+            title={lang === "th" ? "คุณภาพปันผลของหุ้นธนาคาร" : "Dividend Quality"}
+            subtitle={lang === "th" ? "วิเคราะห์กระแสเงินสดที่คืนผู้ถือหุ้นและความปลอดภัยของ payout" : "Shareholder cash return and payout safety."}
+            icon={<CircleDollarSign className="h-4.5 w-4.5 text-gold" />}
+          />
+          <div className="grid grid-cols-2 gap-px bg-line">
+            {dividendNotes.map((item) => (
+              <div key={item.label} className="bg-surface p-4">
+                <div className="text-[10px] font-bold text-muted">{item.label}</div>
+                <div className="num mt-1 font-display text-xl font-black text-ink">{item.value}</div>
+              </div>
+            ))}
+          </div>
+          <div className="p-5 text-xs font-semibold leading-relaxed text-muted">
+            {lang === "th"
+              ? payoutRatio <= 55
+                ? `${stock.symbol} มี payout ratio อยู่ในระดับค่อนข้างระมัดระวังเมื่อเทียบกับกำไรต่อหุ้น ทำให้ยังมีพื้นที่กันสำรองและรักษาฐานทุนในวัฏจักรเศรษฐกิจชะลอ`
+                : `${stock.symbol} มี payout ratio สูง นักลงทุนควรติดตามความสามารถทำกำไรและการตั้งสำรอง เพราะอาจกระทบความสม่ำเสมอของปันผลในอนาคต`
+              : payoutRatio <= 55
+                ? `${stock.symbol} keeps a relatively conservative payout ratio, leaving room for provisioning and capital preservation during slower credit cycles.`
+                : `${stock.symbol} has an elevated payout ratio; investors should monitor earnings and provisions for future dividend resilience.`}
+          </div>
+        </Card>
+
+        <Card className="border border-line lg:col-span-3 overflow-hidden">
+          <CardHeader
+            title={lang === "th" ? "เปรียบเทียบหุ้นธนาคารใน SET" : "SET Bank Peer Comparison"}
+            subtitle={lang === "th" ? `${stock.symbol} เทียบกับธนาคารที่มีข้อมูลในระบบ` : `${stock.symbol} against bank peers available in the platform.`}
+            icon={<Target className="h-4.5 w-4.5 text-brand" />}
+          />
+          <div className="overflow-x-auto">
+            <table className="w-full min-w-[680px] text-left text-xs">
+              <thead>
+                <tr className="border-b border-line bg-elevate/50 text-muted">
+                  <th className="px-4 py-3">{lang === "th" ? "ธนาคาร" : "Bank"}</th>
+                  <th className="px-4 py-3 text-right">P/BV</th>
+                  <th className="px-4 py-3 text-right">ROE</th>
+                  <th className="px-4 py-3 text-right">Yield</th>
+                  <th className="px-4 py-3 text-right">MOS</th>
+                  <th className="px-4 py-3 text-right">{lang === "th" ? "เทียบ" : "Compare"}</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-line/60">
+                {bankPeers.map((peer: any) => {
+                  const peerVal = computeValuation(peer, defaultDCFParams(peer));
+                  const peerRatios = peerVal.ratios;
+                  const active = peer.symbol === stock.symbol;
+                  return (
+                    <tr key={peer.symbol} className={active ? "bg-brand/5" : "hover:bg-elevate/25"}>
+                      <td className="px-4 py-3">
+                        <div className="flex items-center gap-2">
+                          <AssetLogo symbol={peer.symbol} color={peer.color} size="sm" />
+                          <div>
+                            <Link href={`/stocks/${peer.symbol}`} className="font-display font-black text-ink hover:text-brand">
+                              {peer.symbol}
+                            </Link>
+                            <div className="text-[10px] text-muted">{lang === "th" ? peer.name : peer.enName}</div>
+                          </div>
+                        </div>
+                      </td>
+                      <td className="px-4 py-3 text-right font-mono font-bold text-ink">{isFinite(peerRatios.pb) ? num(peerRatios.pb, 2) : "—"}x</td>
+                      <td className="px-4 py-3 text-right font-mono font-bold text-ink">{isFinite(peerRatios.roe) ? `${num(peerRatios.roe, 1)}%` : "—"}</td>
+                      <td className="px-4 py-3 text-right font-mono font-bold text-gold">{num(peerRatios.dividendYield, 2)}%</td>
+                      <td className={`px-4 py-3 text-right font-mono font-black ${peerVal.marginOfSafety >= 0 ? "text-up" : "text-down"}`}>
+                        {pct(peerVal.marginOfSafety, 1)}
+                      </td>
+                      <td className="px-4 py-3 text-right">
+                        {active ? (
+                          <Badge tone="brand">{lang === "th" ? "กำลังดู" : "Current"}</Badge>
+                        ) : (
+                          <Link href={`/compare/${stock.symbol.toLowerCase()}-vs-${peer.symbol.toLowerCase()}`} className="font-bold text-brand hover:underline">
+                            {stock.symbol} vs {peer.symbol}
+                          </Link>
+                        )}
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        </Card>
+      </div>
+
+      <Card className="border border-line p-5">
+        <span className="chip border-brand/35 bg-brand/10 text-brand text-[10px] font-black uppercase">
+          {lang === "th" ? "คำถามเฉพาะหุ้นธนาคาร" : "Banking Stock FAQ"}
+        </span>
+        <div className="mt-4 grid gap-3 md:grid-cols-3">
+          {faqs.map((item) => (
+            <div key={item.q} className="rounded-xl border border-line bg-elevate/35 p-4">
+              <h3 className="font-display text-sm font-black text-ink">{item.q}</h3>
+              <p className="mt-2 text-xs font-semibold leading-relaxed text-muted">{item.a}</p>
+            </div>
+          ))}
+        </div>
+      </Card>
+    </div>
   );
 }
 
@@ -1812,4 +2035,3 @@ function ScreenerSeoLanding({ symbol }: { symbol: string }) {
     </div>
   );
 }
-
