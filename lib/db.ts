@@ -45,6 +45,37 @@ export async function getDbConnectionStatus(): Promise<{
   }
 }
 
+async function ensureColumn(table: string, column: string, definition: string) {
+  const allowedTables = new Set([
+    "users",
+    "watchlists",
+    "user_preferences",
+    "portfolio_transactions",
+    "portfolio_alerts",
+    "articles",
+    "payments",
+    "staff",
+    "active_sessions",
+  ]);
+
+  if (!allowedTables.has(table)) {
+    throw new Error(`Unsafe table name for migration: ${table}`);
+  }
+
+  const existing = await query<any[]>(
+    `SELECT COLUMN_NAME
+     FROM INFORMATION_SCHEMA.COLUMNS
+     WHERE TABLE_SCHEMA = DATABASE()
+       AND TABLE_NAME = ?
+       AND COLUMN_NAME = ?
+     LIMIT 1`,
+    [table, column]
+  );
+  if (existing.length === 0) {
+    await query(`ALTER TABLE \`${table}\` ADD COLUMN \`${column}\` ${definition}`);
+  }
+}
+
 // Automated schema initializer for MariaDB tables
 export async function initDatabase(): Promise<boolean> {
   try {
@@ -155,6 +186,61 @@ export async function initDatabase(): Promise<boolean> {
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
     `);
+
+    // 9. Active sessions: one live browser/device per member or staff account
+    await query(`
+      CREATE TABLE IF NOT EXISTS active_sessions (
+        account_type VARCHAR(20) NOT NULL,
+        account_key VARCHAR(255) NOT NULL,
+        session_id VARCHAR(64) NOT NULL,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+        PRIMARY KEY (account_type, account_key),
+        INDEX idx_active_session_id (session_id)
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+    `);
+
+    await ensureColumn("users", "email", "VARCHAR(255) UNIQUE NOT NULL");
+    await ensureColumn("users", "name", "VARCHAR(255)");
+    await ensureColumn("users", "plan", "VARCHAR(50) DEFAULT 'free'");
+    await ensureColumn("users", "billing", "VARCHAR(50) DEFAULT 'monthly'");
+    await ensureColumn("users", "joined_at", "TIMESTAMP DEFAULT CURRENT_TIMESTAMP");
+
+    await ensureColumn("watchlists", "user_email", "VARCHAR(255) NOT NULL");
+    await ensureColumn("watchlists", "symbol", "VARCHAR(50) NOT NULL");
+    await ensureColumn("watchlists", "created_at", "TIMESTAMP DEFAULT CURRENT_TIMESTAMP");
+
+    await ensureColumn("articles", "slug", "VARCHAR(255) UNIQUE NOT NULL");
+    await ensureColumn("articles", "title", "VARCHAR(255) NOT NULL");
+    await ensureColumn("articles", "category", "VARCHAR(100)");
+    await ensureColumn("articles", "read_time", "VARCHAR(50)");
+    await ensureColumn("articles", "summary", "TEXT");
+    await ensureColumn("articles", "content", "TEXT");
+    await ensureColumn("articles", "tag", "VARCHAR(100)");
+    await ensureColumn("articles", "lang", "VARCHAR(10) DEFAULT 'th'");
+    await ensureColumn("articles", "created_at", "TIMESTAMP DEFAULT CURRENT_TIMESTAMP");
+
+    await ensureColumn("payments", "user_email", "VARCHAR(255) NOT NULL");
+    await ensureColumn("payments", "amount", "DECIMAL(10,2) NOT NULL DEFAULT 0");
+    await ensureColumn("payments", "plan", "VARCHAR(50) NOT NULL DEFAULT 'pro'");
+    await ensureColumn("payments", "billing", "VARCHAR(50) NOT NULL DEFAULT 'monthly'");
+    await ensureColumn("payments", "status", "VARCHAR(50) DEFAULT 'pending'");
+    await ensureColumn("payments", "payment_method", "VARCHAR(50) DEFAULT 'promptpay'");
+    await ensureColumn("payments", "transaction_ref", "VARCHAR(255)");
+    await ensureColumn("payments", "created_at", "TIMESTAMP DEFAULT CURRENT_TIMESTAMP");
+
+    await ensureColumn("staff", "username", "VARCHAR(100) UNIQUE NOT NULL");
+    await ensureColumn("staff", "name", "VARCHAR(255) NOT NULL");
+    await ensureColumn("staff", "role", "VARCHAR(100) DEFAULT 'support'");
+    await ensureColumn("staff", "email", "VARCHAR(255)");
+    await ensureColumn("staff", "status", "VARCHAR(50) DEFAULT 'active'");
+    await ensureColumn("staff", "created_at", "TIMESTAMP DEFAULT CURRENT_TIMESTAMP");
+
+    await ensureColumn("active_sessions", "account_type", "VARCHAR(20) NOT NULL");
+    await ensureColumn("active_sessions", "account_key", "VARCHAR(255) NOT NULL");
+    await ensureColumn("active_sessions", "session_id", "VARCHAR(64) NOT NULL");
+    await ensureColumn("active_sessions", "created_at", "TIMESTAMP DEFAULT CURRENT_TIMESTAMP");
+    await ensureColumn("active_sessions", "updated_at", "TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP");
 
     console.log("🎉 Database tables successfully initialized!");
     return true;

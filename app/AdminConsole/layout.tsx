@@ -47,23 +47,55 @@ export default function AdminConsoleLayout({
   const [error, setError] = useState("");
 
   useEffect(() => {
-    // Check local storage session
-    const authSession = localStorage.getItem("vsc_admin_logged_in") === "true";
-    setIsLoggedIn(authSession);
-
-    // Fetch DB Status
-    fetch("/api/admin/db-status")
+    fetch("/api/admin/auth")
       .then((res) => res.json())
-      .then((data) => setDbConnected(data.connected))
-      .catch((err) => console.error("Error fetching db status:", err));
+      .then((data) => setIsLoggedIn(Boolean(data.authenticated)))
+      .catch((err) => {
+        console.error("Error checking admin auth:", err);
+        setIsLoggedIn(false);
+      });
   }, []);
 
-  const handleLogin = (e: React.FormEvent) => {
+  useEffect(() => {
+    if (!isLoggedIn) return;
+
+    const checkAdminSession = () => {
+      fetch("/api/admin/auth")
+        .then((res) => (res.ok ? res.json() : null))
+        .then((data) => {
+          if (!data?.authenticated) {
+            setIsLoggedIn(false);
+            setDbConnected(false);
+          }
+        })
+        .catch(() => {
+          setIsLoggedIn(false);
+          setDbConnected(false);
+        });
+    };
+
+    fetch("/api/admin/db-status")
+      .then((res) => res.json())
+      .then((data) => setDbConnected(Boolean(data.connected)))
+      .catch((err) => console.error("Error fetching db status:", err));
+
+    const timer = window.setInterval(checkAdminSession, 10000);
+    return () => window.clearInterval(timer);
+  }, [isLoggedIn]);
+
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (username === "zeroline" && password === "Zero7878**&&") {
-      localStorage.setItem("vsc_admin_logged_in", "true");
+
+    const res = await fetch("/api/admin/auth", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ username, password }),
+    });
+
+    if (res.ok) {
       setIsLoggedIn(true);
       setError("");
+      setPassword("");
     } else {
       setError(
         lang === "th"
@@ -73,9 +105,10 @@ export default function AdminConsoleLayout({
     }
   };
 
-  const handleLogout = () => {
-    localStorage.removeItem("vsc_admin_logged_in");
+  const handleLogout = async () => {
+    await fetch("/api/admin/auth", { method: "DELETE" }).catch((err) => console.error("Error logging out admin:", err));
     setIsLoggedIn(false);
+    setDbConnected(false);
   };
 
   const adminMenu = [

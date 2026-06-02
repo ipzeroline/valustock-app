@@ -1,5 +1,43 @@
 import { NextResponse } from "next/server";
+import { requireAdmin } from "@/lib/admin-auth";
 import { getDbConnectionStatus, query } from "@/lib/db";
+
+type SeoArticle = {
+  slug: string;
+  title: string;
+  category: string;
+  read_time: string;
+  summary: string;
+  content: string;
+  tag: string;
+  lang: "th" | "en";
+};
+
+function slugify(value: string) {
+  return value
+    .toLowerCase()
+    .replace(/&/g, " and ")
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "")
+    .slice(0, 90) || "market-update";
+}
+
+function getPrimaryTicker(article: any) {
+  const tickers = article.tickers || article.related_tickers || [];
+  return String(tickers[0] || article.ticker || "GLOBAL").toUpperCase();
+}
+
+function getEnglishDescription(article: any) {
+  return String(article.description || article.summary || article.title || "Global financial market update.");
+}
+
+function getBaseSlug(article: any) {
+  const primaryTicker = getPrimaryTicker(article).toLowerCase();
+  const published = article.published_utc
+    ? new Date(article.published_utc).toISOString().slice(0, 10)
+    : new Date().toISOString().slice(0, 10);
+  return `${published}-${primaryTicker}-${slugify(article.title || "market-update")}`;
+}
 
 // Simulated AI Translation and SEO Optimizer for Thai Investors
 function optimizeAndTranslateForSEO(article: any) {
@@ -142,14 +180,14 @@ function optimizeAndTranslateForSEO(article: any) {
 
 *คำเตือน: ข้อมูลฉบับนี้เป็นการสังเคราะห์ข่าวสารด้วยระบบอัจฉริยะเพื่อประกอบการศึกษาเครื่องมือ DCF เท่านั้น ไม่ใช่คำแนะนำชี้ชวนในการซื้อขายหลักทรัพย์อย่างเป็นทางการ*`;
 
-  // Create an SEO friendly unique slug
-  const cleanSlug = `${primaryTicker.toLowerCase()}-insights-${Math.floor(1000 + Math.random() * 9000)}`;
+  // Create a stable SEO friendly slug so repeated syncs do not duplicate the same article.
+  const cleanSlug = `${getBaseSlug(article)}-th`;
 
   return {
     slug: cleanSlug,
     title: thTitle,
     category: category,
-    read_time: `${5 + Math.floor(Math.random() * 6)} นาที`,
+    read_time: `${5 + Math.floor((primaryTicker.charCodeAt(0) || 0) % 5)} นาที`,
     summary: summary,
     content: content,
     tag: primaryTicker,
@@ -157,14 +195,85 @@ function optimizeAndTranslateForSEO(article: any) {
   };
 }
 
+function buildEnglishSeoArticle(article: any): SeoArticle {
+  const enTitle = String(article.title || "Global Financial Market Update").trim();
+  const enDesc = getEnglishDescription(article);
+  const primaryTicker = getPrimaryTicker(article);
+  const upperTitle = enTitle.toUpperCase();
+  const dateStr = article.published_utc
+    ? new Date(article.published_utc).toLocaleDateString("en-US", { year: "numeric", month: "short", day: "numeric" })
+    : new Date().toLocaleDateString("en-US", { year: "numeric", month: "short", day: "numeric" });
+
+  let category = "Global Stock Analysis";
+  if (upperTitle.includes("CRYPTO") || ["BTC", "ETH", "SOL"].includes(primaryTicker)) {
+    category = "Digital Assets";
+  } else if (upperTitle.includes("GOLD") || upperTitle.includes("OIL") || ["GOLD", "OIL", "BRENT"].includes(primaryTicker)) {
+    category = "Commodities & Futures";
+  } else if (upperTitle.includes("FED") || upperTitle.includes("RATE") || upperTitle.includes("INFLATION")) {
+    category = "Macroeconomics";
+  } else if (upperTitle.includes("VANGUARD") || upperTitle.includes("FIDELITY") || primaryTicker.endsWith("X")) {
+    category = "US Funds & ETFs";
+  }
+
+  const summary = `${primaryTicker} market update with a valuation-focused lens: key catalysts, risk factors, discounted cash flow context, and margin-of-safety considerations for long-term investors.`;
+
+  const content = `### ${primaryTicker} Market Update (${dateStr})
+
+Recent market news around **${primaryTicker}** states:
+> "${enDesc}"
+
+The ValuStock research workflow turns this update into a structured investor brief, focusing on valuation discipline rather than short-term headlines.
+
+---
+
+### 3 Valuation Points To Watch
+
+#### 1. Intrinsic Value And Margin Of Safety
+Before reacting to price movement, investors should compare the current market price with a conservative estimate of intrinsic value. A wide margin of safety helps absorb earnings revisions, interest-rate changes, and sentiment-driven volatility.
+
+#### 2. Growth Quality And Free Cash Flow
+The most useful news is not only whether revenue is growing, but whether growth can convert into sustainable free cash flow. For DCF valuation, assumptions around FCF growth, reinvestment needs, and terminal growth are more important than headline momentum.
+
+#### 3. Portfolio Risk, Currency, And Tax Context
+Thai investors holding global assets should also consider foreign exchange exposure, dividend withholding tax, and timing of fund transfers back to Thailand. These factors can materially affect after-tax returns.
+
+*Disclaimer: This automated ValuStock brief is for education and research workflow purposes only. It is not financial advice or a solicitation to buy or sell securities.*`;
+
+  return {
+    slug: `${getBaseSlug(article)}-en`,
+    title: enTitle.length > 115 ? `${enTitle.slice(0, 112)}...` : enTitle,
+    category,
+    read_time: `${5 + Math.floor((primaryTicker.charCodeAt(0) || 0) % 5)} mins`,
+    summary,
+    content,
+    tag: primaryTicker,
+    lang: "en",
+  };
+}
+
+function buildBilingualSeoArticles(article: any): SeoArticle[] {
+  return [
+    optimizeAndTranslateForSEO(article) as SeoArticle,
+    buildEnglishSeoArticle(article),
+  ];
+}
+
 export async function POST(req: Request) {
+    const authError = await requireAdmin(req);
+    if (authError) return authError;
+
     const dbStatus = await getDbConnectionStatus();
     const connected = dbStatus.connected;
+    const apiKey = process.env.MASSIVE_API_KEY;
+
+    if (!apiKey) {
+      return NextResponse.json({ error: "MASSIVE_API_KEY is not configured" }, { status: 500 });
+    }
 
   try {
     // Fetch news from Massive News API
     const response = await fetch(
-      `https://api.massive.com/v2/reference/news?limit=8&apiKey=B3ezf2eu7aT57Oz9sexkdJLHxLoHgdrN`
+      `https://api.massive.com/v2/reference/news?limit=8&apiKey=${encodeURIComponent(apiKey)}`
     );
     
     let rawNewsList = [];
@@ -188,32 +297,37 @@ export async function POST(req: Request) {
     }
 
     const insertedSlugs: string[] = [];
+    const skippedSlugs: string[] = [];
+    const insertedByLang = { th: 0, en: 0 };
 
     if (connected) {
       // 1. Online Mode: Save to SQL Database
       for (const item of rawNewsList) {
-        const seoNews = optimizeAndTranslateForSEO(item);
+        const bilingualArticles = buildBilingualSeoArticles(item);
 
-        // Check if article already exists
-        const existing = await query("SELECT slug FROM articles WHERE slug = ?", [seoNews.slug]);
-        if (existing.length === 0) {
-          // Check if a similar title already exists to avoid duplication
-          const duplicateTitle = await query("SELECT slug FROM articles WHERE title = ?", [seoNews.title]);
-          if (duplicateTitle.length === 0) {
-            await query(
-              "INSERT INTO articles (slug, title, category, read_time, summary, content, tag, lang) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
-              [seoNews.slug, seoNews.title, seoNews.category, seoNews.read_time, seoNews.summary, seoNews.content, seoNews.tag, seoNews.lang]
-            );
-            insertedSlugs.push(seoNews.slug);
+        for (const seoNews of bilingualArticles) {
+          const existing = await query<any[]>("SELECT slug FROM articles WHERE slug = ? LIMIT 1", [seoNews.slug]);
+          if (existing.length > 0) {
+            skippedSlugs.push(seoNews.slug);
+            continue;
           }
+
+          await query(
+            "INSERT INTO articles (slug, title, category, read_time, summary, content, tag, lang) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+            [seoNews.slug, seoNews.title, seoNews.category, seoNews.read_time, seoNews.summary, seoNews.content, seoNews.tag, seoNews.lang]
+          );
+          insertedSlugs.push(seoNews.slug);
+          insertedByLang[seoNews.lang] += 1;
         }
       }
 
       return NextResponse.json({
         success: true,
-        message: `ดึงข่าวเรียบร้อยและบันทึกลงระบบประมวลผลข่าวเรียบร้อยจำนวน ${insertedSlugs.length} ข่าว!`,
+        message: `ดึงข่าวและแปลอัตโนมัติ 2 ภาษาเรียบร้อย: ไทย ${insertedByLang.th} ข่าว, อังกฤษ ${insertedByLang.en} ข่าว (ข้ามข่าวซ้ำ ${skippedSlugs.length})`,
         fetchedCount: rawNewsList.length,
         insertedCount: insertedSlugs.length,
+        skippedCount: skippedSlugs.length,
+        insertedByLang,
         insertedSlugs,
         mockMode: false
       });

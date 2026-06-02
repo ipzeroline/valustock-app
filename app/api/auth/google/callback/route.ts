@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { isDbConnected, query } from "@/lib/db";
 import { signToken } from "@/lib/auth";
+import { createSingleActiveSession } from "@/lib/sessions";
 
 function getCookieValue(req: Request, name: string) {
   const cookieHeader = req.headers.get("cookie") || "";
@@ -79,24 +80,25 @@ export async function GET(req: Request) {
 
     // 3. Register or log in the user in the MariaDB database
     const dbConnected = await isDbConnected();
-    if (dbConnected) {
-      try {
-        await query(
-          `INSERT INTO users (email, name, plan, billing)
-           VALUES (?, ?, 'free', 'monthly')
-           ON DUPLICATE KEY UPDATE name = VALUES(name)`,
-          [email, name]
-        );
-      } catch (dbErr: any) {
-        console.error("Database user upsert failure:", dbErr.message);
-        // Continue flow so user can still log in in-memory
-      }
-    } else {
-      console.warn("Database offline. Authenticating user locally.");
+    if (!dbConnected) {
+      throw new Error("Database is offline. User login was not saved.");
     }
 
-    // 4. Create cryptographically signed token
-    const token = signToken({ email, name });
+    try {
+      await query(
+        `INSERT INTO users (email, name, plan, billing)
+         VALUES (?, ?, 'free', 'monthly')
+         ON DUPLICATE KEY UPDATE name = VALUES(name)`,
+        [email, name]
+      );
+    } catch (dbErr: any) {
+      console.error("Database user upsert failure:", dbErr.message);
+      throw new Error("Database user upsert failed");
+    }
+
+    // 4. Create a single active member session. New login replaces older devices.
+    const sessionId = await createSingleActiveSession("member", email);
+    const token = signToken({ email, name, sessionId });
 
     // 5. Redirect back to client callback route with the signed token
     const callbackTargetUrl = `${protocol}://${host}/login/callback?token=${encodeURIComponent(token)}`;

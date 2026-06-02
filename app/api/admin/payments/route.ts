@@ -1,7 +1,11 @@
 import { NextResponse } from "next/server";
+import { requireAdmin } from "@/lib/admin-auth";
 import { getDbConnectionStatus, isDbConnected, query } from "@/lib/db";
 
-export async function GET() {
+export async function GET(req: Request) {
+  const authError = await requireAdmin(req);
+  if (authError) return authError;
+
   const status = await getDbConnectionStatus();
 
   try {
@@ -24,6 +28,9 @@ export async function GET() {
 }
 
 export async function POST(req: Request) {
+  const authError = await requireAdmin(req);
+  if (authError) return authError;
+
   const connected = await isDbConnected();
   const body = await req.json();
   const { id, user_email, amount, plan, billing, status, payment_method, transaction_ref } = body;
@@ -77,6 +84,9 @@ export async function POST(req: Request) {
 }
 
 export async function DELETE(req: Request) {
+  const authError = await requireAdmin(req);
+  if (authError) return authError;
+
   const connected = await isDbConnected();
   const { id } = await req.json();
 

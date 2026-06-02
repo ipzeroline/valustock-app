@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { isDbConnected, query } from "@/lib/db";
 import { verifyToken } from "@/lib/auth";
+import { validateActiveSession } from "@/lib/sessions";
 
 export async function POST(req: Request) {
   try {
@@ -16,6 +17,7 @@ export async function POST(req: Request) {
     }
 
     const email = payload.email;
+    const sessionId = payload.sessionId;
     let name = payload.name;
     let plan = "free";
     let billing = "monthly";
@@ -24,6 +26,14 @@ export async function POST(req: Request) {
     const dbConnected = await isDbConnected();
     if (dbConnected) {
       try {
+        const active = await validateActiveSession("member", email, sessionId);
+        if (!active) {
+          return NextResponse.json(
+            { error: "Session was replaced by a newer login", code: "SESSION_REPLACED" },
+            { status: 401 }
+          );
+        }
+
         const rows = await query(
           "SELECT email, name, plan, billing FROM users WHERE email = ? LIMIT 1",
           [email]
@@ -37,6 +47,11 @@ export async function POST(req: Request) {
       } catch (dbErr: any) {
         console.error("Database query failed during verification:", dbErr.message);
       }
+    } else {
+      return NextResponse.json(
+        { error: "Database is not connected. Session cannot be verified." },
+        { status: 503 }
+      );
     }
 
     return NextResponse.json({
@@ -45,6 +60,7 @@ export async function POST(req: Request) {
       name,
       plan,
       billing,
+      sessionId,
     });
   } catch (err: any) {
     console.error("Token verification exception:", err.message);

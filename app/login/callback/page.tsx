@@ -45,7 +45,7 @@ function CallbackContent() {
       .then((data) => {
         if (data.success && data.email) {
           // Log in user on client with backend verified data
-          login(data.email, data.name, data.plan, data.billing);
+          login(data.email, data.name, data.plan, data.billing, token);
           
           // Smooth redirect to dashboard
           setTimeout(() => {

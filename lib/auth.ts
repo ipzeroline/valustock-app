@@ -1,10 +1,17 @@
 import crypto from "crypto";
 
-const SECRET = process.env.GOOGLE_CLIENT_SECRET || "valustock-secret-key-321-google-auth-fallback";
+function getAuthSecret() {
+  const secret = process.env.AUTH_SECRET || process.env.GOOGLE_CLIENT_SECRET;
+  if (!secret && process.env.NODE_ENV === "production") {
+    throw new Error("AUTH_SECRET or GOOGLE_CLIENT_SECRET is required in production");
+  }
+  return secret || "valustock-dev-auth-secret";
+}
 
 export interface AuthTokenPayload {
   email: string;
   name: string;
+  sessionId: string;
   exp: number;
 }
 
@@ -18,7 +25,7 @@ export function signToken(payload: Omit<AuthTokenPayload, "exp"> & { exp?: numbe
   
   const payloadStr = Buffer.from(JSON.stringify(fullPayload)).toString("base64url");
   const signature = crypto
-    .createHmac("sha256", SECRET)
+    .createHmac("sha256", getAuthSecret())
     .update(payloadStr)
     .digest("base64url");
     
@@ -36,7 +43,7 @@ export function verifyToken(token: string): AuthTokenPayload | null {
     
     // Verify signature
     const expectedSignature = crypto
-      .createHmac("sha256", SECRET)
+      .createHmac("sha256", getAuthSecret())
       .update(payloadStr)
       .digest("base64url");
       

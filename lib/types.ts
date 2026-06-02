@@ -150,6 +150,7 @@ export interface User {
 
 export interface AppData {
   user: User | null;
+  authToken?: string | null;
   watchlist: string[]; // symbols
   theme: "dark" | "light";
   lang?: "th" | "en";

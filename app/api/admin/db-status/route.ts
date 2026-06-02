@@ -1,7 +1,11 @@
 import { NextResponse } from "next/server";
+import { requireAdmin } from "@/lib/admin-auth";
 import { getDbConnectionStatus, initDatabase } from "@/lib/db";
 
-export async function GET() {
+export async function GET(req: Request) {
+  const authError = await requireAdmin(req);
+  if (authError) return authError;
+
   const status = await getDbConnectionStatus();
   
   if (status.connected) {

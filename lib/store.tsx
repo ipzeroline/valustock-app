@@ -17,6 +17,7 @@ const DEFAULT: AppData = {
   watchlist: [],
   theme: "dark",
   lang: "th",
+  authToken: null,
 };
 
 interface Ctx {
@@ -26,7 +27,7 @@ interface Ctx {
   theme: "dark" | "light";
   lang: "th" | "en";
   // auth
-  login: (email: string, name?: string, plan?: PlanId, billing?: "monthly" | "yearly") => void;
+  login: (email: string, name?: string, plan?: PlanId, billing?: "monthly" | "yearly", authToken?: string) => void;
   logout: () => void;
   // membership
   setPlan: (plan: PlanId, billing?: "monthly" | "yearly") => void;
@@ -153,7 +154,29 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     "tayasit.pea@gmail.com",
   ]);
 
-  const login = useCallback((email: string, name?: string, plan?: PlanId, billing?: "monthly" | "yearly") => {
+  useEffect(() => {
+    if (!ready || !data.user?.email || !data.authToken) return;
+
+    const verifyCurrentSession = () => {
+      fetch("/api/auth/verify", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ token: data.authToken }),
+      })
+        .then((res) => {
+          if (!res.ok) throw new Error("Session is no longer active");
+          return res.json();
+        })
+        .catch(() => {
+          setData((current) => ({ ...current, user: null, authToken: null }));
+        });
+    };
+
+    const timer = window.setInterval(verifyCurrentSession, 10000);
+    return () => window.clearInterval(timer);
+  }, [ready, data.user?.email, data.authToken]);
+
+  const login = useCallback((email: string, name?: string, plan?: PlanId, billing?: "monthly" | "yearly", authToken?: string) => {
     const normalizedEmail = email.toLowerCase().trim();
     const isPremium = PREMIUM_EMAILS.has(normalizedEmail);
     const nextPlan = isPremium ? "premium" : (plan || "free");
@@ -170,6 +193,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     setData((d) => ({
       ...d,
       user: nextUser,
+      authToken: authToken || d.authToken || null,
     }));
 
     fetch("/api/admin/users", {
@@ -187,7 +211,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const logout = useCallback(() => {
-    setData((d) => ({ ...d, user: null }));
+    setData((d) => ({ ...d, user: null, authToken: null }));
   }, []);
 
   const setPlan = useCallback(

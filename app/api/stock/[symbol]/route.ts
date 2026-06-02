@@ -1,8 +1,6 @@
 import { NextResponse } from "next/server";
 import { STOCKS } from "@/lib/stocks";
 
-const API_KEY = "B3ezf2eu7aT57Oz9sexkdJLHxLoHgdrN";
-
 export async function GET(
   request: Request,
   { params }: { params: Promise<{ symbol: string }> }
@@ -21,9 +19,14 @@ export async function GET(
   }
 
   try {
+    const apiKey = process.env.MASSIVE_API_KEY;
+    if (!apiKey) {
+      return NextResponse.json(getSimulatedStock(symbol));
+    }
+
     // 1. Fetch Ticker Details from Massive API
     const tickerRes = await fetch(
-      `https://api.massive.com/v3/reference/tickers/${symbol}?apiKey=${API_KEY}`,
+      `https://api.massive.com/v3/reference/tickers/${symbol}?apiKey=${encodeURIComponent(apiKey)}`,
       { next: { revalidate: 3600 } } // Cache for 1 hour
     );
 
@@ -43,7 +46,7 @@ export async function GET(
     const fromDate = fiveYearsAgo.toISOString().split("T")[0];
 
     const aggRes = await fetch(
-      `https://api.massive.com/v2/aggs/ticker/${symbol}/range/1/day/${fromDate}/${today}?adjusted=true&sort=asc&limit=50000&apiKey=${API_KEY}`,
+      `https://api.massive.com/v2/aggs/ticker/${symbol}/range/1/day/${fromDate}/${today}?adjusted=true&sort=asc&limit=50000&apiKey=${encodeURIComponent(apiKey)}`,
       { next: { revalidate: 3600 } }
     );
     const aggData = aggRes.ok ? await aggRes.json() : { results: [] };
@@ -60,7 +63,7 @@ export async function GET(
 
     // 3. Fetch Financial Statements (Income, Balance, Cash Flow)
     const finRes = await fetch(
-      `https://api.massive.com/vX/reference/financials?ticker=${symbol}&limit=5&apiKey=${API_KEY}`,
+      `https://api.massive.com/vX/reference/financials?ticker=${symbol}&limit=5&apiKey=${encodeURIComponent(apiKey)}`,
       { next: { revalidate: 86400 } } // Cache financials for 1 day
     );
     const finData = finRes.ok ? await finRes.json() : { results: [] };
