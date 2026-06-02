@@ -73,7 +73,46 @@ export async function initDatabase(): Promise<boolean> {
       ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
     `);
 
-    // 3. Articles table (Insights)
+    // 3. User preferences
+    await query(`
+      CREATE TABLE IF NOT EXISTS user_preferences (
+        user_email VARCHAR(255) PRIMARY KEY,
+        theme VARCHAR(20) DEFAULT 'dark',
+        lang VARCHAR(10) DEFAULT 'th',
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+    `);
+
+    // 4. Portfolio transactions
+    await query(`
+      CREATE TABLE IF NOT EXISTS portfolio_transactions (
+        id VARCHAR(64) PRIMARY KEY,
+        user_email VARCHAR(255) NOT NULL,
+        symbol VARCHAR(50) NOT NULL,
+        action VARCHAR(10) NOT NULL,
+        price DECIMAL(18,6) NOT NULL,
+        shares DECIMAL(18,6) NOT NULL,
+        trade_date DATE NOT NULL,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        INDEX idx_portfolio_user (user_email, trade_date)
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+    `);
+
+    // 5. Portfolio alerts
+    await query(`
+      CREATE TABLE IF NOT EXISTS portfolio_alerts (
+        id VARCHAR(64) PRIMARY KEY,
+        user_email VARCHAR(255) NOT NULL,
+        symbol VARCHAR(50) NOT NULL,
+        type VARCHAR(50) NOT NULL,
+        value DECIMAL(18,6) NOT NULL,
+        active BOOLEAN DEFAULT TRUE,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        INDEX idx_alert_user (user_email, symbol)
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+    `);
+
+    // 6. Articles table (Insights)
     await query(`
       CREATE TABLE IF NOT EXISTS articles (
         id INT AUTO_INCREMENT PRIMARY KEY,
@@ -89,7 +128,7 @@ export async function initDatabase(): Promise<boolean> {
       ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
     `);
 
-    // 4. Payments table
+    // 7. Payments table
     await query(`
       CREATE TABLE IF NOT EXISTS payments (
         id INT AUTO_INCREMENT PRIMARY KEY,
@@ -104,7 +143,7 @@ export async function initDatabase(): Promise<boolean> {
       ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
     `);
 
-    // 5. Staff table
+    // 8. Staff table
     await query(`
       CREATE TABLE IF NOT EXISTS staff (
         id INT AUTO_INCREMENT PRIMARY KEY,

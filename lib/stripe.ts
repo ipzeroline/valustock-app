@@ -53,6 +53,46 @@ function getSubscriptionId(session: StripeSession) {
     : session.subscription.id || session.id;
 }
 
+async function savePendingCheckoutSession({
+  session,
+  email,
+  name,
+  plan,
+  billing,
+  amount,
+}: {
+  session: StripeSession;
+  email: string;
+  name: string;
+  plan: PlanId;
+  billing: BillingInterval;
+  amount: number;
+}) {
+  const connected = await isDbConnected();
+  if (!connected) {
+    throw new Error("Database is not connected. Checkout was not saved.");
+  }
+
+  const existing = await query<any[]>(
+    "SELECT id FROM payments WHERE transaction_ref = ? LIMIT 1",
+    [session.id]
+  );
+
+  if (!existing.length) {
+    await query(
+      "INSERT INTO payments (user_email, amount, plan, billing, status, payment_method, transaction_ref) VALUES (?, ?, ?, ?, 'pending', 'stripe', ?)",
+      [email, amount, plan, billing, session.id]
+    );
+  }
+
+  await query(
+    `INSERT INTO users (email, name, plan, billing)
+     VALUES (?, ?, 'free', 'monthly')
+     ON DUPLICATE KEY UPDATE name = VALUES(name)`,
+    [email, name]
+  );
+}
+
 export async function createCheckoutSession({
   origin,
   email,
@@ -73,6 +113,10 @@ export async function createCheckoutSession({
   const amount = getPlanPrice(planId, billing);
   if (!amount || amount < 10) {
     throw new Error("Invalid checkout amount");
+  }
+
+  if (!(await isDbConnected())) {
+    throw new Error("Database is not connected. Checkout was not started.");
   }
 
   const plan = getPlan(planId);
@@ -115,7 +159,17 @@ export async function createCheckoutSession({
     throw new Error(payload?.error?.message || "Stripe checkout session failed");
   }
 
-  return payload as StripeSession;
+  const session = payload as StripeSession;
+  await savePendingCheckoutSession({
+    session,
+    email: normalizedEmail,
+    name: name || normalizedEmail.split("@")[0] || "นักลงทุน",
+    plan: planId,
+    billing,
+    amount,
+  });
+
+  return session;
 }
 
 export async function retrieveCheckoutSession(sessionId: string) {
@@ -159,16 +213,22 @@ export async function syncStripeCheckoutSession(session: StripeSession) {
   const amount = typeof session.amount_total === "number"
     ? session.amount_total / 100
     : getPlanPrice(plan, billing);
+  const sessionRef = session.id;
   const transactionRef = getSubscriptionId(session);
   const connected = await isDbConnected();
 
   if (connected) {
     const existing = await query<any[]>(
-      "SELECT id FROM payments WHERE transaction_ref = ? LIMIT 1",
-      [transactionRef]
+      "SELECT id FROM payments WHERE transaction_ref IN (?, ?) LIMIT 1",
+      [sessionRef, transactionRef]
     );
 
-    if (!existing.length) {
+    if (existing.length) {
+      await query(
+        "UPDATE payments SET user_email = ?, amount = ?, plan = ?, billing = ?, status = 'verified', payment_method = 'stripe', transaction_ref = ? WHERE id = ?",
+        [email, amount, plan, billing, transactionRef, existing[0].id]
+      );
+    } else {
       await query(
         "INSERT INTO payments (user_email, amount, plan, billing, status, payment_method, transaction_ref) VALUES (?, ?, ?, ?, 'verified', 'stripe', ?)",
         [email, amount, plan, billing, transactionRef]
@@ -181,6 +241,8 @@ export async function syncStripeCheckoutSession(session: StripeSession) {
        ON DUPLICATE KEY UPDATE name = VALUES(name), plan = VALUES(plan), billing = VALUES(billing)`,
       [email, name, plan, billing]
     );
+  } else {
+    throw new Error("Database is not connected. Paid checkout was not saved.");
   }
 
   return {

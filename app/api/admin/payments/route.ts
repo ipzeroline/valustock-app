@@ -1,81 +1,26 @@
 import { NextResponse } from "next/server";
-import { isDbConnected, query } from "@/lib/db";
-
-// Pre-populated mock transactions for sandboxed workspace mode
-const MOCK_PAYMENTS = [
-  {
-    id: 1,
-    user_email: "kitti.value@gmail.com",
-    amount: 290.0,
-    plan: "pro",
-    billing: "monthly",
-    status: "verified",
-    payment_method: "promptpay",
-    transaction_ref: "TXN987654321",
-    created_at: "2026-05-20T10:15:00Z",
-  },
-  {
-    id: 2,
-    user_email: "pitcha.dividend@outlook.com",
-    amount: 590.0,
-    plan: "premium",
-    billing: "monthly",
-    status: "verified",
-    payment_method: "credit_card",
-    transaction_ref: "TXN123456789",
-    created_at: "2026-05-28T09:10:00Z",
-  },
-  {
-    id: 3,
-    user_email: "suradech.grow@yahoo.com",
-    amount: 2900.0,
-    plan: "pro",
-    billing: "yearly",
-    status: "verified",
-    payment_method: "bank_transfer",
-    transaction_ref: "TXN555444333",
-    created_at: "2026-05-29T16:45:00Z",
-  },
-  {
-    id: 4,
-    user_email: "somchai.trade@hotmail.com",
-    amount: 590.0,
-    plan: "premium",
-    billing: "monthly",
-    status: "pending",
-    payment_method: "bank_transfer",
-    transaction_ref: "TXN777888999",
-    created_at: "2026-05-30T01:20:00Z",
-  },
-];
+import { getDbConnectionStatus, isDbConnected, query } from "@/lib/db";
 
 export async function GET() {
-  const connected = await isDbConnected();
+  const status = await getDbConnectionStatus();
 
   try {
-    if (connected) {
+    if (status.connected) {
       const rows = await query("SELECT id, user_email, amount, plan, billing, status, payment_method, transaction_ref, created_at FROM payments ORDER BY created_at DESC");
-      
-      // If table is empty, seed it with mock payments
-      if (rows.length === 0) {
-        for (const p of MOCK_PAYMENTS) {
-          await query(
-            "INSERT INTO payments (user_email, amount, plan, billing, status, payment_method, transaction_ref, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
-            [p.user_email, p.amount, p.plan, p.billing, p.status, p.payment_method, p.transaction_ref, new Date(p.created_at)]
-          );
-        }
-        const seeded = await query("SELECT id, user_email, amount, plan, billing, status, payment_method, transaction_ref, created_at FROM payments ORDER BY created_at DESC");
-        return NextResponse.json({ payments: seeded, mockMode: false });
-      }
-
       return NextResponse.json({ payments: rows, mockMode: false });
     }
   } catch (err: any) {
     console.error("Database payments fetch error:", err.message);
+    return NextResponse.json(
+      { error: "Database payments fetch failed", detail: err.message, mockMode: false },
+      { status: 500 }
+    );
   }
 
-  // Fallback to sandboxed data
-  return NextResponse.json({ payments: MOCK_PAYMENTS, mockMode: true });
+  return NextResponse.json(
+    { error: "Database is not connected. Payments were not loaded.", detail: status.error, code: status.code, mockMode: false },
+    { status: 503 }
+  );
 }
 
 export async function POST(req: Request) {
@@ -105,19 +50,28 @@ export async function POST(req: Request) {
           "INSERT INTO payments (user_email, amount, plan, billing, status, payment_method, transaction_ref) VALUES (?, ?, ?, ?, ?, ?, ?)",
           [user_email, amount || 0, plan || "pro", billing || "monthly", status || "pending", payment_method || "bank_transfer", transaction_ref || ""]
         );
+
+        if (status === "verified" && user_email) {
+          await query(
+            `INSERT INTO users (email, name, plan, billing)
+             VALUES (?, ?, ?, ?)
+             ON DUPLICATE KEY UPDATE plan = VALUES(plan), billing = VALUES(billing)`,
+            [user_email, user_email.split("@")[0] || "นักลงทุน", plan || "pro", billing || "monthly"]
+          );
+        }
       }
       return NextResponse.json({ success: true, mockMode: false });
     }
   } catch (err: any) {
     console.error("Database payments write error:", err.message);
     return NextResponse.json(
-      { error: "Database payment write failed", detail: err.message, mockMode: true },
+      { error: "Database payment write failed", detail: err.message, mockMode: false },
       { status: 500 }
     );
   }
 
   return NextResponse.json(
-    { error: "Database is not connected. Payment was not saved.", mockMode: true },
+    { error: "Database is not connected. Payment was not saved.", mockMode: false },
     { status: 503 }
   );
 }
@@ -138,13 +92,13 @@ export async function DELETE(req: Request) {
   } catch (err: any) {
     console.error("Database payment delete error:", err.message);
     return NextResponse.json(
-      { error: "Database payment delete failed", detail: err.message, mockMode: true },
+      { error: "Database payment delete failed", detail: err.message, mockMode: false },
       { status: 500 }
     );
   }
 
   return NextResponse.json(
-    { error: "Database is not connected. Payment was not deleted.", mockMode: true },
+    { error: "Database is not connected. Payment was not deleted.", mockMode: false },
     { status: 503 }
   );
 }

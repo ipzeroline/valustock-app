@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/Button";
 import { Card, CardHeader, Badge } from "@/components/ui/Card";
 import { Modal, Field } from "@/components/ui/Modal";
 import { useTranslation } from "@/lib/translations";
-import { Shield, Sparkles, Plus, Edit3, Trash2, Key, Mail, RefreshCw } from "@/lib/icons";
+import { Shield, Sparkles, Plus, Edit3, Trash2, Key, Mail } from "@/lib/icons";
 
 interface AdminStaff {
   id: number;
@@ -21,7 +21,7 @@ export default function AdminStaffPanel() {
   const { lang } = useTranslation();
   const [staffList, setStaffList] = useState<AdminStaff[]>([]);
   const [loading, setLoading] = useState(true);
-  const [mockMode, setMockMode] = useState(false);
+  const [error, setError] = useState("");
 
   // Modal State
   const [modalOpen, setModalOpen] = useState(false);
@@ -36,15 +36,20 @@ export default function AdminStaffPanel() {
 
   const fetchStaff = () => {
     setLoading(true);
+    setError("");
     fetch("/api/admin/staff")
-      .then((res) => res.json())
-      .then((data) => {
+      .then((res) => res.json().then((data) => ({ ok: res.ok, data })))
+      .then(({ ok, data }) => {
+        if (!ok) {
+          throw new Error(data.detail || data.error || "Unable to load staff from database");
+        }
         setStaffList(data.staff || []);
-        setMockMode(!!data.mockMode);
         setLoading(false);
       })
       .catch((err) => {
         console.error("Error fetching staff list:", err);
+        setError(err.message || (lang === "th" ? "โหลดข้อมูลเจ้าหน้าที่จากฐานข้อมูลไม่สำเร็จ" : "Unable to load staff from database"));
+        setStaffList([]);
         setLoading(false);
       });
   };
@@ -94,12 +99,14 @@ export default function AdminStaffPanel() {
       });
 
       const data = await res.json();
-      if (data.success) {
-        setModalOpen(false);
-        fetchStaff();
+      if (!res.ok || !data.success) {
+        throw new Error(data.detail || data.error || "Unable to save staff member");
       }
+      setModalOpen(false);
+      fetchStaff();
     } catch (err) {
       console.error(err);
+      setError(err instanceof Error ? err.message : (lang === "th" ? "บันทึกเจ้าหน้าที่ไม่สำเร็จ" : "Unable to save staff member"));
     }
   };
 
@@ -114,11 +121,13 @@ export default function AdminStaffPanel() {
       });
 
       const data = await res.json();
-      if (data.success) {
-        setStaffList((prev) => prev.filter((s) => s.id !== id));
+      if (!res.ok || !data.success) {
+        throw new Error(data.detail || data.error || "Unable to delete staff member");
       }
+      setStaffList((prev) => prev.filter((s) => s.id !== id));
     } catch (err) {
       console.error(err);
+      setError(err instanceof Error ? err.message : (lang === "th" ? "ลบเจ้าหน้าที่ไม่สำเร็จ" : "Unable to delete staff member"));
     }
   };
 
@@ -155,13 +164,13 @@ export default function AdminStaffPanel() {
         </Button>
       </div>
 
-      {mockMode && (
-        <div className="rounded-2xl border border-gold/20 bg-gold/5 p-4 flex items-center gap-3 text-xs text-gold">
-          <Sparkles className="h-4.5 w-4.5 text-gold animate-pulse shrink-0" />
+      {error && (
+        <div className="rounded-2xl border border-down/20 bg-down/5 p-4 flex items-center gap-3 text-xs text-down">
+          <Sparkles className="h-4.5 w-4.5 text-down shrink-0" />
           <span>
             {lang === "th"
-              ? "Sandbox Active: ข้อมูลเจ้าหน้าที่ทำงานบนหน่วยความจำจำลอง เนื่องจาก MariaDB VPS บล็อกสิทธิ์การเชื่อมต่อจากที่อยู่อาศัยปัจจุบันของคุณ"
-              : "Sandbox Active: Permissions are operating on local state because database query has failed over network rules."}
+              ? `ฐานข้อมูลเจ้าหน้าที่ไม่พร้อมใช้งาน: ${error}`
+              : `Staff database unavailable: ${error}`}
           </span>
         </div>
       )}

@@ -102,6 +102,45 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
       });
   }, [ready, data.user?.email]);
 
+  useEffect(() => {
+    if (!ready || !data.user?.email) return;
+
+    const email = data.user.email.trim().toLowerCase();
+    fetch(`/api/preferences?email=${encodeURIComponent(email)}`)
+      .then((res) => (res.ok ? res.json() : null))
+      .then((payload) => {
+        if (!payload?.preferences) return;
+        setData((current) => {
+          if (current.user?.email.trim().toLowerCase() !== email) return current;
+          return {
+            ...current,
+            theme: payload.preferences.theme === "light" ? "light" : "dark",
+            lang: payload.preferences.lang === "en" ? "en" : "th",
+          };
+        });
+      })
+      .catch(() => {
+        /* keep local preferences if the database is unavailable */
+      });
+  }, [ready, data.user?.email]);
+
+  useEffect(() => {
+    if (!ready || !data.user?.email) return;
+    const email = data.user.email.trim().toLowerCase();
+
+    fetch("/api/preferences", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        email,
+        theme: data.theme,
+        lang: data.lang || "th",
+      }),
+    }).catch(() => {
+      /* local preferences remain available while offline */
+    });
+  }, [ready, data.user?.email, data.theme, data.lang]);
+
   // apply theme class
   useEffect(() => {
     const root = document.documentElement;

@@ -1,6 +1,5 @@
 import { NextResponse } from "next/server";
-import { isDbConnected, query } from "@/lib/db";
-import { saveFlatArticle, readFlatArticles } from "@/lib/flatdb";
+import { getDbConnectionStatus, query } from "@/lib/db";
 
 // Simulated AI Translation and SEO Optimizer for Thai Investors
 function optimizeAndTranslateForSEO(article: any) {
@@ -159,7 +158,8 @@ function optimizeAndTranslateForSEO(article: any) {
 }
 
 export async function POST(req: Request) {
-  const connected = await isDbConnected();
+    const dbStatus = await getDbConnectionStatus();
+    const connected = dbStatus.connected;
 
   try {
     // Fetch news from Massive News API
@@ -217,32 +217,17 @@ export async function POST(req: Request) {
         insertedSlugs,
         mockMode: false
       });
-    } else {
-      // 2. Offline Mode: Save to Flat-Files Local JSON Database
-      const flatArticles = readFlatArticles();
-      
-      for (const item of rawNewsList) {
-        const seoNews = optimizeAndTranslateForSEO(item);
-
-        // Check if slug or title already exists in flat-file database
-        const slugExists = flatArticles.some(a => a.slug === seoNews.slug);
-        const titleExists = flatArticles.some(a => a.title === seoNews.title);
-
-        if (!slugExists && !titleExists) {
-          saveFlatArticle(seoNews);
-          insertedSlugs.push(seoNews.slug);
-        }
-      }
-
-      return NextResponse.json({
-        success: true,
-        message: `ดึงข่าวเรียบร้อยและบันทึกลงฐานข้อมูลระบบไฟล์แบนสำเร็จ (Flat-Files Local Database Mode) จำนวน ${insertedSlugs.length} ข่าว! (ฐานข้อมูลหลักออฟไลน์)`,
-        fetchedCount: rawNewsList.length,
-        insertedCount: insertedSlugs.length,
-        insertedSlugs,
-        mockMode: true
-      });
     }
+
+    return NextResponse.json(
+      {
+        error: "Database is not connected. News articles were not saved.",
+        detail: dbStatus.error,
+        code: dbStatus.code,
+        mockMode: false,
+      },
+      { status: 503 }
+    );
 
   } catch (err: any) {
     console.error("Admin news fetch error:", err.message);

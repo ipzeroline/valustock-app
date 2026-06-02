@@ -1,9 +1,9 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { STOCKS, getStock } from "@/lib/stocks";
 import { computeValuation, defaultDCFParams } from "@/lib/valuation";
-import { useCurrentPlan } from "@/lib/store";
+import { useCurrentPlan, useStore } from "@/lib/store";
 import { Card, CardHeader, Badge } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import { Modal } from "@/components/ui/Modal";
@@ -43,16 +43,13 @@ interface Transaction {
 
 export default function PortfolioPage() {
   const plan = useCurrentPlan();
+  const { user } = useStore();
   const { lang, t } = useTranslation();
   const [activeTab, setActiveTab] = useState<TabType>("ledger");
   const [openFaq, setOpenFaq] = useState<number | null>(0);
 
-  // Pre-seed mock transactions for a robust beginner showcase
-  const [transactions, setTransactions] = useState<Transaction[]>([
-    { id: "tx-1", symbol: "PTT", action: "BUY", price: 31.0, shares: 1000, date: "2026-01-15" },
-    { id: "tx-2", symbol: "AOT", action: "BUY", price: 56.5, shares: 500, date: "2026-02-10" },
-    { id: "tx-3", symbol: "KBANK", action: "BUY", price: 151.0, shares: 200, date: "2026-03-01" },
-  ]);
+  const [transactions, setTransactions] = useState<Transaction[]>([]);
+  const [portfolioError, setPortfolioError] = useState("");
 
   // Transaction form states
   const [txSymbol, setTxSymbol] = useState("PTT");
@@ -69,11 +66,35 @@ export default function PortfolioPage() {
   const [alertSymbol, setAlertSymbol] = useState("PTT");
   const [alertType, setAlertType] = useState<"price_above" | "price_below" | "mos_above">("price_below");
   const [alertValue, setAlertValue] = useState<string>("30.00");
-  const [alerts, setAlerts] = useState<any[]>([
-    { id: "al-1", symbol: "PTT", type: "price_below", value: 31.50, active: true },
-    { id: "al-2", symbol: "AAPL", type: "mos_above", value: 15, active: true },
-  ]);
+  const [alerts, setAlerts] = useState<any[]>([]);
   const [simulatedToast, setSimulatedToast] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!user?.email) {
+      setTransactions([]);
+      setAlerts([]);
+      return;
+    }
+
+    const email = user.email.trim().toLowerCase();
+    setPortfolioError("");
+
+    Promise.all([
+      fetch(`/api/portfolio/transactions?email=${encodeURIComponent(email)}`)
+        .then((res) => res.json().then((data) => ({ ok: res.ok, data }))),
+      fetch(`/api/portfolio/alerts?email=${encodeURIComponent(email)}`)
+        .then((res) => res.json().then((data) => ({ ok: res.ok, data }))),
+    ])
+      .then(([txRes, alertRes]) => {
+        if (!txRes.ok) throw new Error(txRes.data.detail || txRes.data.error || "Unable to load portfolio transactions");
+        if (!alertRes.ok) throw new Error(alertRes.data.detail || alertRes.data.error || "Unable to load portfolio alerts");
+        setTransactions(txRes.data.transactions || []);
+        setAlerts(alertRes.data.alerts || []);
+      })
+      .catch((err) => {
+        setPortfolioError(err.message || (lang === "th" ? "โหลดพอร์ตจากฐานข้อมูลไม่สำเร็จ" : "Unable to load portfolio from database"));
+      });
+  }, [user?.email, lang]);
 
   const portfolioGuides = [
     {
@@ -203,8 +224,12 @@ export default function PortfolioPage() {
   }, [transactions]);
 
   // Handle adding transactions
-  const handleAddTransaction = (e: React.FormEvent) => {
+  const handleAddTransaction = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!user?.email) {
+      setPortfolioError(lang === "th" ? "กรุณาเข้าสู่ระบบก่อนบันทึกพอร์ต" : "Please log in before saving portfolio data.");
+      return;
+    }
     const parsedPrice = parseFloat(txPrice);
     const parsedShares = parseInt(txShares, 10);
     if (!parsedPrice || !parsedShares || parsedPrice <= 0 || parsedShares <= 0) return;
@@ -218,15 +243,45 @@ export default function PortfolioPage() {
       date: txDate,
     };
 
-    setTransactions((prev) => [newTx, ...prev]);
+    try {
+      const res = await fetch("/api/portfolio/transactions", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ ...newTx, email: user.email }),
+      });
+      const data = await res.json();
+      if (!res.ok || !data.success) {
+        throw new Error(data.detail || data.error || "Unable to save portfolio transaction");
+      }
+      setTransactions((prev) => [data.transaction || newTx, ...prev]);
+      setPortfolioError("");
+    } catch (err) {
+      setPortfolioError(err instanceof Error ? err.message : (lang === "th" ? "บันทึกรายการซื้อขายไม่สำเร็จ" : "Unable to save transaction"));
+      return;
+    }
     // Reset inputs with default estimates
     const s = getStock(txSymbol)!;
     setTxPrice(s.price.toString());
     setTxShares("500");
   };
 
-  const handleRemoveTransaction = (id: string) => {
-    setTransactions((prev) => prev.filter((tx) => tx.id !== id));
+  const handleRemoveTransaction = async (id: string) => {
+    if (!user?.email) return;
+    try {
+      const res = await fetch("/api/portfolio/transactions", {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: user.email, id }),
+      });
+      const data = await res.json();
+      if (!res.ok || !data.success) {
+        throw new Error(data.detail || data.error || "Unable to delete portfolio transaction");
+      }
+      setTransactions((prev) => prev.filter((tx) => tx.id !== id));
+      setPortfolioError("");
+    } catch (err) {
+      setPortfolioError(err instanceof Error ? err.message : (lang === "th" ? "ลบรายการซื้อขายไม่สำเร็จ" : "Unable to delete transaction"));
+    }
   };
 
   const [showExportModal, setShowExportModal] = useState(false);
@@ -318,8 +373,12 @@ export default function PortfolioPage() {
   }, [backtestSymbol, backtestYears]);
 
   // 3. DYNAMIC ALERTS CONFIGURATION
-  const handleAddAlert = (e: React.FormEvent) => {
+  const handleAddAlert = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!user?.email) {
+      setPortfolioError(lang === "th" ? "กรุณาเข้าสู่ระบบก่อนบันทึกแจ้งเตือน" : "Please log in before saving alerts.");
+      return;
+    }
     const val = parseFloat(alertValue);
     if (!val || val <= 0) return;
     const newAlert = {
@@ -329,12 +388,42 @@ export default function PortfolioPage() {
       value: val,
       active: true,
     };
-    setAlerts((prev) => [newAlert, ...prev]);
+    try {
+      const res = await fetch("/api/portfolio/alerts", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ ...newAlert, email: user.email }),
+      });
+      const data = await res.json();
+      if (!res.ok || !data.success) {
+        throw new Error(data.detail || data.error || "Unable to save portfolio alert");
+      }
+      setAlerts((prev) => [data.alert || newAlert, ...prev]);
+      setPortfolioError("");
+    } catch (err) {
+      setPortfolioError(err instanceof Error ? err.message : (lang === "th" ? "บันทึกแจ้งเตือนไม่สำเร็จ" : "Unable to save alert"));
+      return;
+    }
     setAlertValue("");
   };
 
-  const handleRemoveAlert = (id: string) => {
-    setAlerts((prev) => prev.filter((al) => al.id !== id));
+  const handleRemoveAlert = async (id: string) => {
+    if (!user?.email) return;
+    try {
+      const res = await fetch("/api/portfolio/alerts", {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: user.email, id }),
+      });
+      const data = await res.json();
+      if (!res.ok || !data.success) {
+        throw new Error(data.detail || data.error || "Unable to delete portfolio alert");
+      }
+      setAlerts((prev) => prev.filter((al) => al.id !== id));
+      setPortfolioError("");
+    } catch (err) {
+      setPortfolioError(err instanceof Error ? err.message : (lang === "th" ? "ลบแจ้งเตือนไม่สำเร็จ" : "Unable to delete alert"));
+    }
   };
 
   // Trigger simulated live toast alert block
@@ -410,6 +499,12 @@ export default function PortfolioPage() {
           >
             <X className="h-4 w-4" />
           </button>
+        </div>
+      )}
+
+      {portfolioError && (
+        <div className="rounded-2xl border border-down/25 bg-down/10 px-4 py-3 text-xs font-semibold leading-relaxed text-down">
+          {portfolioError}
         </div>
       )}
 

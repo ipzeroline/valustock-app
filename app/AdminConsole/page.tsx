@@ -128,16 +128,21 @@ export default function AdminOverview() {
         <p className="text-xs text-muted leading-relaxed mt-2.5 max-w-4xl">
           {dbConnected
             ? `การเชื่อมต่อฐานข้อมูลทำงานร่วมกับ MariaDB บนเซิร์ฟเวอร์หลักได้อย่างสมบูรณ์ ข้อมูลธุรกรรม สมาชิก watchlists บทความ และสิทธิ์เจ้าหน้าที่ทั้งหมดจัดเก็บอย่างปลอดภัยบน VPS (DB: ${dbInfo?.database}, User: ${dbInfo?.user})`
-            : "ฐานข้อมูลจำลองอยู่ในสถานะ Sandbox Mode เนื่องจากพอร์ตหรือหมายเลขไอพีของเซิร์ฟเวอร์ (165.22.247.92) บล็อกการเชื่อมต่อจากภายนอก ให้ SSH ไปรัน SQL สั่งเปิดสิทธิ์แอดมินภายนอก"}
+            : `ฐานข้อมูลยังเชื่อมต่อไม่ได้ (${dbInfo?.code || "UNKNOWN"}): ${dbInfo?.error || "ตรวจสอบสิทธิ์ผู้ใช้ MariaDB และ remote grants บน VPS"}`}
         </p>
 
         {!dbConnected && (
           <div className="mt-4 pt-4 border-t border-line/50 space-y-2">
             <span className="text-xs font-bold text-ink block">🔗 คำสั่ง SQL รันบนเซิร์ฟเวอร์ VPS:</span>
             <div className="rounded-xl border border-line bg-bg p-3.5 text-xs font-mono text-ink leading-relaxed select-all">
-              GRANT ALL PRIVILEGES ON vscpost_db.* TO 'vscpost_db'@'%' IDENTIFIED BY 'LBSXamzRx3aLhvbE c]h;]h';<br />
+              CREATE USER IF NOT EXISTS 'vscpost_db'@'%' IDENTIFIED BY '&lt;DB_PASSWORD&gt;';<br />
+              ALTER USER 'vscpost_db'@'%' IDENTIFIED BY '&lt;DB_PASSWORD&gt;';<br />
+              GRANT ALL PRIVILEGES ON vscpost_db.* TO 'vscpost_db'@'%';<br />
               FLUSH PRIVILEGES;
             </div>
+            <p className="text-[11px] font-semibold leading-relaxed text-muted">
+              ใช้รหัสผ่านจริงจาก environment บน server เท่านั้น อย่าแสดงรหัสผ่านในหน้าเว็บหรือ commit ลง git
+            </p>
           </div>
         )}
       </Card>

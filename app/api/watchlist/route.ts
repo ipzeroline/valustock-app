@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { isDbConnected, query } from "@/lib/db";
+import { getDbConnectionStatus, query } from "@/lib/db";
 
 function normalizeEmail(email: unknown) {
   return typeof email === "string" ? email.trim().toLowerCase() : "";
@@ -17,9 +17,10 @@ export async function GET(req: Request) {
     return NextResponse.json({ error: "Email is required" }, { status: 400 });
   }
 
-  if (!(await isDbConnected())) {
+  const status = await getDbConnectionStatus();
+  if (!status.connected) {
     return NextResponse.json(
-      { error: "Database is not connected", watchlist: [], mockMode: true },
+      { error: "Database is not connected", detail: status.error, code: status.code, watchlist: [], mockMode: false },
       { status: 503 }
     );
   }
@@ -36,7 +37,7 @@ export async function GET(req: Request) {
   } catch (err: any) {
     console.error("Database watchlist fetch error:", err.message);
     return NextResponse.json(
-      { error: "Could not load watchlist from database", watchlist: [], mockMode: true },
+      { error: "Could not load watchlist from database", detail: err.message, watchlist: [], mockMode: false },
       { status: 500 }
     );
   }
@@ -51,9 +52,10 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "Email and symbol are required" }, { status: 400 });
   }
 
-  if (!(await isDbConnected())) {
+  const status = await getDbConnectionStatus();
+  if (!status.connected) {
     return NextResponse.json(
-      { error: "Database is not connected. Watchlist was not saved.", mockMode: true },
+      { error: "Database is not connected. Watchlist was not saved.", detail: status.error, code: status.code, mockMode: false },
       { status: 503 }
     );
   }
@@ -67,7 +69,7 @@ export async function POST(req: Request) {
   } catch (err: any) {
     console.error("Database watchlist insert error:", err.message);
     return NextResponse.json(
-      { error: "Could not save watchlist to database", mockMode: true },
+      { error: "Could not save watchlist to database", detail: err.message, mockMode: false },
       { status: 500 }
     );
   }
@@ -82,9 +84,10 @@ export async function DELETE(req: Request) {
     return NextResponse.json({ error: "Email and symbol are required" }, { status: 400 });
   }
 
-  if (!(await isDbConnected())) {
+  const status = await getDbConnectionStatus();
+  if (!status.connected) {
     return NextResponse.json(
-      { error: "Database is not connected. Watchlist was not deleted.", mockMode: true },
+      { error: "Database is not connected. Watchlist was not deleted.", detail: status.error, code: status.code, mockMode: false },
       { status: 503 }
     );
   }
@@ -95,7 +98,7 @@ export async function DELETE(req: Request) {
   } catch (err: any) {
     console.error("Database watchlist delete error:", err.message);
     return NextResponse.json(
-      { error: "Could not delete watchlist from database", mockMode: true },
+      { error: "Could not delete watchlist from database", detail: err.message, mockMode: false },
       { status: 500 }
     );
   }
