@@ -2,9 +2,19 @@ import { NextResponse } from "next/server";
 import { isDbConnected, query } from "@/lib/db";
 import { signToken } from "@/lib/auth";
 
+function getCookieValue(req: Request, name: string) {
+  const cookieHeader = req.headers.get("cookie") || "";
+  return cookieHeader
+    .split(";")
+    .map((cookie) => cookie.trim())
+    .find((cookie) => cookie.startsWith(`${name}=`))
+    ?.slice(name.length + 1);
+}
+
 export async function GET(req: Request) {
   const { searchParams } = new URL(req.url);
   const code = searchParams.get("code");
+  const state = searchParams.get("state");
 
   const host = req.headers.get("host") || "localhost:7887";
   const protocol = host.includes("localhost") || host.includes("127.0.0.1") ? "http" : "https";
@@ -16,6 +26,11 @@ export async function GET(req: Request) {
   }
 
   try {
+    const storedState = getCookieValue(req, "valustock_google_oauth_state");
+    if (!state || !storedState || state !== storedState) {
+      throw new Error("OAuth state mismatch");
+    }
+
     const clientId = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID;
     const clientSecret = process.env.GOOGLE_CLIENT_SECRET;
     if (!clientId || !clientSecret) {
@@ -85,7 +100,15 @@ export async function GET(req: Request) {
 
     // 5. Redirect back to client callback route with the signed token
     const callbackTargetUrl = `${protocol}://${host}/login/callback?token=${encodeURIComponent(token)}`;
-    return NextResponse.redirect(callbackTargetUrl);
+    const response = NextResponse.redirect(callbackTargetUrl);
+    response.cookies.set("valustock_google_oauth_state", "", {
+      httpOnly: true,
+      sameSite: "lax",
+      secure: protocol === "https",
+      path: "/",
+      maxAge: 0,
+    });
+    return response;
 
   } catch (err: any) {
     console.error("Google Auth Callback Exception:", err.message);

@@ -31,7 +31,7 @@ const mono = IBM_Plex_Mono({
 });
 
 export const metadata: Metadata = {
-  metadataBase: new URL("https://valustock.app"),
+  metadataBase: new URL("https://valustock.com"),
   title: "ValuStock | เครื่องมือประเมินมูลค่าหุ้น คำนวณ DCF และหาหุ้นพื้นฐานดี",
   description: "ประเมินมูลค่าหุ้นด้วย DCF, Intrinsic Value และ Margin of Safety คัดกรองหุ้นพื้นฐานดี หุ้น undervalue หุ้นปันผลสูง และดูว่าหุ้นไทยหรือหุ้นอเมริกาถูกหรือแพง",
   keywords: [
@@ -71,7 +71,7 @@ export const metadata: Metadata = {
     "valustock",
     "งบการเงิน"
   ],
-  authors: [{ name: "ValuStock Team", url: "https://valustock.app" }],
+  authors: [{ name: "ValuStock Team", url: "https://valustock.com" }],
   creator: "ValuStock",
   publisher: "ValuStock",
   robots: {
@@ -88,13 +88,13 @@ export const metadata: Metadata = {
   openGraph: {
     type: "website",
     locale: "th_TH",
-    url: "https://valustock.app",
+    url: "https://valustock.com",
     title: "ValuStock | เครื่องมือประเมินมูลค่าหุ้น คำนวณ DCF และหาหุ้นพื้นฐานดี",
     description: "ประเมินมูลค่าหุ้นด้วย DCF, Intrinsic Value และ Margin of Safety คัดกรองหุ้นพื้นฐานดี หุ้น undervalue หุ้นปันผลสูง และดูว่าหุ้นไทยหรือหุ้นอเมริกาถูกหรือแพง",
     siteName: "ValuStock",
     images: [
       {
-        url: "https://valustock.app/og-image.png",
+        url: "https://valustock.com/og-image.png",
         width: 1200,
         height: 630,
         alt: "ValuStock - เครื่องมือประเมินมูลค่าหุ้น",
@@ -105,7 +105,7 @@ export const metadata: Metadata = {
     card: "summary_large_image",
     title: "ValuStock | เครื่องมือประเมินมูลค่าหุ้น คำนวณ DCF และหาหุ้นพื้นฐานดี",
     description: "ประเมินมูลค่าหุ้นด้วย DCF, Intrinsic Value และ Margin of Safety คัดกรองหุ้นพื้นฐานดี หุ้น undervalue หุ้นปันผลสูง และดูว่าหุ้นไทยหรือหุ้นอเมริกาถูกหรือแพง",
-    images: ["https://valustock.app/og-image.png"],
+    images: ["https://valustock.com/og-image.png"],
     creator: "@valustock",
   },
   alternates: {

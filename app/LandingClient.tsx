@@ -37,6 +37,24 @@ interface Article {
   gradient: string;
 }
 
+interface ValuationOpportunity {
+  symbol: string;
+  name: string;
+  enName: string;
+  assetType?: string;
+  category: "thai" | "us" | "etf" | "alternative";
+  currency?: "THB" | "USD";
+  color: string;
+  price: number;
+  fairValue: number;
+  marginOfSafety: number;
+  pe: number;
+  dividendYield: number;
+  changePct: number;
+  priceHistory: number[];
+  href: string;
+}
+
 const FEATURED_ARTICLES_TH: Article[] = [
   {
     id: "tech-vs-dividend",
@@ -109,6 +127,8 @@ export default function Landing() {
   const val = computeValuation(demo, defaultDCFParams(demo));
 
   const [dbArticles, setDbArticles] = useState<Article[]>([]);
+  const [apiOpportunities, setApiOpportunities] = useState<ValuationOpportunity[]>([]);
+  const [activeAssetTab, setActiveAssetTab] = useState<ValuationOpportunity["category"]>("us");
   const [openFaq, setOpenFaq] = useState<number | null>(null);
 
   // Newsletter subscription states
@@ -154,6 +174,17 @@ export default function Landing() {
       .catch((err) => console.error("Error fetching homepage articles:", err));
   }, [lang]);
 
+  useEffect(() => {
+    fetch("/api/home/valuation-opportunities?limit=24")
+      .then((res) => (res.ok ? res.json() : null))
+      .then((payload) => {
+        if (payload?.opportunities?.length) {
+          setApiOpportunities(payload.opportunities);
+        }
+      })
+      .catch((err) => console.error("Error fetching homepage valuation opportunities:", err));
+  }, []);
+
   const articlesList = useMemo(() => {
     const mocks = lang === "th" ? FEATURED_ARTICLES_TH : FEATURED_ARTICLES_EN;
     const combined = [...dbArticles, ...mocks];
@@ -178,6 +209,66 @@ export default function Landing() {
     .sort((a: any, b: any) => b.val.marginOfSafety - a.val.marginOfSafety)
     .slice(0, 3);
   }, []);
+
+  const valuationOpportunities = useMemo<ValuationOpportunity[]>(() => {
+    if (apiOpportunities.length) return apiOpportunities;
+
+    return STOCKS
+      .filter((stock) =>
+        stock.assetType === "TH_STOCK" ||
+        stock.assetType === "US_STOCK" ||
+        stock.assetType === "ETF" ||
+        stock.assetType === "US_FUND" ||
+        stock.assetType === "CRYPTO" ||
+        stock.assetType === "FUTURES"
+      )
+      .map((stock) => {
+        const valuation = computeValuation(stock, defaultDCFParams(stock));
+        const category: ValuationOpportunity["category"] = stock.assetType === "TH_STOCK"
+          ? "thai"
+          : stock.assetType === "US_STOCK"
+          ? "us"
+          : stock.assetType === "ETF" || stock.assetType === "US_FUND"
+          ? "etf"
+          : "alternative";
+        return {
+          symbol: stock.symbol,
+          name: stock.name,
+          enName: stock.enName,
+          assetType: stock.assetType,
+          category,
+          currency: stock.currency,
+          color: stock.color,
+          price: stock.price,
+          fairValue: valuation.fairValue,
+          marginOfSafety: valuation.marginOfSafety,
+          pe: valuation.ratios.pe,
+          dividendYield: valuation.ratios.dividendYield,
+          changePct: stock.priceHistory?.[0] ? ((stock.price - stock.priceHistory[0]) / stock.priceHistory[0]) * 100 : 0,
+          priceHistory: stock.priceHistory || [],
+          href: `/stocks/${stock.symbol.toLowerCase()}`,
+        };
+      })
+      .filter((row) => Number.isFinite(row.fairValue) && Number.isFinite(row.marginOfSafety))
+      .sort((a, b) => {
+        if (a.category !== b.category) {
+          return ["thai", "us", "etf", "alternative"].indexOf(a.category) - ["thai", "us", "etf", "alternative"].indexOf(b.category);
+        }
+        if (a.category === "etf") {
+          const priority = ["GLD", "SPY", "QQQ", "VOO", "SCHD", "TLT", "JEPQ", "XLE"];
+          return (priority.indexOf(a.symbol) === -1 ? 99 : priority.indexOf(a.symbol)) -
+            (priority.indexOf(b.symbol) === -1 ? 99 : priority.indexOf(b.symbol));
+        }
+        if (a.category === "alternative") {
+          const priority = ["GOLD", "BTC", "ETH", "OIL", "SILVER", "COPPER"];
+          return (priority.indexOf(a.symbol) === -1 ? 99 : priority.indexOf(a.symbol)) -
+            (priority.indexOf(b.symbol) === -1 ? 99 : priority.indexOf(b.symbol));
+        }
+        return b.marginOfSafety - a.marginOfSafety;
+      })
+      .filter((row) => row.category !== "etf" || ["GLD", "SPY", "QQQ", "VOO", "SCHD", "TLT", "JEPQ", "XLE"].includes(row.symbol))
+      .filter((row) => row.category !== "alternative" || ["GOLD", "BTC", "ETH", "OIL", "SILVER", "COPPER"].includes(row.symbol));
+  }, [apiOpportunities]);
 
   // Real-time top 3 dividend stocks from DB
   const topDividend = useMemo(() => {
@@ -334,16 +425,16 @@ export default function Landing() {
     }
   ], [lang]);
 
-  const sectionClass = "mx-auto max-w-6xl px-5 py-14 sm:py-16 lg:py-20";
+  const sectionClass = "mx-auto max-w-6xl px-5 py-9 sm:py-11 lg:py-14";
   const borderedSectionClass = `${sectionClass} border-t border-line/60`;
-  const compactSectionClass = "mx-auto max-w-4xl px-5 py-14 sm:py-16 lg:py-20 border-t border-line/60";
-  const centeredHeaderClass = "mx-auto mb-9 max-w-2xl text-center sm:mb-11 lg:mb-12";
-  const splitHeaderClass = "mb-9 flex flex-col gap-5 sm:mb-11 md:flex-row md:items-end md:justify-between lg:mb-12";
+  const compactSectionClass = "mx-auto max-w-4xl px-5 py-9 sm:py-11 lg:py-14 border-t border-line/60";
+  const centeredHeaderClass = "mx-auto mb-6 max-w-2xl text-center sm:mb-7 lg:mb-8";
+  const splitHeaderClass = "mb-6 flex flex-col gap-4 sm:mb-7 md:flex-row md:items-end md:justify-between lg:mb-8";
   const eyebrowClass = "chip mb-3 inline-flex max-w-full items-center gap-1.5 text-xs font-bold leading-relaxed [overflow-wrap:anywhere]";
   const sectionTitleClass = "font-display text-2xl font-bold leading-tight text-ink [text-wrap:balance] sm:text-3xl";
 
   return (
-    <div className="max-w-full overflow-x-hidden pb-16 md:pb-24">
+    <div className="max-w-full overflow-x-hidden pb-10 md:pb-14">
       {/* 📊 Structured JSON-LD Data for Search Engines */}
       <script
         type="application/ld+json"
@@ -353,8 +444,8 @@ export default function Landing() {
             "@graph": [
               {
                 "@type": "SoftwareApplication",
-                "@id": "https://valustock.app/#software",
-                "url": "https://valustock.app",
+                "@id": "https://valustock.com/#software",
+                "url": "https://valustock.com",
                 "name": "ValuStock",
                 "applicationCategory": "FinancialApplication",
                 "operatingSystem": "All",
@@ -365,29 +456,29 @@ export default function Landing() {
                   "priceCurrency": "THB",
                   "category": "FreeTrial"
                 },
-                "screenshot": "https://valustock.app/og-image.png"
+                "screenshot": "https://valustock.com/og-image.png"
               },
               {
                 "@type": "WebSite",
-                "@id": "https://valustock.app/#website",
-                "url": "https://valustock.app",
+                "@id": "https://valustock.com/#website",
+                "url": "https://valustock.com",
                 "name": "ValuStock — เครื่องมือประเมินมูลค่าหุ้นสำหรับนักลงทุนไทย",
                 "description": "ประเมินมูลค่าหุ้นด้วย DCF, Intrinsic Value และ Margin of Safety คัดกรองหุ้นพื้นฐานดี หุ้น undervalue หุ้นปันผลสูง และดูว่าหุ้นไทยหรือหุ้นอเมริกาถูกหรือแพง",
                 "publisher": {
-                  "@id": "https://valustock.app/#organization"
+                  "@id": "https://valustock.com/#organization"
                 },
                 "inLanguage": "th"
               },
               {
                 "@type": "Organization",
-                "@id": "https://valustock.app/#organization",
+                "@id": "https://valustock.com/#organization",
                 "name": "ValuStock",
-                "url": "https://valustock.app",
-                "logo": "https://valustock.app/logo.png"
+                "url": "https://valustock.com",
+                "logo": "https://valustock.com/logo.png"
               },
               {
                 "@type": "FAQPage",
-                "@id": "https://valustock.app/#faq",
+                "@id": "https://valustock.com/#faq",
                 "mainEntity": homeFaqs.map((faq) => ({
                   "@type": "Question",
                   "name": faq.q,
@@ -406,7 +497,7 @@ export default function Landing() {
       <section className="relative overflow-hidden border-b border-line/60">
         <div className="aurora absolute inset-0 -z-10" />
         <div className="grid-lines absolute inset-0 -z-10 opacity-60" />
-        <div className="mx-auto grid w-full max-w-6xl grid-cols-[minmax(0,1fr)] items-start gap-9 px-4 pb-12 pt-9 text-center sm:px-5 sm:py-16 md:min-h-[720px] md:items-center lg:grid-cols-[minmax(0,1.05fr)_minmax(0,0.95fr)] lg:min-h-[760px] lg:gap-14 lg:py-20 lg:text-left">
+        <div className="mx-auto grid w-full max-w-6xl grid-cols-[minmax(0,1fr)] items-start gap-7 px-4 pb-9 pt-7 text-center sm:px-5 sm:py-11 md:min-h-[600px] md:items-center lg:grid-cols-[minmax(0,1.05fr)_minmax(0,0.95fr)] lg:min-h-[640px] lg:gap-10 lg:py-14 lg:text-left">
           <div className="animate-fade-up mx-auto min-w-0 max-w-md sm:max-w-2xl lg:mx-0">
             <span className={`${eyebrowClass} mx-auto justify-center border-brand/35 bg-brand/10 text-brand sm:text-sm lg:mx-0 lg:justify-start`}>
               <Sparkles className="h-3.5 w-3.5" /> 
@@ -415,7 +506,7 @@ export default function Landing() {
                 : "Institutional Stock Valuation & Intrinsic Value Terminal"}
             </span>
             
-            <h1 className="mt-5 max-w-full font-display text-3xl font-bold leading-[1.18] text-ink [word-break:break-word] sm:text-4xl md:text-5xl">
+            <h1 className="mt-4 max-w-full font-display text-3xl font-bold leading-[1.18] text-ink [word-break:break-word] sm:text-4xl md:text-5xl">
               {lang === "th" ? (
                 <>
                   <span className="block">ValuStock</span>
@@ -435,13 +526,13 @@ export default function Landing() {
               )}
             </h1>
 
-            <p className="mx-auto mt-6 max-w-md text-sm font-medium leading-relaxed text-muted [overflow-wrap:anywhere] sm:max-w-xl sm:text-base lg:mx-0">
+            <p className="mx-auto mt-4 max-w-md text-sm font-medium leading-relaxed text-muted [overflow-wrap:anywhere] sm:max-w-xl sm:text-base lg:mx-0">
               {lang === "th" 
                 ? "ตอบคำถาม 'หุ้นตัวไหนดี' และ 'หุ้นไทยถูกหรือแพง' ด้วยเครื่องประเมินมูลค่าหุ้นที่แท้จริง คำนวณ Intrinsic Value, Fair Value, DCF Calculator และ Margin of Safety เพื่อคัดกรองหุ้นปันผลสูง หุ้น undervalue และหุ้นราคาถูกพื้นฐานดีอย่างเป็นระบบ"
                 : "Solve the question of what stocks to buy and evaluate if equities are cheap or expensive. Utilize our professional DCF Calculator and intrinsic value models to discover high dividend, undervalued stocks in seconds."}
             </p>
 
-            <div className="mx-auto mt-8 flex max-w-sm flex-col items-stretch gap-3 sm:max-w-none sm:flex-row sm:items-center sm:justify-center lg:mx-0 lg:justify-start">
+            <div className="mx-auto mt-6 flex max-w-sm flex-col items-stretch gap-3 sm:max-w-none sm:flex-row sm:items-center sm:justify-center lg:mx-0 lg:justify-start">
               <Link href="/pricing" className="w-full sm:w-auto">
                 <Button size="lg" className="w-full text-xs sm:w-auto sm:text-sm">
                   {t("common.startFree")} <ArrowRight className="h-4 w-4" />
@@ -454,7 +545,7 @@ export default function Landing() {
               </Link>
             </div>
 
-            <nav className="mx-auto mt-7 flex max-w-sm flex-wrap justify-center gap-x-4 gap-y-2 text-[11px] font-bold text-muted sm:max-w-none sm:text-xs lg:mx-0 lg:justify-start" aria-label="ลิงก์เครื่องมือประเมินมูลค่าหุ้นยอดนิยม">
+            <nav className="mx-auto mt-5 flex max-w-sm flex-wrap justify-center gap-x-4 gap-y-2 text-[11px] font-bold text-muted sm:max-w-none sm:text-xs lg:mx-0 lg:justify-start" aria-label="ลิงก์เครื่องมือประเมินมูลค่าหุ้นยอดนิยม">
               <Link className="hover:text-brand" href="/dcf-calculator">DCF Calculator</Link>
               <Link className="hover:text-brand" href="/intrinsic-value-calculator">Intrinsic Value</Link>
               <Link className="hover:text-brand" href="/undervalued-stocks">หุ้น undervalue</Link>
@@ -496,6 +587,54 @@ export default function Landing() {
               </div>
             </div>
           </div>
+        </div>
+      </section>
+
+      {/* VALUATION OPPORTUNITY CHART */}
+      <section className={borderedSectionClass}>
+        <div className="grid gap-6 lg:grid-cols-[minmax(0,0.95fr)_minmax(0,1.05fr)] lg:items-center">
+          <div className="min-w-0">
+            <span className={`${eyebrowClass} border-up/30 bg-up/10 text-up`}>
+              <TrendingUp className="h-3.5 w-3.5" />
+              {lang === "th" ? "หุ้นสหรัฐ ETF ทอง และสินทรัพย์ทางเลือก" : "US stocks, ETFs, gold, and alternatives"}
+            </span>
+            <h2 className={sectionTitleClass}>
+              {lang === "th"
+                ? "กราฟตลาดโลกแบบย่อ: หุ้นอเมริกา ทองคำ ETF และ Margin of Safety"
+                : "Compact Global Market Chart: US Stocks, Gold ETFs, and Margin of Safety"}
+            </h2>
+            <p className="mt-3 max-w-xl text-sm font-medium leading-relaxed text-muted [overflow-wrap:anywhere]">
+              {lang === "th"
+                ? "เลือกดูได้ทั้งหุ้นไทย หุ้นอเมริกา ETF สหรัฐ กองทุนทองคำ GLD และสินทรัพย์อย่าง Gold Futures หรือ Bitcoin ในพื้นที่เดียว กราฟนี้ดึงข้อมูลจาก ValuStock API พร้อมประเมิน DCF, Fair Value และ Margin of Safety เพื่อช่วยค้นหาหุ้น undervalue และสินทรัพย์ที่น่าสนใจ"
+                : "Switch between Thai stocks, US equities, US ETFs, GLD gold ETF, Gold Futures, and Bitcoin in one compact panel. Data comes from the ValuStock API with DCF, Fair Value, and Margin of Safety signals."}
+            </p>
+            <div className="mt-5 flex flex-wrap gap-2">
+              {[
+                lang === "th" ? "หุ้น undervalue" : "undervalued stocks",
+                lang === "th" ? "หุ้นอเมริกา" : "US stocks",
+                "GLD / Gold ETF",
+                "Intrinsic Value",
+                "Margin of Safety",
+              ].map((label) => (
+                <span key={label} className="rounded-full border border-line bg-bg px-3 py-1.5 text-[11px] font-bold text-muted">
+                  {label}
+                </span>
+              ))}
+            </div>
+            <Link href="/undervalued-stocks" className="mt-5 inline-flex">
+              <Button variant="outline" size="sm" className="font-bold">
+                {lang === "th" ? "ดูหุ้น undervalue ทั้งหมด" : "View all undervalued stocks"}
+                <ChevronRight className="h-4 w-4" />
+              </Button>
+            </Link>
+          </div>
+
+          <ValuationGapChart
+            rows={valuationOpportunities}
+            lang={lang}
+            activeTab={activeAssetTab}
+            onTabChange={setActiveAssetTab}
+          />
         </div>
       </section>
 
@@ -541,7 +680,7 @@ export default function Landing() {
           })}
         </div>
 
-        <div className="mx-auto mt-8 max-w-4xl rounded-2xl border border-line bg-surface/35 p-4 sm:p-5">
+        <div className="mx-auto mt-6 max-w-4xl rounded-2xl border border-line bg-surface/35 p-4 sm:p-5">
           <h3 className="font-display text-sm font-bold text-ink">
             {lang === "th" ? "คำค้นยอดนิยมที่ ValuStock ครอบคลุม" : "Popular valuation topics covered"}
           </h3>
@@ -754,7 +893,7 @@ export default function Landing() {
           </Link>
         </div>
 
-        <div className="grid gap-6 md:grid-cols-3">
+        <div className="grid gap-4 md:grid-cols-3">
           {articlesList.map((art, idx) => {
             return (
               <article 
@@ -811,7 +950,7 @@ export default function Landing() {
           </p>
         </div>
 
-        <div className="grid gap-6 md:grid-cols-3">
+        <div className="grid gap-4 md:grid-cols-3">
           {investmentGuides.map((guide, idx) => (
             <Card key={idx} className="border border-line p-5.5 bg-surface/20 flex flex-col justify-between space-y-4 text-center">
               <div>
@@ -854,7 +993,7 @@ export default function Landing() {
           </h2>
         </div>
 
-        <div className="space-y-3.5">
+        <div className="space-y-2.5">
           {homeFaqs.map((faq, idx) => {
             const isOpen = openFaq === idx;
             return (
@@ -897,7 +1036,7 @@ export default function Landing() {
           </p>
 
           {!subscribed ? (
-            <form onSubmit={handleSubscribe} className="mt-6 flex flex-col sm:flex-row max-w-md mx-auto gap-2">
+            <form onSubmit={handleSubscribe} className="mt-4 flex flex-col sm:flex-row max-w-md mx-auto gap-2">
               <input
                 type="email"
                 required
@@ -911,7 +1050,7 @@ export default function Landing() {
               </Button>
             </form>
           ) : (
-            <div className="mt-6 p-4 border border-up/30 bg-up/10 rounded-2xl max-w-md mx-auto animate-fade-up text-xs text-up font-bold">
+            <div className="mt-4 p-4 border border-up/30 bg-up/10 rounded-2xl max-w-md mx-auto animate-fade-up text-xs text-up font-bold">
               🎉 {lang === "th" ? "สำเร็จ! เราได้ส่งรายงานต้อนรับพอร์ตคุณค่าไปยังอีเมลของคุณเรียบร้อย" : "Success! Welcome package and value checklist sent to your inbox."}
             </div>
           )}
@@ -926,6 +1065,117 @@ function Stat({ value, label }: { value: string; label: string }) {
     <div>
       <div className="font-display text-2xl font-extrabold text-ink">{value}</div>
       <div className="text-xs text-muted">{label}</div>
+    </div>
+  );
+}
+
+function ValuationGapChart({
+  rows,
+  lang,
+  activeTab,
+  onTabChange,
+}: {
+  rows: ValuationOpportunity[];
+  lang: "th" | "en";
+  activeTab: ValuationOpportunity["category"];
+  onTabChange: (tab: ValuationOpportunity["category"]) => void;
+}) {
+  const tabs: Array<{ id: ValuationOpportunity["category"]; labelTh: string; labelEn: string }> = [
+    { id: "us", labelTh: "หุ้นสหรัฐ", labelEn: "US" },
+    { id: "etf", labelTh: "ETF/ทอง", labelEn: "ETF/Gold" },
+    { id: "alternative", labelTh: "Crypto/Futures", labelEn: "Alt" },
+    { id: "thai", labelTh: "หุ้นไทย", labelEn: "Thai" },
+  ];
+  const visibleRows = rows.filter((row) => row.category === activeTab).slice(0, 4);
+  const maxFair = Math.max(...visibleRows.map((row) => Math.max(row.fairValue, row.price)), 1);
+
+  return (
+    <div className="surface min-w-0 rounded-2xl border border-line bg-surface/45 p-4 shadow-card sm:p-5">
+      <div className="flex flex-col gap-3 border-b border-line/50 pb-4">
+        <div>
+          <h3 className="font-display text-base font-extrabold text-ink">
+            {lang === "th" ? "Global Asset Snapshot" : "Global Asset Snapshot"}
+          </h3>
+          <p className="mt-1 text-[11px] font-semibold leading-relaxed text-muted">
+            {lang === "th"
+              ? "แสดง 4 รายการต่อหมวด พร้อมกราฟราคาเล็กและส่วนต่างมูลค่า"
+              : "Four assets per category with mini trend charts and value gaps."}
+          </p>
+        </div>
+        <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+          {tabs.map((tab) => (
+            <button
+              key={tab.id}
+              type="button"
+              onClick={() => onTabChange(tab.id)}
+              className={`h-9 rounded-xl border px-2 text-[11px] font-black transition ${
+                activeTab === tab.id
+                  ? "border-brand bg-brand text-bg shadow-[0_8px_20px_-12px_rgb(var(--brand))]"
+                  : "border-line bg-bg text-muted hover:border-brand/35 hover:text-ink"
+              }`}
+            >
+              {lang === "th" ? tab.labelTh : tab.labelEn}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      <div className="mt-4 space-y-3">
+        {visibleRows.map((row) => {
+          const priceWidth = Math.max(5, Math.min(100, (row.price / maxFair) * 100));
+          const fairWidth = Math.max(8, Math.min(100, (row.fairValue / maxFair) * 100));
+          const formatMoney = row.currency === "USD" ? dollar : baht;
+          const displayName = lang === "th" ? row.name : row.enName || row.name;
+          const up = row.changePct >= 0;
+
+          return (
+            <Link
+              key={row.symbol}
+              href={row.href}
+              className="group block rounded-xl border border-line/55 bg-bg/55 p-3 transition hover:border-brand/45 hover:bg-elevate/45"
+            >
+              <div className="flex min-w-0 items-center justify-between gap-3">
+                <div className="flex min-w-0 items-center gap-2.5">
+                  <AssetLogo symbol={row.symbol} color={row.color} size="sm" />
+                  <div className="min-w-0">
+                    <div className="font-mono text-sm font-black text-ink group-hover:text-brand">{row.symbol}</div>
+                    <div className="truncate text-[10px] font-semibold text-muted">{displayName}</div>
+                  </div>
+                </div>
+                <div className={`shrink-0 rounded-full border px-2 py-1 text-[10px] font-black ${
+                  activeTab === "alternative" && !up
+                    ? "border-down/25 bg-down/10 text-down"
+                    : "border-up/25 bg-up/10 text-up"
+                }`}>
+                  {activeTab === "alternative" ? pct(row.changePct, 0) : `MOS ${pct(row.marginOfSafety, 0)}`}
+                </div>
+              </div>
+
+              <div className="mt-3 grid gap-3 sm:grid-cols-[minmax(0,1fr)_96px] sm:items-center">
+                <div className="space-y-1.5">
+                  <div className="relative h-3 overflow-hidden rounded-full bg-line/45">
+                    <div
+                      className="absolute inset-y-0 left-0 rounded-full bg-gold/75"
+                      style={{ width: `${fairWidth}%` }}
+                    />
+                    <div
+                      className="absolute inset-y-0 left-0 rounded-full bg-brand"
+                      style={{ width: `${priceWidth}%` }}
+                    />
+                  </div>
+                  <div className="flex items-center justify-between gap-2 text-[10px] font-bold text-muted">
+                    <span>{lang === "th" ? "ราคา" : "Price"} {formatMoney(row.price)}</span>
+                    <span className="text-gold">{lang === "th" ? "มูลค่า" : "Fair"} {formatMoney(row.fairValue)}</span>
+                  </div>
+                </div>
+                <div className="h-10 rounded-lg border border-line/50 bg-surface/50 px-1.5 py-1">
+                  <Sparkline data={row.priceHistory?.length ? row.priceHistory.slice(-30) : [row.price]} up={up} />
+                </div>
+              </div>
+            </Link>
+          );
+        })}
+      </div>
     </div>
   );
 }

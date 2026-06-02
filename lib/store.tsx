@@ -117,13 +117,15 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
   const login = useCallback((email: string, name?: string, plan?: PlanId, billing?: "monthly" | "yearly") => {
     const normalizedEmail = email.toLowerCase().trim();
     const isPremium = PREMIUM_EMAILS.has(normalizedEmail);
+    const nextPlan = isPremium ? "premium" : (plan || "free");
+    const nextBilling = isPremium ? "yearly" : (billing || "monthly");
     const nextUser = {
       name: isPremium
         ? (normalizedEmail === "zeroline@live.com" ? "Zeroline VIP" : (name || email.split("@")[0] || "นักลงทุน"))
         : (name || email.split("@")[0] || "นักลงทุน"),
-      email,
-      plan: plan || (isPremium ? "premium" as const : "free" as const),
-      billing: billing || (isPremium ? "yearly" as const : "monthly" as const),
+      email: normalizedEmail,
+      plan: nextPlan,
+      billing: nextBilling,
       joinedAt: new Date().toISOString(),
     };
     setData((d) => ({

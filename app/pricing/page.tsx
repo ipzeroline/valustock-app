@@ -14,7 +14,6 @@ import { num } from "@/lib/format";
 import { useTranslation } from "@/lib/translations";
 import {
   Check,
-  CircleDollarSign,
   Crown,
   Layers,
   Info,
@@ -32,6 +31,9 @@ export default function PricingPage() {
   const { t, lang } = useTranslation();
   const [billing, setBilling] = useState<"monthly" | "yearly">("monthly");
   const [checkout, setCheckout] = useState<PlanId | null>(null);
+  const [checkoutEmail, setCheckoutEmail] = useState(user?.email || "");
+  const [checkoutLoading, setCheckoutLoading] = useState(false);
+  const [checkoutError, setCheckoutError] = useState("");
   const [openFaq, setOpenFaq] = useState<number | null>(0);
 
   const choose = (id: PlanId) => {
@@ -40,14 +42,48 @@ export default function PricingPage() {
       router.push("/dashboard");
       return;
     }
+    setCheckoutEmail(user?.email || checkoutEmail);
+    setCheckoutError("");
     setCheckout(id);
   };
 
-  const confirm = () => {
+  const confirm = async () => {
     if (!checkout) return;
-    setPlan(checkout, billing);
-    setCheckout(null);
-    router.push("/dashboard");
+    const normalizedEmail = (user?.email || checkoutEmail).trim().toLowerCase();
+
+    if (!normalizedEmail || !normalizedEmail.includes("@")) {
+      setCheckoutError(lang === "th" ? "กรุณากรอกอีเมลที่ถูกต้อง" : "Please enter a valid email address.");
+      return;
+    }
+
+    setCheckoutLoading(true);
+    setCheckoutError("");
+
+    try {
+      const res = await fetch("/api/checkout/session", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          plan: checkout,
+          billing,
+          email: normalizedEmail,
+          name: user?.name,
+        }),
+      });
+      const data = await res.json();
+
+      if (!res.ok || !data.url) {
+        throw new Error(data.error || "Unable to start checkout");
+      }
+
+      window.location.href = data.url;
+    } catch (err: any) {
+      setCheckoutError(
+        err.message ||
+          (lang === "th" ? "เริ่มชำระเงินไม่สำเร็จ กรุณาลองใหม่" : "Unable to start checkout. Please try again.")
+      );
+      setCheckoutLoading(false);
+    }
   };
 
   const plan = checkout ? getPlan(checkout) : null;
@@ -76,8 +112,8 @@ export default function PricingPage() {
       ];
 
   const paymentMethods = lang === "th"
-    ? ["บัตรเครดิต / เดบิต", "พร้อมเพย์ (PromptPay)", "โอนผ่านธนาคาร"]
-    : ["Credit / Debit Card", "PromptPay (TH Local)", "Bank Wire Transfer"];
+    ? ["ชำระผ่าน Stripe Checkout", "รองรับบัตรเครดิต/เดบิตและ Link", "ใบเสร็จและข้อมูลสมาชิกซิงก์อัตโนมัติ"]
+    : ["Secured by Stripe Checkout", "Supports credit/debit cards and Link", "Receipts and membership sync automatically"];
 
   const planGuides = [
     {
@@ -134,8 +170,8 @@ export default function PricingPage() {
       desc: lang === "th" ? "เปลี่ยนแผนหรือยกเลิกได้ตามรอบบิล" : "Change or cancel your plan based on billing cycle.",
     },
     {
-      title: lang === "th" ? "รองรับช่องทางไทย" : "Thai payments",
-      desc: lang === "th" ? "รองรับบัตร พร้อมเพย์ และโอนผ่านธนาคาร" : "Supports cards, PromptPay, and bank transfer.",
+      title: lang === "th" ? "จ่ายปลอดภัยผ่าน Stripe" : "Secure Stripe billing",
+      desc: lang === "th" ? "ชำระแบบสมาชิกด้วยบัตรเครดิต/เดบิตและ Link ผ่าน Stripe Checkout" : "Recurring card and Link subscriptions are handled by Stripe Checkout.",
     },
     {
       title: lang === "th" ? "ข้อมูลเพื่อการวิเคราะห์" : "Research focused",
@@ -487,8 +523,8 @@ export default function PricingPage() {
 
       <p className="text-center text-xs text-muted animate-fade-up [animation-delay:160ms]">
         {lang === "th" 
-          ? "ราคารวมภาษีมูลค่าเพิ่มแล้ว · รองรับบัตรเครดิต/เดบิต และพร้อมเพย์ (PromptPay) ผ่านผู้ให้บริการในไทย" 
-          : "Prices include VAT. Supports credit/debit cards and PromptPay local payments."}
+          ? "ราคารวมภาษีมูลค่าเพิ่มแล้ว · ชำระแบบสมาชิกอย่างปลอดภัยผ่าน Stripe Checkout" 
+          : "Prices include VAT. Secured by Stripe Checkout for recurring card subscriptions."}
       </p>
 
       {/* SECTION 7: FAQ */}
@@ -556,11 +592,11 @@ export default function PricingPage() {
         </div>
       </section>
 
-      {/* checkout modal (simulated) */}
+      {/* Stripe checkout modal */}
       <Modal
         open={!!checkout}
         onClose={() => setCheckout(null)}
-        title={lang === "th" ? "ยืนยันการสมัครสมาชิก" : "Confirm Subscription"}
+        title={lang === "th" ? "ชำระเงินผ่าน Stripe" : "Stripe Checkout"}
       >
         {plan && (
           <div>
@@ -580,32 +616,53 @@ export default function PricingPage() {
               </div>
             </div>
 
-            <div className="mt-4 space-y-2.5">
-              <div className="text-sm font-medium text-ink">{lang === "th" ? "วิธีชำระเงิน" : "Select Payment Method"}</div>
-              {paymentMethods.map((m, i) => (
-                <label
-                  key={m}
-                  className="flex cursor-pointer items-center gap-3 rounded-xl border border-line px-4 py-3 text-sm has-[input:checked]:border-brand text-ink"
-                >
-                  <input
-                    type="radio"
-                    name="pay"
-                    defaultChecked={i === 0}
-                    className="accent-brand"
-                  />
-                  <CircleDollarSign className="h-4 w-4 text-muted" />
-                  {m}
-                </label>
-              ))}
+            {!user?.email && (
+              <label className="mt-4 block">
+                <span className="mb-1.5 block text-sm font-semibold text-ink">
+                  {lang === "th" ? "อีเมลสำหรับสมัครสมาชิก" : "Membership email"}
+                </span>
+                <input
+                  className="input-base"
+                  type="email"
+                  value={checkoutEmail}
+                  onChange={(e) => setCheckoutEmail(e.target.value)}
+                  placeholder="you@example.com"
+                />
+              </label>
+            )}
+
+            <div className="mt-4 rounded-xl border border-line bg-elevate/55 p-4">
+              <div className="text-sm font-bold text-ink">{lang === "th" ? "สิ่งที่จะเกิดขึ้น" : "What happens next"}</div>
+              <ul className="mt-3 space-y-2">
+                {paymentMethods.map((m) => (
+                  <li key={m} className="flex items-start gap-2 text-xs font-semibold leading-relaxed text-muted">
+                    <Check className="mt-0.5 h-3.5 w-3.5 shrink-0 text-brand" />
+                    {m}
+                  </li>
+                ))}
+              </ul>
             </div>
 
-            <Button className="mt-5 w-full text-white bg-brand hover:bg-brand/90" size="lg" onClick={confirm}>
-              {lang === "th" ? "ยืนยันและเริ่มใช้งาน" : "Confirm & Subscribe"}
+            {checkoutError && (
+              <div className="mt-4 rounded-xl border border-rose-500/20 bg-rose-500/10 px-4 py-3 text-xs font-semibold text-rose-400">
+                {checkoutError}
+              </div>
+            )}
+
+            <Button
+              className="mt-5 w-full text-white bg-brand hover:bg-brand/90"
+              size="lg"
+              onClick={confirm}
+              disabled={checkoutLoading}
+            >
+              {checkoutLoading
+                ? (lang === "th" ? "กำลังเปิด Stripe..." : "Opening Stripe...")
+                : (lang === "th" ? "ไปที่หน้า Stripe Checkout" : "Continue to Stripe Checkout")}
             </Button>
             <p className="mt-3 text-center text-[11px] text-muted">
               {lang === "th" 
-                ? "เดโม: ไม่มีการตัดเงินจริง — สามารถเชื่อมต่อ Stripe / Omise / GB Prime Pay ในโปรดักชันได้ทันที" 
-                : "Demo Mode: No real funds charged. Seamlessly integrates Stripe / Omise / local gateways."}
+                ? "คุณจะถูกพาไปหน้า Stripe ที่ปลอดภัย ValuStock ไม่เก็บเลขบัตรหรือ CVV" 
+                : "You will be redirected to Stripe. ValuStock never stores card numbers or CVV."}
             </p>
           </div>
         )}

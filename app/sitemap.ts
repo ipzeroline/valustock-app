@@ -1,7 +1,7 @@
 import type { MetadataRoute } from "next";
 import { STOCKS, SECTORS } from "@/lib/stocks";
 
-const SITE_URL = "https://valustock.app";
+const SITE_URL = "https://valustock.com";
 
 const staticRoutes = [
   "",

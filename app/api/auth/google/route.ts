@@ -10,6 +10,7 @@ export async function GET(req: Request) {
   const host = req.headers.get("host") || "localhost:7887";
   const protocol = host.includes("localhost") || host.includes("127.0.0.1") ? "http" : "https";
   const redirectUri = `${protocol}://${host}/api/auth/google/callback`;
+  const state = crypto.randomUUID();
 
   // Create Google OAuth Auth URL
   const googleAuthUrl = new URL("https://accounts.google.com/o/oauth2/v2/auth");
@@ -18,7 +19,16 @@ export async function GET(req: Request) {
   googleAuthUrl.searchParams.set("redirect_uri", redirectUri);
   googleAuthUrl.searchParams.set("scope", "openid email profile");
   googleAuthUrl.searchParams.set("prompt", "select_account");
+  googleAuthUrl.searchParams.set("state", state);
 
   // Redirect the browser to Google
-  return NextResponse.redirect(googleAuthUrl.toString());
+  const response = NextResponse.redirect(googleAuthUrl.toString());
+  response.cookies.set("valustock_google_oauth_state", state, {
+    httpOnly: true,
+    sameSite: "lax",
+    secure: protocol === "https",
+    path: "/",
+    maxAge: 60 * 10,
+  });
+  return response;
 }
