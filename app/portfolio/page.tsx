@@ -16,6 +16,7 @@ import {
   Wallet,
   Calculator,
   Bell,
+  MessageSquare,
   CheckCircle,
   Plus,
   Trash2,
@@ -48,7 +49,7 @@ interface Transaction {
 
 export default function PortfolioPage() {
   const plan = useCurrentPlan();
-  const { user } = useStore();
+  const { user, authToken } = useStore();
   const { lang, t } = useTranslation();
   const [activeTab, setActiveTab] = useState<TabType>("ledger");
   const [openFaq, setOpenFaq] = useState<number | null>(0);
@@ -504,9 +505,13 @@ export default function PortfolioPage() {
   };
 
   // Trigger simulated live toast alert block
-  const triggerLiveNotificationTest = () => {
+  const triggerLiveNotificationTest = async () => {
     if (!plan.limits.alerts) {
       setPortfolioError(lang === "th" ? "ระบบแจ้งเตือนใช้ได้เฉพาะ Premium และ Lifetime" : "Alerts are available on Premium and Lifetime plans.");
+      return;
+    }
+    if (!user?.email || !authToken) {
+      setPortfolioError(lang === "th" ? "กรุณาเข้าสู่ระบบก่อนทดสอบ Telegram alert" : "Please log in before testing Telegram alerts.");
       return;
     }
     const s = getStock(alertSymbol)!;
@@ -522,6 +527,30 @@ export default function PortfolioPage() {
     setTimeout(() => {
       setSimulatedToast(null);
     }, 6500);
+
+    try {
+      const res = await fetch("/api/portfolio/alerts/telegram-test", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${authToken}` },
+        body: JSON.stringify({
+          symbol: s.symbol,
+          price: s.price,
+          fairValue: v.fairValue,
+          marginOfSafety: v.marginOfSafety,
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok || !data.success) {
+        throw new Error(data.error || "Telegram test failed");
+      }
+      setPortfolioError("");
+    } catch (err) {
+      setPortfolioError(
+        err instanceof Error
+          ? err.message
+          : lang === "th" ? "ส่ง Telegram test ไม่สำเร็จ" : "Telegram test failed"
+      );
+    }
   };
 
   if (!plan.limits.portfolio) {
@@ -1329,6 +1358,46 @@ export default function PortfolioPage() {
               </form>
             </Card>
 
+            <Card className="w-full max-w-full overflow-hidden border border-sky-500/30 bg-gradient-to-br from-sky-500/12 via-surface to-brand/10 p-4 sm:p-5">
+              <div className="flex items-start gap-3">
+                <span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl border border-sky-400/30 bg-sky-400/15 text-sky-300">
+                  <MessageSquare className="h-5 w-5" />
+                </span>
+                <div className="min-w-0">
+                  <div className="text-[10px] font-black uppercase tracking-wide text-sky-300">
+                    Telegram Alert Channel
+                  </div>
+                  <h4 className="mt-0.5 font-display text-sm font-black text-ink">
+                    {lang === "th" ? "ส่งสัญญาณหุ้นเข้า Telegram" : "Send stock alerts to Telegram"}
+                  </h4>
+                  <p className="mt-2 text-[11px] font-semibold leading-relaxed text-muted">
+                    {lang === "th"
+                      ? "Premium/Lifetime รองรับการส่ง test alert ผ่าน Telegram Bot ที่ตั้งค่าไว้บน server เหมาะกับการแจ้งเตือนราคาหรือ MOS แบบรวดเร็วโดยไม่เปิดเผย token ให้ browser"
+                      : "Premium/Lifetime can send test alerts through the server-configured Telegram Bot, keeping bot tokens away from the browser."}
+                  </p>
+                </div>
+              </div>
+              <div className="mt-4 grid gap-2 text-[10px] font-bold sm:grid-cols-3">
+                {[
+                  lang === "th" ? "1. สร้าง Bot" : "1. Create bot",
+                  lang === "th" ? "2. ใส่ Chat ID" : "2. Add chat ID",
+                  lang === "th" ? "3. กด Test" : "3. Run test",
+                ].map((step) => (
+                  <div key={step} className="rounded-xl border border-line/70 bg-bg/45 px-3 py-2 text-center text-ink/80">
+                    {step}
+                  </div>
+                ))}
+              </div>
+              <div className="mt-4 rounded-xl border border-line/70 bg-bg/45 p-3 text-[10px] font-semibold leading-relaxed text-muted">
+                <div className="font-black text-ink">
+                  {lang === "th" ? "ต้องเตรียมบน production" : "Production setup"}
+                </div>
+                <div className="mt-1 font-mono text-[10px] text-sky-300">TELEGRAM_BOT_TOKEN</div>
+                <div className="font-mono text-[10px] text-sky-300">NEXT_PUBLIC_TELEGRAM_BOT_USERNAME</div>
+                <div className="font-mono text-[10px] text-sky-300">TELEGRAM_WEBHOOK_SECRET</div>
+              </div>
+            </Card>
+
             {/* Test Trigger Card */}
             <Card className="w-full max-w-full space-y-3 border border-gold/40 bg-gold/5 p-4 text-center sm:p-5">
               <span className="inline-flex h-9 w-9 items-center justify-center rounded-xl bg-gold/15 text-gold shrink-0">
@@ -1340,12 +1409,12 @@ export default function PortfolioPage() {
                 </h4>
                 <p className="text-[9px] text-muted leading-normal">
                   {lang === "th"
-                    ? "ทดสอบประสิทธิภาพกลไกพุชส่งการแจ้งเตือนสดเมื่อราคาหลักทรัพย์เข้าเขตราคาถูก (Deep Value) อัตโนมัติ"
-                    : "Simulate a live push popup warning you that your target asset has fallen into a deep bargain."}
+                    ? "ทดสอบ toast บนหน้าเว็บและส่งข้อความ Telegram ผ่าน Bot ที่ตั้งค่าไว้บน server"
+                    : "Test the in-app toast and send a Telegram message through the server-configured bot."}
                 </p>
               </div>
               <Button size="sm" variant="gold" className="w-full text-[10px] font-bold" onClick={triggerLiveNotificationTest}>
-                ⚡ {lang === "th" ? "ทดลองยิงแจ้งเตือนเดี๋ยวนี้" : "Test Trigger Live Alert"}
+                ⚡ {lang === "th" ? "ทดสอบ In-app + Telegram" : "Test In-app + Telegram"}
               </Button>
             </Card>
           </div>
@@ -1355,7 +1424,7 @@ export default function PortfolioPage() {
             <Card className="w-full max-w-full overflow-hidden border border-line">
               <CardHeader
                 title={lang === "th" ? "รายการแจ้งเตือนที่เปิดทำงานอยู่ (Active Price Targets)" : "Active Target Price Alerting"}
-                subtitle={lang === "th" ? "ตรวจสอบระบบพุชส่งสัญญานทางหน้าจอและอีเมลของท่าน" : "Real-time pushes matching your active target thresholds"}
+                subtitle={lang === "th" ? "ตรวจสอบระบบแจ้งเตือนบนหน้าเว็บและ Telegram สำหรับ Premium/Lifetime" : "In-app and Telegram alerts for Premium/Lifetime target thresholds"}
                 icon={<Bell className="h-4.5 w-4.5 text-brand" />}
               />
               <div className="space-y-3 p-4 md:hidden">

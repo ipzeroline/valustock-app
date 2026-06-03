@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { useStore, useCurrentPlan } from "@/lib/store";
@@ -19,14 +20,133 @@ import {
   Bell,
   Download,
   Shield,
+  MessageSquare,
+  Key,
 } from "@/lib/icons";
 
+type TelegramState = {
+  connected: boolean;
+  status: string;
+  telegramUsername: string | null;
+  chatIdMask: string | null;
+  notificationsEnabled: boolean;
+  connectedAt: string | null;
+  lastTestAt: string | null;
+  botUsername: string | null;
+};
+
+type TelegramConnectCode = {
+  code: string;
+  command: string;
+  deepLink: string;
+  botUsername: string;
+  expiresInSeconds: number;
+};
+
 export default function AccountPage() {
-  const { user, logout, theme, toggleTheme, setPlan } = useStore();
+  const { user, authToken, logout, theme, toggleTheme, setPlan } = useStore();
   const plan = useCurrentPlan();
   const router = useRouter();
   const { t, lang } = useTranslation();
   const showLocalPlanControls = process.env.NODE_ENV !== "production";
+  const [telegram, setTelegram] = useState<TelegramState | null>(null);
+  const [telegramCode, setTelegramCode] = useState<TelegramConnectCode | null>(null);
+  const [telegramLoading, setTelegramLoading] = useState(false);
+  const [telegramMessage, setTelegramMessage] = useState("");
+
+  const loadTelegram = async () => {
+    if (!authToken) return;
+    try {
+      const res = await fetch("/api/account/telegram", {
+        headers: { Authorization: `Bearer ${authToken}` },
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Unable to load Telegram status");
+      setTelegram(data.telegram);
+      if (data.telegram?.connected) setTelegramCode(null);
+    } catch (err) {
+      setTelegramMessage(err instanceof Error ? err.message : "Unable to load Telegram status");
+    }
+  };
+
+  useEffect(() => {
+    if (!user?.email || !authToken) return;
+    loadTelegram();
+  }, [user?.email, authToken]);
+
+  useEffect(() => {
+    if (!telegramCode || telegram?.connected || !authToken) return;
+    const timer = window.setInterval(loadTelegram, 5000);
+    return () => window.clearInterval(timer);
+  }, [telegramCode, telegram?.connected, authToken]);
+
+  const startTelegramConnect = async () => {
+    if (!authToken) return;
+    setTelegramLoading(true);
+    setTelegramMessage("");
+    try {
+      const res = await fetch("/api/account/telegram/connect-code", {
+        method: "POST",
+        headers: { Authorization: `Bearer ${authToken}` },
+      });
+      const data = await res.json();
+      if (!res.ok || !data.success) throw new Error(data.error || "Unable to create Telegram code");
+      setTelegramCode(data);
+      setTelegramMessage(lang === "th" ? "สร้างโค้ดแล้ว ส่งคำสั่งนี้ให้ Telegram Bot ภายใน 10 นาที" : "Code created. Send the command to the Telegram Bot within 10 minutes.");
+    } catch (err) {
+      setTelegramMessage(err instanceof Error ? err.message : "Unable to create Telegram code");
+    } finally {
+      setTelegramLoading(false);
+    }
+  };
+
+  const copyTelegramCommand = async () => {
+    if (!telegramCode?.command) return;
+    await navigator.clipboard.writeText(telegramCode.command).catch(() => undefined);
+    setTelegramMessage(lang === "th" ? "คัดลอกคำสั่งแล้ว" : "Command copied.");
+  };
+
+  const testTelegram = async () => {
+    if (!authToken) return;
+    setTelegramLoading(true);
+    setTelegramMessage("");
+    try {
+      const res = await fetch("/api/account/telegram", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${authToken}` },
+        body: JSON.stringify({ action: "test" }),
+      });
+      const data = await res.json();
+      if (!res.ok || !data.success) throw new Error(data.error || "Telegram test failed");
+      setTelegramMessage(lang === "th" ? "ส่งข้อความทดสอบเข้า Telegram แล้ว" : "Telegram test message sent.");
+      await loadTelegram();
+    } catch (err) {
+      setTelegramMessage(err instanceof Error ? err.message : "Telegram test failed");
+    } finally {
+      setTelegramLoading(false);
+    }
+  };
+
+  const disconnectTelegram = async () => {
+    if (!authToken) return;
+    setTelegramLoading(true);
+    setTelegramMessage("");
+    try {
+      const res = await fetch("/api/account/telegram", {
+        method: "DELETE",
+        headers: { Authorization: `Bearer ${authToken}` },
+      });
+      const data = await res.json();
+      if (!res.ok || !data.success) throw new Error(data.error || "Unable to disconnect Telegram");
+      setTelegramCode(null);
+      await loadTelegram();
+      setTelegramMessage(lang === "th" ? "ยกเลิกการเชื่อมต่อ Telegram แล้ว" : "Telegram disconnected.");
+    } catch (err) {
+      setTelegramMessage(err instanceof Error ? err.message : "Unable to disconnect Telegram");
+    } finally {
+      setTelegramLoading(false);
+    }
+  };
 
   if (!user) {
     return (
@@ -248,6 +368,112 @@ export default function AccountPage() {
                 ? `สลับเป็น${theme === "dark" ? "สว่าง" : "มืด"}` 
                 : `Switch to ${theme === "dark" ? "Light" : "Dark"}`}
             </Button>
+          </div>
+          <div className="p-5">
+            <div className="overflow-hidden rounded-2xl border border-sky-500/30 bg-gradient-to-br from-sky-500/10 via-elevate to-brand/10">
+              <div className="flex flex-col gap-4 p-4 sm:flex-row sm:items-start sm:justify-between">
+                <div className="flex min-w-0 gap-3">
+                  <span className="grid h-11 w-11 shrink-0 place-items-center rounded-xl border border-sky-400/30 bg-sky-400/15 text-sky-300">
+                    <MessageSquare className="h-5 w-5" />
+                  </span>
+                  <div className="min-w-0">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <h3 className="font-display text-sm font-black text-ink">
+                        {lang === "th" ? "Telegram Alerts ส่วนตัว" : "Personal Telegram Alerts"}
+                      </h3>
+                      <Badge tone={telegram?.connected ? "up" : "gold"}>
+                        {telegram?.connected
+                          ? lang === "th" ? "เชื่อมต่อแล้ว" : "Connected"
+                          : lang === "th" ? "ยังไม่เชื่อมต่อ" : "Not connected"}
+                      </Badge>
+                    </div>
+                    <p className="mt-2 text-xs font-semibold leading-relaxed text-muted">
+                      {lang === "th"
+                        ? "เชื่อม Telegram ส่วนตัวเพื่อรับแจ้งเตือนราคาและ Margin of Safety จาก Alert Center โดยใช้ Bot กลางของ ValuStock"
+                        : "Connect your personal Telegram account to receive price and Margin-of-Safety alerts from ValuStock Alert Center."}
+                    </p>
+                    <div className="mt-3 grid gap-2 text-[11px] font-semibold text-muted sm:grid-cols-2">
+                      <div className="rounded-xl border border-line/70 bg-bg/45 px-3 py-2">
+                        <span className="block text-[9px] font-black uppercase text-muted">Bot</span>
+                        <span className="text-ink">{telegram?.botUsername ? `@${telegram.botUsername}` : "-"}</span>
+                      </div>
+                      <div className="rounded-xl border border-line/70 bg-bg/45 px-3 py-2">
+                        <span className="block text-[9px] font-black uppercase text-muted">Telegram</span>
+                        <span className="text-ink">
+                          {telegram?.connected
+                            ? telegram.telegramUsername || telegram.chatIdMask || "Connected"
+                            : lang === "th" ? "รอเชื่อมต่อ" : "Waiting"}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                <div className="flex shrink-0 flex-wrap gap-2 sm:justify-end">
+                  <Button size="sm" variant={telegram?.connected ? "outline" : "primary"} onClick={startTelegramConnect} disabled={telegramLoading || !authToken}>
+                    <Key className="h-4 w-4" />
+                    {telegram?.connected
+                      ? lang === "th" ? "สร้างโค้ดใหม่" : "New code"
+                      : lang === "th" ? "เชื่อมต่อ" : "Connect"}
+                  </Button>
+                  <Button size="sm" variant="outline" onClick={loadTelegram} disabled={telegramLoading || !authToken}>
+                    {lang === "th" ? "รีเฟรช" : "Refresh"}
+                  </Button>
+                </div>
+              </div>
+
+              {telegramCode && (
+                <div className="border-t border-line/60 bg-bg/35 p-4">
+                  <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                    <div className="min-w-0">
+                      <div className="text-[10px] font-black uppercase tracking-wide text-sky-300">
+                        {lang === "th" ? "ส่งคำสั่งนี้ให้ Bot ภายใน 10 นาที" : "Send this command to the bot within 10 minutes"}
+                      </div>
+                      <div className="mt-2 rounded-xl border border-line bg-bg px-3 py-2 font-mono text-sm font-black text-ink [overflow-wrap:anywhere]">
+                        {telegramCode.command}
+                      </div>
+                    </div>
+                    <div className="flex shrink-0 gap-2">
+                      <Button size="sm" variant="outline" onClick={copyTelegramCommand}>
+                        {lang === "th" ? "คัดลอก" : "Copy"}
+                      </Button>
+                      <a href={telegramCode.deepLink} target="_blank" rel="noreferrer">
+                        <Button size="sm">
+                          {lang === "th" ? "เปิด Telegram" : "Open Telegram"}
+                        </Button>
+                      </a>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              <div className="flex flex-col gap-3 border-t border-line/60 p-4 sm:flex-row sm:items-center sm:justify-between">
+                <div className="text-[11px] font-semibold leading-relaxed text-muted">
+                  {plan.limits.alerts
+                    ? lang === "th"
+                      ? "Premium/Lifetime สามารถส่งข้อความทดสอบและรับ alert จริงเมื่อ worker ตรวจพบเงื่อนไข"
+                      : "Premium/Lifetime can send test messages and receive real alerts when the alert worker detects matching conditions."
+                    : lang === "th"
+                      ? "เชื่อมบัญชีไว้ล่วงหน้าได้ แต่การส่ง alert ใช้งานใน Premium/Lifetime"
+                      : "You can connect in advance. Alert delivery is available on Premium/Lifetime."}
+                </div>
+                <div className="flex shrink-0 flex-wrap gap-2">
+                  <Button size="sm" variant="gold" onClick={testTelegram} disabled={telegramLoading || !telegram?.connected || !plan.limits.alerts}>
+                    {lang === "th" ? "ส่งทดสอบ" : "Send test"}
+                  </Button>
+                  {telegram?.connected && (
+                    <Button size="sm" variant="outline" onClick={disconnectTelegram} disabled={telegramLoading}>
+                      {lang === "th" ? "ยกเลิกเชื่อมต่อ" : "Disconnect"}
+                    </Button>
+                  )}
+                </div>
+              </div>
+
+              {telegramMessage && (
+                <div className="border-t border-line/60 bg-bg/30 px-4 py-3 text-xs font-bold text-muted">
+                  {telegramMessage}
+                </div>
+              )}
+            </div>
           </div>
           <FeatureRow
             icon={<Bell className="h-5 w-5 text-muted" />}

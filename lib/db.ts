@@ -60,6 +60,7 @@ export async function ensureColumn(table: string, column: string, definition: st
     "comparison_sets",
     "newsletter_subscribers",
     "reviews",
+    "telegram_connections",
   ]);
 
   if (!allowedTables.has(table)) {
@@ -115,6 +116,23 @@ export async function initDatabase(): Promise<boolean> {
         theme VARCHAR(20) DEFAULT 'dark',
         lang VARCHAR(10) DEFAULT 'th',
         updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+    `);
+
+    await query(`
+      CREATE TABLE IF NOT EXISTS telegram_connections (
+        user_email VARCHAR(255) PRIMARY KEY,
+        telegram_chat_id VARCHAR(100),
+        telegram_username VARCHAR(255),
+        status VARCHAR(30) DEFAULT 'pending',
+        connect_code_hash VARCHAR(128),
+        connect_code_expires_at TIMESTAMP NULL,
+        notifications_enabled BOOLEAN DEFAULT TRUE,
+        connected_at TIMESTAMP NULL,
+        last_test_at TIMESTAMP NULL,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+        INDEX idx_telegram_code (connect_code_hash, connect_code_expires_at),
+        INDEX idx_telegram_chat (telegram_chat_id)
       ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
     `);
 
@@ -295,6 +313,17 @@ export async function initDatabase(): Promise<boolean> {
     await ensureColumn("portfolio_settings", "backtest_symbol", "VARCHAR(50) DEFAULT 'PTT'");
     await ensureColumn("portfolio_settings", "backtest_years", "INT DEFAULT 3");
     await ensureColumn("portfolio_settings", "updated_at", "TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP");
+
+    await ensureColumn("telegram_connections", "user_email", "VARCHAR(255) PRIMARY KEY");
+    await ensureColumn("telegram_connections", "telegram_chat_id", "VARCHAR(100)");
+    await ensureColumn("telegram_connections", "telegram_username", "VARCHAR(255)");
+    await ensureColumn("telegram_connections", "status", "VARCHAR(30) DEFAULT 'pending'");
+    await ensureColumn("telegram_connections", "connect_code_hash", "VARCHAR(128)");
+    await ensureColumn("telegram_connections", "connect_code_expires_at", "TIMESTAMP NULL");
+    await ensureColumn("telegram_connections", "notifications_enabled", "BOOLEAN DEFAULT TRUE");
+    await ensureColumn("telegram_connections", "connected_at", "TIMESTAMP NULL");
+    await ensureColumn("telegram_connections", "last_test_at", "TIMESTAMP NULL");
+    await ensureColumn("telegram_connections", "updated_at", "TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP");
 
     await ensureColumn("articles", "slug", "VARCHAR(255) UNIQUE NOT NULL");
     await ensureColumn("articles", "title", "VARCHAR(255) NOT NULL");

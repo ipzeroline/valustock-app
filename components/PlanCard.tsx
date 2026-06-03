@@ -48,7 +48,7 @@ export const PLAN_TRANS = {
         "ทุกอย่างในแพ็กเกจโปร",
         "ข้อมูล Crypto & Futures",
         "เปรียบเทียบหุ้นหลายตัวพร้อมกัน",
-        "แจ้งเตือนเมื่อราคาต่ำกว่ามูลค่า",
+        "แจ้งเตือนผ่าน Telegram เมื่อราคาต่ำกว่ามูลค่า",
         "ส่งออกข้อมูลเป็น CSV",
         "Backtest และ Alert Center ในพอร์ต",
         "สมมติฐาน/Scenario การประเมินขั้นสูง",
@@ -64,7 +64,7 @@ export const PLAN_TRANS = {
         "สิทธิ์ใช้งานตลอดชีพ",
         "รองรับ Bulk historical/Flat Files workflow",
         "ส่งออกข้อมูล CSV สำหรับ backtest",
-        "แจ้งเตือนและเปรียบเทียบหุ้นครบ",
+        "Telegram alerts และเปรียบเทียบหุ้นครบ",
         "เหมาะกับคนใช้ต่อเนื่องเกิน 10 เดือน",
       ]
     }
@@ -104,7 +104,7 @@ export const PLAN_TRANS = {
         "Everything in the Pro plan",
         "Crypto & Futures data access",
         "Side-by-side asset comparison tool",
-        "Under-intrinsic-value price alert triggers",
+        "Telegram alerts for below-value triggers",
         "Prism direct exports (Excel & CSV)",
         "Portfolio backtest and Alert Center",
         "Advanced valuation scenario workflows",
@@ -120,7 +120,7 @@ export const PLAN_TRANS = {
         "Lifetime access",
         "Bulk historical / Flat Files workflow",
         "CSV exports for backtesting",
-        "Full alerts and comparison tools",
+        "Telegram alerts and comparison tools",
         "Best if you use it beyond 10 months",
       ]
     }

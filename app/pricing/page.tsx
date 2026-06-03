@@ -157,12 +157,12 @@ export default function PricingPage() {
       badge: lang === "th" ? "ครบสุด" : "Full access",
       desc:
         lang === "th"
-          ? "เหมาะกับคนมีพอร์ตจริงจัง ต้องการเปรียบเทียบหุ้นหลายตัว ตั้ง Alert Center, ทำ Backtest/Scenario และส่งออกข้อมูลไปวิเคราะห์ต่อ"
-          : "Best for active portfolios that need comparisons, Alert Center, backtests/scenarios, and data exports.",
+          ? "เหมาะกับคนมีพอร์ตจริงจัง ต้องการเปรียบเทียบหุ้นหลายตัว ตั้ง Alert Center ผ่าน Telegram, ทำ Backtest/Scenario และส่งออกข้อมูลไปวิเคราะห์ต่อ"
+          : "Best for active portfolios that need comparisons, Telegram Alert Center, backtests/scenarios, and data exports.",
       points:
         lang === "th"
-          ? ["Compare หุ้นหลายตัว", "Alert Center + MOS alerts", "Backtest, Scenario และ CSV Export"]
-          : ["Multi-asset comparison", "Alert Center + MOS alerts", "Backtest, scenarios, and CSV export"],
+          ? ["Compare หุ้นหลายตัว", "Telegram Alert Center + MOS alerts", "Backtest, Scenario และ CSV Export"]
+          : ["Multi-asset comparison", "Telegram Alert Center + MOS alerts", "Backtest, scenarios, and CSV export"],
     },
     {
       id: "lifetime" as PlanId,
@@ -578,7 +578,7 @@ export default function PricingPage() {
                 label={lang === "th" ? "12. ช่องทางแจ้งเตือน" : "12. Alert Channels"}
                 free="❌"
                 pro="❌"
-                premium={lang === "th" ? "In-app + Email + LINE" : "In-app + email + LINE"}
+                premium={lang === "th" ? "In-app + Telegram" : "In-app + Telegram"}
                 premiumStyle="gold"
               />
 
