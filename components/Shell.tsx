@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useStore, useCurrentPlan } from "@/lib/store";
@@ -241,23 +241,25 @@ function SiteFooter() {
 
 const NAV = [
   { href: "/dashboard", key: "dashboard", icon: BarChart3 },
+  { href: "/watchlist", key: "watchlist", icon: Star },
   { href: "/stocks", key: "searchStocks", icon: Search },
+  { href: "/compare", key: "compare", icon: Layers },
   { href: "/portfolio", key: "portfolio", icon: Wallet },
   { href: "/insights", key: "insights", icon: Sparkles },
-  { href: "/watchlist", key: "watchlist", icon: Star },
   { href: "/reviews", icon: MessageSquare, labelTh: "เขียนรีวิว", labelEn: "Write Review" },
-  { href: "/compare", key: "compare", icon: Layers },
   { href: "/pricing", key: "pricing", icon: Crown },
-  { href: "/contact", key: "contact", icon: Mail },
   { href: "/account", key: "account", icon: User },
+  { href: "/contact", key: "contact", icon: Mail },
 ];
+
+const MOBILE_NAV_HREFS = ["/dashboard", "/stocks", "/portfolio", "/reviews", "/account"];
 
 function AppSidebar({ pathname }: { pathname: string }) {
   const plan = useCurrentPlan();
   const { t, lang } = useTranslation();
   const pricingLabel = plan.id === "lifetime" ? (lang === "th" ? "สถานะสมาชิก" : "Membership") : t("common.pricing");
   return (
-    <aside className="sticky top-0 hidden h-screen w-60 shrink-0 flex-col border-r border-line bg-surface px-3 py-5 lg:flex">
+    <aside className="sticky top-0 hidden h-screen w-60 shrink-0 flex-col border-r border-line bg-surface px-3 py-5 xl:flex">
       <div className="px-2">
         <Logo />
       </div>
@@ -312,9 +314,11 @@ function AppSidebar({ pathname }: { pathname: string }) {
 
 function AppMobileNav({ pathname }: { pathname: string }) {
   const { t, lang } = useTranslation();
-  const items = [NAV[0], NAV[1], NAV[2], NAV[5], NAV[9]]; // Dashboard, Search, Portfolio, Reviews, Account
+  const items = MOBILE_NAV_HREFS.map((href) => NAV.find((item) => item.href === href)).filter(
+    (item): item is (typeof NAV)[number] => Boolean(item),
+  );
   return (
-    <nav className="fixed bottom-0 left-0 right-0 z-40 grid grid-cols-5 border-t border-line bg-surface/95 backdrop-blur-xl lg:hidden">
+    <nav className="fixed bottom-0 left-0 right-0 z-40 grid grid-cols-5 border-t border-line bg-surface/95 backdrop-blur-xl xl:hidden">
       {items.map((item) => {
         const active =
           pathname === item.href || pathname.startsWith(item.href + "/");
@@ -341,10 +345,10 @@ function AppTopbar() {
   const { t } = useTranslation();
   return (
     <div className="sticky top-0 z-30 flex h-16 items-center justify-between border-b border-line bg-bg/80 px-3 backdrop-blur-xl sm:px-5 lg:px-8">
-      <div className="shrink-0 lg:hidden">
+      <div className="shrink-0 xl:hidden">
         <Logo />
       </div>
-      <div className="hidden lg:block" />
+      <div className="hidden xl:block" />
       <div className="flex shrink-0 items-center gap-1.5 sm:gap-2.5">
         <LangToggle />
         <ThemeToggle />
@@ -382,6 +386,11 @@ function AppTopbar() {
 
 export function Shell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname() || "/";
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   // Completely isolate surfaces that should not inherit the member web shell.
   if (pathname.startsWith("/AdminConsole") || pathname.startsWith("/telegram")) {
@@ -400,15 +409,17 @@ export function Shell({ children }: { children: React.ReactNode }) {
     );
   }
 
+  const activePathname = mounted ? pathname : "";
+
   return (
     <div className="flex min-h-screen">
-      <AppSidebar pathname={pathname} />
+      <AppSidebar pathname={activePathname} />
       <div className="flex min-w-0 flex-1 flex-col">
         <AppTopbar />
-        <main className="min-w-0 max-w-full flex-1 overflow-x-hidden px-3 pb-24 pt-5 sm:px-5 sm:pt-6 lg:px-8 lg:pb-10">
+        <main className="min-w-0 max-w-full flex-1 overflow-x-hidden px-3 pb-24 pt-5 sm:px-5 sm:pt-6 xl:px-8 xl:pb-10">
           {children}
         </main>
-        <AppMobileNav pathname={pathname} />
+        <AppMobileNav pathname={activePathname} />
       </div>
     </div>
   );

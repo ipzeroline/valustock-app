@@ -152,7 +152,7 @@ export default function TelegramMiniAppPage() {
     };
   }, []);
 
-  const sendAction = async (action: "watchlist_summary" | "compare_alert", setId?: string) => {
+  const sendAction = async (action: "portfolio_summary" | "watchlist_summary" | "compare_alert", setId?: string) => {
     if (!initData) return;
     setActionLoading(setId || action);
     setMessage("");
@@ -258,6 +258,16 @@ export default function TelegramMiniAppPage() {
 
             {activeTab === "portfolio" ? (
               <section className="space-y-3">
+                <Button
+                  size="md"
+                  variant="gold"
+                  className="w-full"
+                  onClick={() => sendAction("portfolio_summary")}
+                  disabled={Boolean(actionLoading) || !summary.capabilities.portfolio || !summary.capabilities.alerts}
+                >
+                  <Bell className="h-4 w-4" />
+                  {actionLoading === "portfolio_summary" ? "กำลังส่ง..." : "ส่ง Portfolio Summary เข้า Telegram"}
+                </Button>
                 <div className="grid grid-cols-2 gap-3">
                   <MiniStat label="มูลค่าพอร์ต" value={num(summary.portfolio.totalValue, 0)} tone="gold" />
                   <MiniStat

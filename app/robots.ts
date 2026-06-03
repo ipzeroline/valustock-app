@@ -15,6 +15,7 @@ export default function robots(): MetadataRoute.Robots {
           "/dashboard",
           "/login",
           "/portfolio",
+          "/telegram",
           "/watchlist",
         ],
       },

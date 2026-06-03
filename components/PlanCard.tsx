@@ -23,6 +23,7 @@ export const PLAN_TRANS = {
         "อัตราส่วนพื้นฐาน (P/E, P/B, ปันผล)",
         "กราฟเส้นราคาย้อนหลัง",
         "บันทึกรายการโปรดได้ 3 ตัว",
+        "ทดลองดู Portfolio/Watchlist พื้นฐาน",
       ]
     },
     pro: {
@@ -34,10 +35,12 @@ export const PLAN_TRANS = {
         "เครื่องคำนวณ DCF แบบปรับค่าได้",
         "Graham Number & มูลค่าเหมาะสม",
         "สกรีนเนอร์คัดกรองหุ้นถูก",
-        "กราฟแท่งเทียน + Volume",
-        "Technical Chart: MA, EMA, RSI, MACD",
+        "กราฟแท่งเทียน + Volume + Fullscreen",
+        "Technical Chart: MA, EMA, RSI, MACD, Bollinger",
+        "Drawing Tools และ Custom Range",
         "รายการโปรดไม่จำกัด",
         "Portfolio Tracker ไม่จำกัด",
+        "Telegram Mini App แบบดูข้อมูลย่อ",
       ]
     },
     premium: {
@@ -48,7 +51,10 @@ export const PLAN_TRANS = {
         "ทุกอย่างในแพ็กเกจโปร",
         "ข้อมูล Crypto & Futures",
         "เปรียบเทียบหุ้นหลายตัวพร้อมกัน",
-        "Telegram Watchlist และ Compare Alerts",
+        "Telegram Watchlist Digest ทุกตัว",
+        "Telegram Portfolio Summary",
+        "Telegram Compare Set Alerts",
+        "Mini App ส่งสรุปกลับเข้า Telegram",
         "ส่งออกข้อมูลเป็น CSV",
         "Backtest และ Alert Center ในพอร์ต",
         "สมมติฐาน/Scenario การประเมินขั้นสูง",
@@ -64,7 +70,8 @@ export const PLAN_TRANS = {
         "สิทธิ์ใช้งานตลอดชีพ",
         "รองรับ Bulk historical/Flat Files workflow",
         "ส่งออกข้อมูล CSV สำหรับ backtest",
-        "Telegram Watchlist/Compare Alerts ครบ",
+        "Telegram Watchlist/Portfolio/Compare ครบ",
+        "Telegram Mini App และ reply ในแชทส่วนตัว",
         "เหมาะกับคนใช้ต่อเนื่องเกิน 10 เดือน",
       ]
     }
@@ -79,6 +86,7 @@ export const PLAN_TRANS = {
         "Basic ratios (P/E, P/B, yield)",
         "Historical line price charts",
         "Track up to 3 watchlist items",
+        "Basic portfolio/watchlist preview",
       ]
     },
     pro: {
@@ -90,10 +98,12 @@ export const PLAN_TRANS = {
         "Interactive DCF modeling engine",
         "Graham Number & Fair Value calculations",
         "High Margin-of-Safety stock screener",
-        "Candlestick chart with volume",
-        "Technical chart: MA, EMA, RSI, MACD",
+        "Candlesticks + volume + fullscreen",
+        "Technical chart: MA, EMA, RSI, MACD, Bollinger",
+        "Drawing tools and custom range",
         "Unlimited synced watchlist tracking",
         "Unlimited Portfolio Tracker",
+        "Read-only Telegram Mini App summary",
       ]
     },
     premium: {
@@ -104,7 +114,10 @@ export const PLAN_TRANS = {
         "Everything in the Pro plan",
         "Crypto & Futures data access",
         "Side-by-side asset comparison tool",
-        "Telegram Watchlist and Compare Alerts",
+        "Telegram Watchlist Digest for all symbols",
+        "Telegram Portfolio Summary",
+        "Telegram Compare Set Alerts",
+        "Mini App actions back to Telegram chat",
         "Prism direct exports (Excel & CSV)",
         "Portfolio backtest and Alert Center",
         "Advanced valuation scenario workflows",
@@ -120,7 +133,8 @@ export const PLAN_TRANS = {
         "Lifetime access",
         "Bulk historical / Flat Files workflow",
         "CSV exports for backtesting",
-        "Full Telegram Watchlist/Compare Alerts",
+        "Full Telegram Watchlist/Portfolio/Compare",
+        "Telegram Mini App and chat replies",
         "Best if you use it beyond 10 months",
       ]
     }

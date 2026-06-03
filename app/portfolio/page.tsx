@@ -17,6 +17,7 @@ import {
   Calculator,
   Bell,
   MessageSquare,
+  Search,
   CheckCircle,
   Plus,
   Trash2,
@@ -34,6 +35,48 @@ import {
 } from "@/lib/icons";
 
 type TabType = "ledger" | "backtest" | "alerts";
+
+type SecurityOption = (typeof STOCKS)[number];
+
+function securityGroupLabel(asset: SecurityOption, lang: "th" | "en") {
+  if (asset.assetType === "TH_STOCK") return lang === "th" ? "หุ้นไทย SET / mai" : "Thai Stocks";
+  if (asset.assetType === "US_STOCK") return lang === "th" ? "หุ้นสหรัฐ NASDAQ / NYSE" : "US Stocks";
+  if (asset.assetType === "ETF") {
+    return asset.currency === "USD"
+      ? lang === "th" ? "ETF สหรัฐ / Global ETF" : "US / Global ETFs"
+      : lang === "th" ? "ETF ไทย" : "Thai ETFs";
+  }
+  if (asset.assetType === "US_FUND") return lang === "th" ? "กองทุนรวมสหรัฐ" : "US Mutual Funds";
+  if (asset.assetType === "FUND") return lang === "th" ? "กองทุนรวมไทย / Feeder Fund" : "Thai Mutual / Feeder Funds";
+  if (asset.assetType === "CRYPTO") return lang === "th" ? "คริปโต" : "Crypto";
+  if (asset.assetType === "FUTURES") return lang === "th" ? "ฟิวเจอร์ส / สินค้าโภคภัณฑ์" : "Futures / Commodities";
+  return lang === "th" ? "สินทรัพย์อื่น" : "Other Assets";
+}
+
+function buildSecurityGroups(assets: SecurityOption[], lang: "th" | "en") {
+  const order = [
+    lang === "th" ? "หุ้นไทย SET / mai" : "Thai Stocks",
+    lang === "th" ? "หุ้นสหรัฐ NASDAQ / NYSE" : "US Stocks",
+    lang === "th" ? "ETF สหรัฐ / Global ETF" : "US / Global ETFs",
+    lang === "th" ? "ETF ไทย" : "Thai ETFs",
+    lang === "th" ? "กองทุนรวมสหรัฐ" : "US Mutual Funds",
+    lang === "th" ? "กองทุนรวมไทย / Feeder Fund" : "Thai Mutual / Feeder Funds",
+    lang === "th" ? "คริปโต" : "Crypto",
+    lang === "th" ? "ฟิวเจอร์ส / สินค้าโภคภัณฑ์" : "Futures / Commodities",
+    lang === "th" ? "สินทรัพย์อื่น" : "Other Assets",
+  ];
+  const groups = new Map<string, SecurityOption[]>();
+  for (const asset of assets) {
+    const label = securityGroupLabel(asset, lang);
+    groups.set(label, [...(groups.get(label) || []), asset]);
+  }
+  return order
+    .map((label) => ({
+      label,
+      assets: (groups.get(label) || []).sort((a, b) => a.symbol.localeCompare(b.symbol)),
+    }))
+    .filter((group) => group.assets.length > 0);
+}
 
 interface Transaction {
   id: string;
@@ -77,6 +120,11 @@ export default function PortfolioPage() {
   const [alertValue, setAlertValue] = useState<string>("30.00");
   const [alerts, setAlerts] = useState<any[]>([]);
   const [simulatedToast, setSimulatedToast] = useState<string | null>(null);
+  const securityGroups = useMemo(() => buildSecurityGroups(STOCKS, lang), [lang]);
+  const backtestSecurityGroups = useMemo(
+    () => buildSecurityGroups(STOCKS.filter((s) => s.assetType !== "FUND"), lang),
+    [lang]
+  );
 
   useEffect(() => {
     if (!user?.email) {
@@ -86,16 +134,17 @@ export default function PortfolioPage() {
     }
 
     const email = user.email.trim().toLowerCase();
+    const authHeaders = authToken ? { Authorization: `Bearer ${authToken}` } : undefined;
     setPortfolioError("");
 
     Promise.all([
-      fetch(`/api/portfolio/transactions?email=${encodeURIComponent(email)}`)
+      fetch(`/api/portfolio/transactions?email=${encodeURIComponent(email)}`, { headers: authHeaders })
         .then((res) => res.json().then((data) => ({ ok: res.ok, data }))),
       plan.limits.alerts
-        ? fetch(`/api/portfolio/alerts?email=${encodeURIComponent(email)}`)
+        ? fetch(`/api/portfolio/alerts?email=${encodeURIComponent(email)}`, { headers: authHeaders })
           .then((res) => res.json().then((data) => ({ ok: res.ok, data })))
         : Promise.resolve({ ok: true, data: { alerts: [] } }),
-      fetch(`/api/portfolio/settings?email=${encodeURIComponent(email)}`)
+      fetch(`/api/portfolio/settings?email=${encodeURIComponent(email)}`, { headers: authHeaders })
         .then((res) => res.json().then((data) => ({ ok: res.ok, data }))),
     ])
       .then(([txRes, alertRes, settingsRes]) => {
@@ -117,7 +166,7 @@ export default function PortfolioPage() {
       .catch((err) => {
         setPortfolioError(err.message || (lang === "th" ? "โหลดพอร์ตจากฐานข้อมูลไม่สำเร็จ" : "Unable to load portfolio from database"));
       });
-  }, [user?.email, lang, plan.limits.alerts]);
+  }, [user?.email, authToken, lang, plan.limits.alerts]);
 
   useEffect(() => {
     if (!user?.email) return;
@@ -125,7 +174,10 @@ export default function PortfolioPage() {
     const timer = window.setTimeout(() => {
       fetch("/api/portfolio/settings", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          ...(authToken ? { Authorization: `Bearer ${authToken}` } : {}),
+        },
         body: JSON.stringify({
           email,
           activeTab,
@@ -137,7 +189,7 @@ export default function PortfolioPage() {
       });
     }, 500);
     return () => window.clearTimeout(timer);
-  }, [user?.email, activeTab, backtestSymbol, backtestYears]);
+  }, [user?.email, authToken, activeTab, backtestSymbol, backtestYears]);
 
   const portfolioGuides = [
     {
@@ -315,7 +367,10 @@ export default function PortfolioPage() {
     try {
       const res = await fetch("/api/portfolio/transactions", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          ...(authToken ? { Authorization: `Bearer ${authToken}` } : {}),
+        },
         body: JSON.stringify({ ...newTx, email: user.email }),
       });
       const data = await res.json();
@@ -341,7 +396,10 @@ export default function PortfolioPage() {
     try {
       const res = await fetch("/api/portfolio/transactions", {
         method: "DELETE",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          ...(authToken ? { Authorization: `Bearer ${authToken}` } : {}),
+        },
         body: JSON.stringify({ email: user.email, id }),
       });
       const data = await res.json();
@@ -469,7 +527,10 @@ export default function PortfolioPage() {
     try {
       const res = await fetch("/api/portfolio/alerts", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          ...(authToken ? { Authorization: `Bearer ${authToken}` } : {}),
+        },
         body: JSON.stringify({ ...newAlert, email: user.email }),
       });
       const data = await res.json();
@@ -490,7 +551,10 @@ export default function PortfolioPage() {
     try {
       const res = await fetch("/api/portfolio/alerts", {
         method: "DELETE",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          ...(authToken ? { Authorization: `Bearer ${authToken}` } : {}),
+        },
         body: JSON.stringify({ email: user.email, id }),
       });
       const data = await res.json();
@@ -759,22 +823,19 @@ export default function PortfolioPage() {
                   <label className="text-[10px] font-bold text-muted uppercase">
                     {lang === "th" ? "เลือกตัวย่อหลักทรัพย์" : "Security Ticker"}
                   </label>
-                  <select
+                  <SecuritySymbolSearch
                     value={txSymbol}
-                    onChange={(e) => {
-                      setTxSymbol(e.target.value);
-                      const s = getStock(e.target.value)!;
+                    groups={securityGroups}
+                    lang={lang}
+                    placeholder={lang === "th" ? "พิมพ์เช่น PTT, AAPL, SPY, VTSAX" : "Type e.g. PTT, AAPL, SPY, VTSAX"}
+                    onChange={(symbol) => {
+                      const normalized = symbol.toUpperCase();
+                      setTxSymbol(normalized);
+                      const s = getStock(normalized)!;
                       setTxPrice(s.price.toString());
-                      setTxCurrency(getDefaultCurrency(e.target.value));
+                      setTxCurrency(getDefaultCurrency(normalized));
                     }}
-                    className="input-base text-xs font-semibold"
-                  >
-                    {STOCKS.map((s) => (
-                      <option key={s.symbol} value={s.symbol}>
-                        {s.symbol} — {lang === "th" ? s.name : s.enName}
-                      </option>
-                    ))}
-                  </select>
+                  />
                 </div>
 
                 {/* Buy vs Sell */}
@@ -1134,17 +1195,13 @@ export default function PortfolioPage() {
                   <label className="text-[10px] font-bold text-muted uppercase">
                     {lang === "th" ? "เลือกหลักทรัพย์เพื่อจำลอง" : "Target Asset"}
                   </label>
-                  <select
+                  <SecuritySymbolSearch
                     value={backtestSymbol}
-                    onChange={(e) => setBacktestSymbol(e.target.value)}
-                    className="input-base text-xs font-semibold"
-                  >
-                    {STOCKS.filter((s) => s.assetType !== "FUND").map((s) => (
-                      <option key={s.symbol} value={s.symbol}>
-                        {s.symbol} — {lang === "th" ? s.name : s.enName}
-                      </option>
-                    ))}
-                  </select>
+                    groups={backtestSecurityGroups}
+                    lang={lang}
+                    placeholder={lang === "th" ? "พิมพ์ตัวย่อสำหรับ Backtest" : "Type a ticker for backtest"}
+                    onChange={(symbol) => setBacktestSymbol(symbol.toUpperCase())}
+                  />
                 </div>
 
                 {/* Backtest Years */}
@@ -1308,17 +1365,13 @@ export default function PortfolioPage() {
                   <label className="text-[10px] font-bold text-muted uppercase">
                     {lang === "th" ? "ตัวย่อหลักทรัพย์" : "Security symbol"}
                   </label>
-                  <select
+                  <SecuritySymbolSearch
                     value={alertSymbol}
-                    onChange={(e) => setAlertSymbol(e.target.value)}
-                    className="input-base text-xs font-semibold"
-                  >
-                    {STOCKS.map((s) => (
-                      <option key={s.symbol} value={s.symbol}>
-                        {s.symbol}
-                      </option>
-                    ))}
-                  </select>
+                    groups={securityGroups}
+                    lang={lang}
+                    placeholder={lang === "th" ? "พิมพ์ตัวย่อที่ต้องการแจ้งเตือน" : "Type a ticker for alert"}
+                    onChange={(symbol) => setAlertSymbol(symbol.toUpperCase())}
+                  />
                 </div>
 
                 {/* Alert Type */}
@@ -1694,6 +1747,137 @@ function MobileMetric({
       >
         {value}
       </span>
+    </div>
+  );
+}
+
+function SecuritySymbolSearch({
+  value,
+  groups,
+  lang,
+  placeholder,
+  onChange,
+}: {
+  value: string;
+  groups: Array<{ label: string; assets: SecurityOption[] }>;
+  lang: "th" | "en";
+  placeholder: string;
+  onChange: (symbol: string) => void;
+}) {
+  const [query, setQuery] = useState(value);
+  const [open, setOpen] = useState(false);
+
+  useEffect(() => {
+    setQuery(value);
+  }, [value]);
+
+  const normalizedQuery = query.trim().toUpperCase();
+  const allAssets = useMemo(() => groups.flatMap((group) => group.assets), [groups]);
+  const matches = useMemo(() => {
+    const term = query.trim().toLowerCase();
+    if (!term) return allAssets.slice(0, 12);
+    return allAssets
+      .filter((asset) =>
+        asset.symbol.toLowerCase().includes(term) ||
+        asset.name.toLowerCase().includes(term) ||
+        asset.enName.toLowerCase().includes(term) ||
+        String(asset.sector || "").toLowerCase().includes(term)
+      )
+      .slice(0, 12);
+  }, [allAssets, query]);
+
+  const commit = (symbol: string) => {
+    const normalized = symbol.trim().toUpperCase();
+    if (!normalized) return;
+    onChange(normalized);
+    setQuery(normalized);
+    setOpen(false);
+  };
+
+  const exactMatch = allAssets.some((asset) => asset.symbol.toUpperCase() === normalizedQuery);
+  const canUseCustom = /^[A-Z0-9._-]{1,20}$/.test(normalizedQuery) && !exactMatch;
+
+  return (
+    <div className="relative">
+      <div className="relative">
+        <Search className="absolute left-3 top-2.5 h-4 w-4 text-muted" />
+        <input
+          className="input-base pl-9 pr-16 text-xs font-semibold uppercase"
+          value={query}
+          placeholder={placeholder}
+          onFocus={() => setOpen(true)}
+          onChange={(e) => {
+            setQuery(e.target.value);
+            setOpen(true);
+          }}
+          onKeyDown={(e) => {
+            if (e.key === "Enter") {
+              e.preventDefault();
+              commit(matches[0]?.symbol || normalizedQuery);
+            }
+          }}
+          onBlur={() => {
+            window.setTimeout(() => setOpen(false), 140);
+          }}
+        />
+        <button
+          type="button"
+          onMouseDown={(e) => e.preventDefault()}
+          onClick={() => commit(matches[0]?.symbol || normalizedQuery)}
+          className="absolute right-1.5 top-1.5 rounded-lg border border-line bg-elevate px-2 py-1 text-[10px] font-black text-muted transition hover:text-brand"
+        >
+          {lang === "th" ? "ใช้" : "Use"}
+        </button>
+      </div>
+
+      {open && (
+        <div className="absolute left-0 right-0 top-full z-50 mt-1 max-h-72 overflow-y-auto rounded-xl border border-line bg-surface/95 p-1 shadow-card backdrop-blur">
+          {matches.length > 0 ? (
+            matches.map((asset) => {
+              const group = securityGroupLabel(asset, lang);
+              return (
+                <button
+                  key={asset.symbol}
+                  type="button"
+                  onMouseDown={(e) => e.preventDefault()}
+                  onClick={() => commit(asset.symbol)}
+                  className="flex w-full items-center justify-between gap-2 rounded-lg p-2 text-left transition hover:bg-brand-soft"
+                >
+                  <div className="min-w-0">
+                    <div className="flex items-center gap-2">
+                      <AssetLogo symbol={asset.symbol} color={asset.color} size="sm" />
+                      <span className="font-display text-xs font-black text-ink">{asset.symbol}</span>
+                    </div>
+                    <div className="mt-0.5 truncate text-[10px] font-semibold text-muted">
+                      {lang === "th" ? asset.name : asset.enName}
+                    </div>
+                  </div>
+                  <span className="shrink-0 rounded-md border border-line bg-elevate px-1.5 py-0.5 text-[9px] font-bold text-muted">
+                    {group}
+                  </span>
+                </button>
+              );
+            })
+          ) : (
+            <div className="p-3 text-center text-[11px] font-semibold text-muted">
+              {lang === "th" ? "ไม่พบในรายการที่มี" : "No listed asset found"}
+            </div>
+          )}
+
+          {canUseCustom && (
+            <button
+              type="button"
+              onMouseDown={(e) => e.preventDefault()}
+              onClick={() => commit(normalizedQuery)}
+              className="mt-1 flex w-full items-center justify-center rounded-lg border border-brand/30 bg-brand/10 px-3 py-2 text-[11px] font-black text-brand transition hover:bg-brand hover:text-bg"
+            >
+              {lang === "th"
+                ? `ใช้สัญลักษณ์ "${normalizedQuery}" จาก API/fallback`
+                : `Use "${normalizedQuery}" from API/fallback`}
+            </button>
+          )}
+        </div>
+      )}
     </div>
   );
 }

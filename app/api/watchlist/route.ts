@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { getDbConnectionStatus, query } from "@/lib/db";
 import { getPlanForEmail } from "@/lib/entitlements";
+import { requireSameMemberEmail } from "@/lib/request-auth";
 
 function normalizeEmail(email: unknown) {
   return typeof email === "string" ? email.trim().toLowerCase() : "";
@@ -17,6 +18,8 @@ export async function GET(req: Request) {
   if (!email) {
     return NextResponse.json({ error: "Email is required" }, { status: 400 });
   }
+  const access = await requireSameMemberEmail(req, email);
+  if (access.error) return access.error;
 
   const status = await getDbConnectionStatus();
   if (!status.connected) {
@@ -52,6 +55,8 @@ export async function POST(req: Request) {
   if (!email || !symbol) {
     return NextResponse.json({ error: "Email and symbol are required" }, { status: 400 });
   }
+  const access = await requireSameMemberEmail(req, email);
+  if (access.error) return access.error;
 
   const status = await getDbConnectionStatus();
   if (!status.connected) {
@@ -104,6 +109,8 @@ export async function DELETE(req: Request) {
   if (!email || !symbol) {
     return NextResponse.json({ error: "Email and symbol are required" }, { status: 400 });
   }
+  const access = await requireSameMemberEmail(req, email);
+  if (access.error) return access.error;
 
   const status = await getDbConnectionStatus();
   if (!status.connected) {

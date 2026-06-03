@@ -2,10 +2,12 @@ import { NextResponse } from "next/server";
 import { getDbConnectionStatus, initDatabase, query } from "@/lib/db";
 import { hashTelegramConnectCode } from "@/lib/telegram-connection";
 import { answerTelegramCallbackQuery, sendTelegramMessage } from "@/lib/telegram";
-import { buildCompareTelegramSummaryMessage, buildWatchlistTelegramSummaryMessages } from "@/lib/telegram-digest";
+import {
+  buildCompareTelegramSummaryMessage,
+  buildPortfolioTelegramSummaryMessage,
+  buildWatchlistTelegramSummaryMessages,
+} from "@/lib/telegram-digest";
 import { getStock } from "@/lib/stocks";
-import { computeValuation, defaultDCFParams } from "@/lib/valuation";
-import { num } from "@/lib/format";
 
 type TelegramUpdate = {
   message?: {
@@ -107,82 +109,6 @@ function parseSymbols(value: string) {
   }
 }
 
-function portfolioSummaryMessage(email: string, rows: TransactionRow[]) {
-  const bySymbol = new Map<string, { shares: number; cost: number }>();
-  for (const row of rows) {
-    const symbol = String(row.symbol || "").toUpperCase();
-    const price = Number(row.price || 0);
-    const shares = Number(row.shares || 0);
-    const fee = Number(row.fee || 0);
-    if (!symbol || !price || !shares) continue;
-
-    const current = bySymbol.get(symbol) || { shares: 0, cost: 0 };
-    if (row.action === "SELL") {
-      const avgCost = current.shares > 0 ? current.cost / current.shares : 0;
-      current.shares = Math.max(0, current.shares - shares);
-      current.cost = Math.max(0, current.cost - avgCost * shares + fee);
-    } else {
-      current.shares += shares;
-      current.cost += price * shares + fee;
-    }
-    bySymbol.set(symbol, current);
-  }
-
-  const positions = Array.from(bySymbol.entries())
-    .map(([symbol, pos]) => {
-      const stock = getStock(symbol);
-      if (!stock || pos.shares <= 0) return null;
-      const value = stock.price * pos.shares;
-      const pnl = value - pos.cost;
-      const pnlPct = pos.cost > 0 ? (pnl / pos.cost) * 100 : 0;
-      const valuation = computeValuation(stock, defaultDCFParams(stock));
-      return { symbol, name: stock.name, shares: pos.shares, value, pnl, pnlPct, mos: valuation.marginOfSafety };
-    })
-    .filter(Boolean)
-    .sort((a: any, b: any) => b.value - a.value) as Array<{
-      symbol: string;
-      name: string;
-      shares: number;
-      value: number;
-      pnl: number;
-      pnlPct: number;
-      mos: number;
-    }>;
-
-  if (positions.length === 0) {
-    return [
-      "<b>ValuStock Portfolio</b>",
-      "",
-      "ยังไม่มีรายการพอร์ตในระบบ",
-      `บัญชี: <b>${escapeHtml(email)}</b>`,
-      `${(process.env.NEXT_PUBLIC_SITE_URL || "https://valustock.com").replace(/\/$/, "")}/portfolio`,
-    ].join("\n");
-  }
-
-  const totalValue = positions.reduce((sum, pos) => sum + pos.value, 0);
-  const totalPnl = positions.reduce((sum, pos) => sum + pos.pnl, 0);
-  const totalCost = totalValue - totalPnl;
-  const totalPnlPct = totalCost > 0 ? (totalPnl / totalCost) * 100 : 0;
-  const lines = positions.slice(0, 8).flatMap((pos, index) => [
-    `<b>${index + 1}. ${escapeHtml(pos.symbol)}</b> - ${escapeHtml(pos.name)}`,
-    `มูลค่า: <b>${num(pos.value, 0)}</b> | P/L: <b>${pos.pnl >= 0 ? "+" : ""}${num(pos.pnl, 0)} (${num(pos.pnlPct, 1)}%)</b>`,
-    `MOS: <b>${pos.mos >= 0 ? "+" : ""}${num(pos.mos, 0)}%</b> | จำนวน: <b>${num(pos.shares, 2)}</b>`,
-    "",
-  ]);
-
-  return [
-    "<b>ValuStock Portfolio Summary</b>",
-    `บัญชี: <b>${escapeHtml(email)}</b>`,
-    "",
-    `มูลค่าพอร์ต: <b>${num(totalValue, 0)}</b>`,
-    `กำไร/ขาดทุนรวม: <b>${totalPnl >= 0 ? "+" : ""}${num(totalPnl, 0)} (${num(totalPnlPct, 1)}%)</b>`,
-    "",
-    ...lines,
-    "หมายเหตุ: ข้อมูลนี้ใช้เพื่อการติดตามและวิเคราะห์ ไม่ใช่คำแนะนำซื้อขายหลักทรัพย์",
-    `${(process.env.NEXT_PUBLIC_SITE_URL || "https://valustock.com").replace(/\/$/, "")}/portfolio`,
-  ].join("\n");
-}
-
 async function sendBotMenu(chatId: string, email?: string) {
   await sendTelegramMessage({
     chatId,
@@ -202,7 +128,12 @@ async function sendPortfolio(chatId: string, email: string) {
     "SELECT symbol, action, price, shares, fee FROM portfolio_transactions WHERE user_email = ? ORDER BY trade_date DESC, created_at DESC",
     [email]
   );
-  await sendTelegramMessage({ chatId, text: portfolioSummaryMessage(email, rows), replyMarkup: mainMenuKeyboard() });
+  const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL || "https://valustock.com").replace(/\/$/, "");
+  await sendTelegramMessage({
+    chatId,
+    text: buildPortfolioTelegramSummaryMessage({ email, transactions: rows, siteUrl }),
+    replyMarkup: mainMenuKeyboard(),
+  });
 }
 
 async function sendWatchlist(chatId: string, email: string) {

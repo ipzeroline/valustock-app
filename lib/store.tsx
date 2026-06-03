@@ -75,7 +75,9 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     const email = data.user.email.trim().toLowerCase();
     const localSymbols = data.watchlist.map((symbol) => symbol.toUpperCase());
 
-    fetch(`/api/watchlist?email=${encodeURIComponent(email)}`)
+    fetch(`/api/watchlist?email=${encodeURIComponent(email)}`, {
+      headers: data.authToken ? { Authorization: `Bearer ${data.authToken}` } : undefined,
+    })
       .then((res) => (res.ok ? res.json() : null))
       .then((payload) => {
         if (!payload || !Array.isArray(payload.watchlist)) return;
@@ -93,7 +95,10 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
           .forEach((symbol) => {
             fetch("/api/watchlist", {
               method: "POST",
-              headers: { "Content-Type": "application/json" },
+              headers: {
+                "Content-Type": "application/json",
+                ...(data.authToken ? { Authorization: `Bearer ${data.authToken}` } : {}),
+              },
               body: JSON.stringify({ email, symbol }),
             }).catch(() => {
               /* keep local optimistic state */
@@ -103,13 +108,15 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
       .catch(() => {
         /* keep local optimistic state if the database is unavailable */
       });
-  }, [ready, data.user?.email]);
+  }, [ready, data.user?.email, data.authToken]);
 
   useEffect(() => {
     if (!ready || !data.user?.email) return;
 
     const email = data.user.email.trim().toLowerCase();
-    fetch(`/api/preferences?email=${encodeURIComponent(email)}`)
+    fetch(`/api/preferences?email=${encodeURIComponent(email)}`, {
+      headers: data.authToken ? { Authorization: `Bearer ${data.authToken}` } : undefined,
+    })
       .then((res) => (res.ok ? res.json() : null))
       .then((payload) => {
         if (!payload?.preferences) return;
@@ -125,7 +132,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
       .catch(() => {
         /* keep local preferences if the database is unavailable */
       });
-  }, [ready, data.user?.email]);
+  }, [ready, data.user?.email, data.authToken]);
 
   useEffect(() => {
     if (!ready || !data.user?.email) return;
@@ -133,7 +140,10 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
 
     fetch("/api/preferences", {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: {
+        "Content-Type": "application/json",
+        ...(data.authToken ? { Authorization: `Bearer ${data.authToken}` } : {}),
+      },
       body: JSON.stringify({
         email,
         theme: data.theme,
@@ -142,7 +152,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     }).catch(() => {
       /* local preferences remain available while offline */
     });
-  }, [ready, data.user?.email, data.theme, data.lang]);
+  }, [ready, data.user?.email, data.authToken, data.theme, data.lang]);
 
   // apply theme class
   useEffect(() => {
@@ -214,6 +224,8 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
       user: nextUser,
       authToken: authToken || d.authToken || null,
     }));
+
+    if (authToken && process.env.NODE_ENV === "production") return;
 
     fetch("/api/auth/email", {
       method: "POST",

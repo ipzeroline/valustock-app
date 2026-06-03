@@ -38,6 +38,83 @@ const verdictTone = {
 } as const;
 
 type ChartMetric = "mos" | "yield" | "roe" | "margin";
+const DEFAULT_COMPARE_SYMBOLS = ["PTT", "AOT", "KBANK"];
+const COMPARE_STORAGE_KEY = "valustock.compare.picked.v1";
+
+const COMPARE_PRESETS = [
+  {
+    id: "set-bluechip",
+    symbols: ["PTT", "AOT", "KBANK"],
+    labelTh: "SET Blue Chips",
+    labelEn: "SET Blue Chips",
+  },
+  {
+    id: "thai-banks",
+    symbols: ["BBL", "KBANK", "SCB", "KTB"],
+    labelTh: "กลุ่มธนาคาร",
+    labelEn: "Thai Banks",
+  },
+  {
+    id: "energy",
+    symbols: ["PTT", "PTTEP", "OR"],
+    labelTh: "พลังงาน",
+    labelEn: "Energy",
+  },
+  {
+    id: "dividend",
+    symbols: ["TISCO", "ADVANC", "PTT"],
+    labelTh: "หุ้นปันผล",
+    labelEn: "Dividend",
+  },
+  {
+    id: "us-tech",
+    symbols: ["AAPL", "MSFT", "NVDA", "GOOGL"],
+    labelTh: "US Tech",
+    labelEn: "US Tech",
+  },
+  {
+    id: "us-mega-cap",
+    symbols: ["AAPL", "MSFT", "AMZN", "META"],
+    labelTh: "US Mega Cap",
+    labelEn: "US Mega Cap",
+  },
+  {
+    id: "us-growth",
+    symbols: ["NVDA", "TSLA", "AMD", "NFLX"],
+    labelTh: "US Growth",
+    labelEn: "US Growth",
+  },
+  {
+    id: "us-bluechip",
+    symbols: ["BRK.B", "JPM", "V", "JNJ"],
+    labelTh: "US Blue Chips",
+    labelEn: "US Blue Chips",
+  },
+  {
+    id: "sp500-etf",
+    symbols: ["SPY", "VOO", "IVV"],
+    labelTh: "S&P 500 ETF",
+    labelEn: "S&P 500 ETF",
+  },
+  {
+    id: "nasdaq-income-etf",
+    symbols: ["QQQ", "JEPQ", "SCHD", "DIA"],
+    labelTh: "US ETF ยอดนิยม",
+    labelEn: "Popular US ETFs",
+  },
+  {
+    id: "global-etf",
+    symbols: ["VEA", "VWO", "GLD", "TLT"],
+    labelTh: "Global/Asset ETF",
+    labelEn: "Global/Asset ETF",
+  },
+  {
+    id: "us-mutual-funds",
+    symbols: ["VTSAX", "VFIAX", "FCNTX", "FBALX"],
+    labelTh: "US Mutual Funds",
+    labelEn: "US Mutual Funds",
+  },
+];
 
 type SavedComparisonSet = {
   id: string;
@@ -49,11 +126,11 @@ type SavedComparisonSet = {
 
 export default function ComparePage() {
   const plan = useCurrentPlan();
-  const { user, authToken } = useStore();
+  const { user, authToken, watchlist } = useStore();
   const { t, lang } = useTranslation();
 
   // Picked stocks (up to 4)
-  const [picked, setPicked] = useState<string[]>(["PTT", "AOT", "KBANK"]);
+  const [picked, setPicked] = useState<string[]>(DEFAULT_COMPARE_SYMBOLS);
   const [searchQuery, setSearchQuery] = useState("");
   const [activeChartMetric, setActiveChartMetric] = useState<ChartMetric>("mos");
   const [savedSets, setSavedSets] = useState<SavedComparisonSet[]>([]);
@@ -74,7 +151,9 @@ export default function ComparePage() {
     setSetsLoading(true);
     setSetMessage("");
     try {
-      const res = await fetch(`/api/compare?email=${encodeURIComponent(user.email)}`);
+      const res = await fetch(`/api/compare?email=${encodeURIComponent(user.email)}`, {
+        headers: authToken ? { Authorization: `Bearer ${authToken}` } : undefined,
+      });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "Could not load comparison sets");
       setSavedSets(Array.isArray(data.sets) ? data.sets : []);
@@ -87,7 +166,50 @@ export default function ComparePage() {
 
   useEffect(() => {
     loadSavedSets();
-  }, [user?.email]);
+  }, [user?.email, authToken]);
+
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem(COMPARE_STORAGE_KEY);
+      if (!raw) return;
+      const parsed = JSON.parse(raw);
+      if (!Array.isArray(parsed)) return;
+      const symbols = parsed
+        .filter((symbol): symbol is string => typeof symbol === "string")
+        .map((symbol) => symbol.trim().toUpperCase())
+        .filter((symbol) => getStock(symbol))
+        .slice(0, 4);
+      if (symbols.length >= 2) setPicked(symbols);
+    } catch {
+      /* keep default example set */
+    }
+  }, []);
+
+  useEffect(() => {
+    try {
+      localStorage.setItem(COMPARE_STORAGE_KEY, JSON.stringify(picked));
+    } catch {
+      /* local persistence is optional */
+    }
+  }, [picked]);
+
+  const applyPreset = (symbols: string[]) => {
+    const next = Array.from(new Set(symbols.map((symbol) => symbol.trim().toUpperCase()).filter((symbol) => getStock(symbol)))).slice(0, 4);
+    if (next.length >= 2) {
+      setPicked(next);
+      setSetName(next.join(" vs "));
+      setSetMessage(lang === "th" ? `โหลดชุด ${next.join(" / ")} แล้ว` : `Loaded ${next.join(" / ")}.`);
+    }
+  };
+
+  const applyWatchlistPreset = () => {
+    const next = watchlist.map((symbol) => symbol.toUpperCase()).filter((symbol) => getStock(symbol)).slice(0, 4);
+    if (next.length < 2) {
+      setSetMessage(lang === "th" ? "Watchlist ต้องมีอย่างน้อย 2 ตัวเพื่อใช้เป็นชุดเปรียบเทียบ" : "Watchlist needs at least 2 assets for comparison.");
+      return;
+    }
+    applyPreset(next);
+  };
 
   const faqItems = [
     {
@@ -265,7 +387,10 @@ export default function ComparePage() {
     try {
       const res = await fetch("/api/compare", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          ...(authToken ? { Authorization: `Bearer ${authToken}` } : {}),
+        },
         body: JSON.stringify({
           email: user.email,
           name: setName || picked.join(" vs "),
@@ -297,7 +422,10 @@ export default function ComparePage() {
     try {
       const res = await fetch("/api/compare", {
         method: "DELETE",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          ...(authToken ? { Authorization: `Bearer ${authToken}` } : {}),
+        },
         body: JSON.stringify({ email: user.email, id }),
       });
       const data = await res.json();
@@ -497,6 +625,53 @@ export default function ComparePage() {
         </div>
       </div>
 
+      <Card className="border border-line/70 bg-surface/25 p-3">
+        <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+          <div>
+            <div className="text-[10px] font-black uppercase tracking-wide text-brand">
+              {lang === "th" ? "ชุดเริ่มต้นและลูกเล่น" : "Presets & shortcuts"}
+            </div>
+            <p className="mt-1 text-[11px] font-semibold leading-relaxed text-muted">
+              {lang === "th"
+                ? "PTT / AOT / KBANK เป็นชุดตัวอย่างแรกเท่านั้น คุณเปลี่ยนเป็นกลุ่มอุตสาหกรรม, หุ้นสหรัฐ, ETF, กองทุน หรือ Watchlist ของคุณได้"
+                : "PTT / AOT / KBANK is only the first example set. Switch to sectors, US stocks, ETFs, funds, or your own watchlist."}
+            </p>
+          </div>
+          <div className="flex flex-wrap gap-2">
+            {COMPARE_PRESETS.map((preset) => (
+              <button
+                key={preset.id}
+                type="button"
+                onClick={() => applyPreset(preset.symbols)}
+                className={`rounded-lg border px-3 py-1.5 text-[11px] font-black transition ${
+                  JSON.stringify(picked) === JSON.stringify(preset.symbols)
+                    ? "border-brand bg-brand-soft text-brand"
+                    : "border-line bg-elevate/45 text-muted hover:border-brand hover:text-brand"
+                }`}
+                title={preset.symbols.join(" / ")}
+              >
+                {lang === "th" ? preset.labelTh : preset.labelEn}
+              </button>
+            ))}
+            <button
+              type="button"
+              onClick={applyWatchlistPreset}
+              className="rounded-lg border border-gold/35 bg-gold/10 px-3 py-1.5 text-[11px] font-black text-gold transition hover:bg-gold/15"
+              title={watchlist.length > 0 ? watchlist.slice(0, 4).join(" / ") : undefined}
+            >
+              {lang === "th" ? "จาก Watchlist" : "From Watchlist"}
+            </button>
+            <button
+              type="button"
+              onClick={() => applyPreset(DEFAULT_COMPARE_SYMBOLS)}
+              className="rounded-lg border border-line bg-elevate/35 px-3 py-1.5 text-[11px] font-black text-muted transition hover:border-brand hover:text-brand"
+            >
+              {lang === "th" ? "รีเซ็ตตัวอย่าง" : "Reset"}
+            </button>
+          </div>
+        </div>
+      </Card>
+
       <Card className="border border-line/80 bg-surface/35 p-4">
         <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(320px,420px)] lg:items-start">
           <div>
@@ -523,39 +698,27 @@ export default function ComparePage() {
                 onChange={(e) => setSetName(e.target.value)}
                 placeholder={lang === "th" ? `เช่น ${picked.join(" vs ")}` : `e.g. ${picked.join(" vs ")}`}
               />
-              <Button
-                type="button"
-                size="sm"
-                onClick={saveCurrentSet}
-                disabled={savingSet || picked.length < 2}
-                className="w-full sm:w-auto"
-              >
-                <CheckCircle className="h-4 w-4" />
-                {savingSet
-                  ? (lang === "th" ? "กำลังบันทึก..." : "Saving...")
-                  : (lang === "th" ? "บันทึกชุดนี้" : "Save Set")}
-              </Button>
-            </div>
-            <div className="mt-3 rounded-xl border border-gold/25 bg-gold/10 p-3">
-              <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                <div className="min-w-0">
-                  <div className="flex items-center gap-2 text-xs font-black text-ink">
-                    <Bell className="h-4 w-4 text-gold" />
-                    {lang === "th" ? "Telegram Compare Alert" : "Telegram Compare Alert"}
-                  </div>
-                  <p className="mt-1 text-[11px] font-semibold leading-relaxed text-muted">
-                    {lang === "th"
-                      ? "ส่งสรุปอันดับหุ้นในชุดนี้ พร้อม MOS, Yield, ROE และ Fair Value เข้า Telegram ของสมาชิก"
-                      : "Send the current comparison ranking with MOS, yield, ROE, and fair value to your connected Telegram."}
-                  </p>
-                </div>
+              <div className="grid gap-2 sm:grid-cols-2">
                 <Button
                   type="button"
                   size="sm"
-                  variant="gold"
+                  onClick={saveCurrentSet}
+                  disabled={savingSet || picked.length < 2}
+                  className="w-full"
+                >
+                  <CheckCircle className="h-4 w-4" />
+                  {savingSet
+                    ? (lang === "th" ? "กำลังบันทึก..." : "Saving...")
+                    : (lang === "th" ? "บันทึกชุดนี้" : "Save Set")}
+                </Button>
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="outline"
                   onClick={() => sendCompareTelegram()}
                   disabled={telegramSending || picked.length < 2 || !authToken}
-                  className="w-full shrink-0 sm:w-auto"
+                  className="w-full"
+                  title={lang === "th" ? "ส่งสรุปชุดนี้เข้า Telegram" : "Send this comparison to Telegram"}
                 >
                   <Bell className="h-4 w-4" />
                   {telegramSending
@@ -564,6 +727,11 @@ export default function ComparePage() {
                 </Button>
               </div>
             </div>
+            {user?.email && !authToken && (
+              <p className="mt-2 text-[11px] font-semibold text-gold">
+                {lang === "th" ? "ต้องมี session สมาชิกเพื่อส่ง Telegram" : "Member session is required to send Telegram."}
+              </p>
+            )}
             {!user?.email && (
               <p className="mt-2 text-[11px] font-semibold text-gold">
                 {lang === "th" ? "ต้อง login ก่อนจึงจะบันทึกลง database ได้" : "Log in to save comparison sets to the database."}
@@ -1280,17 +1448,18 @@ function CompareRow({
 
 // ================== SPARKLINE CHART COMPONENT ==================
 function Sparkline({ data, up, symbol }: { data: number[]; up: boolean; symbol: string }) {
-  if (!data || data.length === 0) return null;
+  const safeData = (data || []).map((value) => Number(value)).filter((value) => Number.isFinite(value));
+  if (safeData.length < 2) return null;
 
-  const min = Math.min(...data);
-  const max = Math.max(...data);
+  const min = Math.min(...safeData);
+  const max = Math.max(...safeData);
   const range = max - min === 0 ? 1 : max - min;
   const width = 100;
   const height = 28;
 
-  const points = data
+  const points = safeData
     .map((val, idx) => {
-      const x = (idx / (data.length - 1)) * width;
+      const x = (idx / (safeData.length - 1)) * width;
       const y = height - 2 - ((val - min) / range) * (height - 4);
       return `${x},${y}`;
     })
@@ -1316,7 +1485,7 @@ function Sparkline({ data, up, symbol }: { data: number[]; up: boolean; symbol: 
         strokeLinejoin="round"
         points={points}
       />
-      <circle cx={width} cy={height - 2 - ((data[data.length - 1] - min) / range) * (height - 4)} r="2" fill={color} />
+      <circle cx={width} cy={height - 2 - ((safeData[safeData.length - 1] - min) / range) * (height - 4)} r="2" fill={color} />
     </svg>
   );
 }
@@ -1331,14 +1500,19 @@ function MetricBarChart({
   metricKey: ChartMetric;
   lang: "th" | "en";
 }) {
+  const safeMetricValue = (value: unknown) => {
+    const next = Number(value);
+    return Number.isFinite(next) ? next : 0;
+  };
+
   const data = stocks.map((s) => {
     const v = computeValuation(s, defaultDCFParams(s));
     let val = 0;
-    if (metricKey === "mos") val = v.marginOfSafety;
-    else if (metricKey === "yield") val = v.ratios.dividendYield;
-    else if (metricKey === "roe") val = isFinite(v.ratios.roe) ? v.ratios.roe : 0;
+    if (metricKey === "mos") val = safeMetricValue(v.marginOfSafety);
+    else if (metricKey === "yield") val = safeMetricValue(v.ratios.dividendYield);
+    else if (metricKey === "roe") val = safeMetricValue(v.ratios.roe);
     else if (metricKey === "margin") {
-      val = s.financials.revenue > 0 ? (s.financials.netIncome / s.financials.revenue) * 100 : 0;
+      val = safeMetricValue(s.financials.revenue > 0 ? (s.financials.netIncome / s.financials.revenue) * 100 : 0);
     }
     return {
       symbol: s.symbol,
@@ -1347,9 +1521,9 @@ function MetricBarChart({
     };
   });
 
-  const values = data.map((d) => d.value);
-  const maxVal = Math.max(...values, 10);
-  const minVal = Math.min(...values, 0);
+  const values = data.map((d) => safeMetricValue(d.value));
+  const maxVal = safeMetricValue(Math.max(...values, 10));
+  const minVal = safeMetricValue(Math.min(...values, 0));
   const range = maxVal - minVal === 0 ? 1 : maxVal - minVal;
 
   const chartHeight = 160;
@@ -1385,18 +1559,21 @@ function MetricBarChart({
 
         {/* Dynamic Bars */}
         {data.map((item) => {
-          const isPositive = item.value >= 0;
+          const value = safeMetricValue(item.value);
+          const isPositive = value >= 0;
           
           let barHeight = 0;
           let barTop = zeroY;
 
           if (isPositive) {
-            barHeight = (item.value / range) * usableHeight;
+            barHeight = (value / range) * usableHeight;
             barTop = zeroY - barHeight;
           } else {
-            barHeight = (Math.abs(item.value) / range) * usableHeight;
+            barHeight = (Math.abs(value) / range) * usableHeight;
             barTop = zeroY;
           }
+          barHeight = safeMetricValue(barHeight);
+          barTop = safeMetricValue(barTop);
 
           return (
             <div
@@ -1412,7 +1589,7 @@ function MetricBarChart({
                   zIndex: 20
                 }}
               >
-                {item.value.toFixed(1)}%
+                {value.toFixed(1)}%
               </div>
 
               {/* SVG Bar representation */}

@@ -19,8 +19,10 @@ function LoginContent() {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const demoAuthEnabled = process.env.NODE_ENV !== "production";
 
   const submit = () => {
+    if (!demoAuthEnabled) return;
     if (!email.includes("@")) return;
     login(email, mode === "register" ? name : undefined);
     router.push("/dashboard");
@@ -59,46 +61,49 @@ function LoginContent() {
           )}
 
           <div className="mt-6 space-y-4">
-            {mode === "register" && (
-              <Field label={lang === "th" ? "ชื่อของคุณ" : "Full Name"}>
-                <input
-                  className="input-base"
-                  placeholder={lang === "th" ? "ชื่อผู้ใช้" : "John Doe"}
-                  value={name}
-                  onChange={(e) => setName(e.target.value)}
-                />
-              </Field>
-            )}
-            <Field label={lang === "th" ? "อีเมล" : "Email Address"}>
-              <input
-                className="input-base"
-                type="email"
-                placeholder="you@example.com"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-              />
-            </Field>
-            <Field label={lang === "th" ? "รหัสผ่าน" : "Password"}>
-              <input
-                className="input-base"
-                type="password"
-                placeholder="••••••••"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-              />
-            </Field>
-            <Button className="w-full text-white bg-brand hover:bg-brand/90" onClick={submit} size="lg">
-              {mode === "login" ? t("common.logIn") : t("common.signUp")}
-            </Button>
+            {demoAuthEnabled && (
+              <>
+                {mode === "register" && (
+                  <Field label={lang === "th" ? "ชื่อของคุณ" : "Full Name"}>
+                    <input
+                      className="input-base"
+                      placeholder={lang === "th" ? "ชื่อผู้ใช้" : "John Doe"}
+                      value={name}
+                      onChange={(e) => setName(e.target.value)}
+                    />
+                  </Field>
+                )}
+                <Field label={lang === "th" ? "อีเมล" : "Email Address"}>
+                  <input
+                    className="input-base"
+                    type="email"
+                    placeholder="you@example.com"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                  />
+                </Field>
+                <Field label={lang === "th" ? "รหัสผ่าน" : "Password"}>
+                  <input
+                    className="input-base"
+                    type="password"
+                    placeholder="••••••••"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                  />
+                </Field>
+                <Button className="w-full text-white bg-brand hover:bg-brand/90" onClick={submit} size="lg">
+                  {mode === "login" ? t("common.logIn") : t("common.signUp")}
+                </Button>
 
-            {/* Separator */}
-            <div className="relative flex py-2 items-center">
-              <div className="flex-grow border-t border-line"></div>
-              <span className="flex-shrink mx-4 text-xs text-muted uppercase tracking-wider font-semibold">
-                {lang === "th" ? "หรือ" : "or"}
-              </span>
-              <div className="flex-grow border-t border-line"></div>
-            </div>
+                <div className="relative flex py-2 items-center">
+                  <div className="flex-grow border-t border-line"></div>
+                  <span className="flex-shrink mx-4 text-xs text-muted uppercase tracking-wider font-semibold">
+                    {lang === "th" ? "หรือ" : "or"}
+                  </span>
+                  <div className="flex-grow border-t border-line"></div>
+                </div>
+              </>
+            )}
 
             {/* Google OAuth Button */}
             <button
@@ -126,22 +131,28 @@ function LoginContent() {
 
           <div className="mt-5 flex items-center gap-2 rounded-xl border border-line bg-elevate px-3 py-2.5 text-xs text-muted">
             <Shield className="h-4 w-4 shrink-0 text-brand" />
-            {lang === "th" 
-              ? "เดโม: สามารถเข้าสู่ระบบด้วยบัญชีใดก็ได้ หรือคลิกปุ่มด้านบนเพื่อเชื่อมต่อบัญชี Google ของคุณ"
-              : "Demo Mode: type any email to test, or click above to link your real Google account."}
+            {demoAuthEnabled
+              ? lang === "th"
+                ? "เดโม: สามารถเข้าสู่ระบบด้วยบัญชีใดก็ได้ หรือคลิกปุ่มด้านบนเพื่อเชื่อมต่อบัญชี Google ของคุณ"
+                : "Demo Mode: type any email to test, or click above to link your real Google account."
+              : lang === "th"
+                ? "Production: เข้าสู่ระบบด้วย Google OAuth เท่านั้น เพื่อยืนยันตัวตนและออก session token ที่ปลอดภัย"
+                : "Production: sign in with Google OAuth only, so ValuStock can issue a verified secure session token."}
           </div>
 
-          <p className="mt-5 text-center text-sm text-muted">
-            {mode === "login" 
-              ? (lang === "th" ? "ยังไม่มีบัญชี?" : "Don't have an account?") 
-              : (lang === "th" ? "มีบัญชีอยู่แล้ว?" : "Already have an account?")}{" "}
-            <button
-              className="font-semibold text-brand hover:underline"
-              onClick={() => setMode(mode === "login" ? "register" : "login")}
-            >
-              {mode === "login" ? (lang === "th" ? "สมัครฟรี" : "Sign Up Free") : t("common.logIn")}
-            </button>
-          </p>
+          {demoAuthEnabled && (
+            <p className="mt-5 text-center text-sm text-muted">
+              {mode === "login" 
+                ? (lang === "th" ? "ยังไม่มีบัญชี?" : "Don't have an account?") 
+                : (lang === "th" ? "มีบัญชีอยู่แล้ว?" : "Already have an account?")}{" "}
+              <button
+                className="font-semibold text-brand hover:underline"
+                onClick={() => setMode(mode === "login" ? "register" : "login")}
+              >
+                {mode === "login" ? (lang === "th" ? "สมัครฟรี" : "Sign Up Free") : t("common.logIn")}
+              </button>
+            </p>
+          )}
         </div>
         <Link
           href="/"

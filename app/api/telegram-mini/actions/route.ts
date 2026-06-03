@@ -2,7 +2,11 @@ import { NextResponse } from "next/server";
 import { getDbConnectionStatus, initDatabase, query } from "@/lib/db";
 import { getPlanForEmail } from "@/lib/entitlements";
 import { sendTelegramMessage } from "@/lib/telegram";
-import { buildCompareTelegramSummaryMessage, buildWatchlistTelegramSummaryMessages } from "@/lib/telegram-digest";
+import {
+  buildCompareTelegramSummaryMessage,
+  buildPortfolioTelegramSummaryMessage,
+  buildWatchlistTelegramSummaryMessages,
+} from "@/lib/telegram-digest";
 import { getTelegramMiniMember } from "@/lib/telegram-mini";
 
 type CompareSetRow = {
@@ -10,6 +14,14 @@ type CompareSetRow = {
   name: string;
   symbols: string;
   chartMetric: string | null;
+};
+
+type TransactionRow = {
+  symbol: string;
+  action: "BUY" | "SELL";
+  price: string | number;
+  shares: string | number;
+  fee: string | number | null;
 };
 
 function parseSymbols(value: string) {
@@ -46,6 +58,24 @@ export async function POST(req: Request) {
 
   const action = String(body.action || "");
   const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL || "https://valustock.com").replace(/\/$/, "");
+
+  if (action === "portfolio_summary") {
+    if (!plan.limits.portfolio) {
+      return NextResponse.json({ error: "Portfolio Mini App requires Starter plan or higher", requiredPlan: "starter" }, { status: 403 });
+    }
+
+    const transactions = await query<TransactionRow[]>(
+      "SELECT symbol, action, price, shares, fee FROM portfolio_transactions WHERE user_email = ? ORDER BY trade_date DESC, created_at DESC",
+      [member.email]
+    );
+    const text = buildPortfolioTelegramSummaryMessage({
+      email: member.email,
+      transactions,
+      siteUrl,
+    });
+    await sendTelegramMessage({ chatId: member.chatId, text });
+    return NextResponse.json({ success: true, messagesSent: 1 });
+  }
 
   if (action === "watchlist_summary") {
     const rows = await query<{ symbol: string }[]>(

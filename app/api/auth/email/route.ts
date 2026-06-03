@@ -13,6 +13,13 @@ function isValidEmail(email: string) {
 }
 
 export async function POST(req: Request) {
+  if (process.env.NODE_ENV === "production") {
+    return NextResponse.json(
+      { error: "Email demo authentication is disabled in production. Use Google OAuth." },
+      { status: 403 }
+    );
+  }
+
   const status = await getDbConnectionStatus();
   if (!status.connected) {
     return NextResponse.json(

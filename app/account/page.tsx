@@ -438,8 +438,8 @@ export default function AccountPage() {
                     </div>
                     <p className="mt-2 text-xs font-semibold leading-relaxed text-muted">
                       {lang === "th"
-                        ? "เชื่อม Telegram ส่วนตัวเพื่อรับแจ้งเตือนราคาและ Margin of Safety จาก Alert Center โดยใช้ Bot กลางของ ValuStock"
-                        : "Connect your personal Telegram account to receive price and Margin-of-Safety alerts from ValuStock Alert Center."}
+                        ? "เชื่อม Telegram ส่วนตัวครั้งเดียว เพื่อรับสรุป Watchlist, Portfolio, Compare Alert และใช้ Mini App โดยไม่ต้องล็อกอินเว็บซ้ำ"
+                        : "Connect your personal Telegram account once to receive Watchlist summaries, Portfolio updates, Compare Alerts, and use the Mini App without logging into the web again."}
                     </p>
                     <div className="mt-3 grid gap-2 text-[11px] font-semibold text-muted sm:grid-cols-2">
                       <div className="rounded-xl border border-line/70 bg-bg/45 px-3 py-2">
@@ -468,6 +468,63 @@ export default function AccountPage() {
                         {lang === "th"
                           ? "ข้อมูลนี้ใช้เฉพาะสำหรับส่งแจ้งเตือนจาก ValuStock Bot ไปยังบัญชี Telegram ของคุณเท่านั้น ไม่แสดง chat id เต็มบนหน้าเว็บ และยกเลิกการเชื่อมต่อได้ทุกเมื่อ"
                           : "This data is used only to deliver ValuStock Bot alerts to your Telegram account. Full chat IDs are hidden on the web and can be disconnected anytime."}
+                      </p>
+                    </div>
+                    <div className="mt-3 rounded-xl border border-sky-400/25 bg-sky-400/10 p-3">
+                      <div className="flex flex-wrap items-center justify-between gap-2">
+                        <div className="text-[10px] font-black uppercase tracking-wide text-sky-300">
+                          {lang === "th" ? "วิธีเชื่อมต่อแบบง่าย" : "Simple Connection Flow"}
+                        </div>
+                        {telegram?.connected && (
+                          <Badge tone="up">{lang === "th" ? "เชื่อมแล้ว ไม่ต้องทำซ้ำ" : "Connected once"}</Badge>
+                        )}
+                      </div>
+                      <div className="mt-3 grid gap-2 text-[11px] font-semibold leading-relaxed text-muted md:grid-cols-3">
+                        {[
+                          {
+                            step: "1",
+                            title: lang === "th" ? "กดเชื่อมต่อ" : "Click Connect",
+                            desc:
+                              lang === "th"
+                                ? "ระบบจะสร้างคำสั่ง /start พร้อมโค้ดเฉพาะสมาชิก"
+                                : "ValuStock creates a /start command with your one-time member code.",
+                          },
+                          {
+                            step: "2",
+                            title: lang === "th" ? "ส่งให้ Bot" : "Send to Bot",
+                            desc:
+                              lang === "th"
+                                ? "กดเปิด Telegram หรือคัดลอกคำสั่งไปส่งในแชทส่วนตัวของ Bot"
+                                : "Open Telegram or copy the command into the bot's private chat.",
+                          },
+                          {
+                            step: "3",
+                            title: lang === "th" ? "รอสถานะเชื่อมต่อ" : "Wait for Connected",
+                            desc:
+                              lang === "th"
+                                ? "กลับมาหน้านี้ รอ 5 วินาที หรือกดรีเฟรชจนขึ้นเชื่อมต่อแล้ว"
+                                : "Return here, wait a few seconds, or click refresh until Connected appears.",
+                          },
+                        ].map((item) => (
+                          <div key={item.step} className="rounded-lg border border-line/60 bg-bg/35 p-2">
+                            <div className="flex items-center gap-2">
+                              <span className="grid h-5 w-5 shrink-0 place-items-center rounded-full bg-sky-400/20 text-[10px] font-black text-sky-300">
+                                {item.step}
+                              </span>
+                              <span className="font-black text-ink">{item.title}</span>
+                            </div>
+                            <p className="mt-1 text-muted">{item.desc}</p>
+                          </div>
+                        ))}
+                      </div>
+                      <p className="mt-2 text-[11px] font-semibold leading-relaxed text-muted">
+                        {telegram?.connected
+                          ? lang === "th"
+                            ? "เมื่อเชื่อมต่อแล้ว สถานะจะค้างอยู่ในระบบ ไม่ต้องเชื่อมซ้ำ ยกเว้นคุณกดยกเลิกเชื่อมต่อหรือเปลี่ยนบัญชี Telegram"
+                            : "Once connected, the status stays linked. You only need to reconnect if you disconnect or change Telegram accounts."
+                          : lang === "th"
+                            ? "สำคัญ: ส่งคำสั่งในแชทส่วนตัวกับ Bot เท่านั้น ไม่ควรส่งโค้ดในกลุ่ม และโค้ดหมดอายุภายใน 10 นาที"
+                            : "Important: send the command only in a private bot chat. Do not post the code in groups. Codes expire in 10 minutes."}
                       </p>
                     </div>
                     <div className="mt-3 rounded-xl border border-brand/25 bg-brand/10 p-3">
@@ -556,18 +613,26 @@ export default function AccountPage() {
 
               {telegramCode && (
                 <div className="border-t border-line/60 bg-bg/35 p-4">
-                  <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                  <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                     <div className="min-w-0">
                       <div className="text-[10px] font-black uppercase tracking-wide text-sky-300">
-                        {lang === "th" ? "ส่งคำสั่งนี้ให้ Bot ภายใน 10 นาที" : "Send this command to the bot within 10 minutes"}
+                        {lang === "th" ? "ขั้นตอนถัดไป: ส่งคำสั่งนี้ใน Telegram" : "Next step: send this command in Telegram"}
                       </div>
                       <p className="mt-1 text-[11px] font-semibold leading-relaxed text-muted">
                         {lang === "th"
-                          ? "ใช้โค้ดนี้ครั้งเดียวเพื่อยืนยันว่า Telegram นี้เป็นของสมาชิกที่ล็อกอินอยู่"
-                          : "Use this one-time code to confirm this Telegram account belongs to the logged-in member."}
+                          ? "ให้กดปุ่ม เปิด Telegram หรือคัดลอกคำสั่งด้านล่างไปส่งในแชทส่วนตัวของ Bot ภายใน 10 นาที ระบบจะผูก Telegram นี้กับบัญชีสมาชิกที่ล็อกอินอยู่"
+                          : "Click Open Telegram or copy the command below into the bot's private chat within 10 minutes. ValuStock will link that Telegram account to the logged-in member."}
                       </p>
                       <div className="mt-2 rounded-xl border border-line bg-bg px-3 py-2 font-mono text-sm font-black text-ink [overflow-wrap:anywhere]">
                         {telegramCode.command}
+                      </div>
+                      <div className="mt-2 grid gap-2 text-[11px] font-semibold leading-relaxed text-muted sm:grid-cols-2">
+                        <span className="rounded-lg border border-line/60 bg-bg/50 px-2 py-1">
+                          {lang === "th" ? `Bot: @${telegramCode.botUsername}` : `Bot: @${telegramCode.botUsername}`}
+                        </span>
+                        <span className="rounded-lg border border-line/60 bg-bg/50 px-2 py-1">
+                          {lang === "th" ? "หลังส่งแล้ว หน้านี้จะรีเฟรชสถานะอัตโนมัติ" : "After sending, this page refreshes status automatically."}
+                        </span>
                       </div>
                     </div>
                     <div className="flex shrink-0 gap-2">

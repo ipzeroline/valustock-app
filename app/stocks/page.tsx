@@ -37,6 +37,7 @@ import {
 
 type SortKey = "mos" | "pe" | "growth" | "yield" | "symbol";
 type TabType = "valuation" | "performance" | "dividends" | "funds";
+type MetricTone = "up" | "down" | "gold" | "muted" | "brand";
 
 export default function StocksPage() {
   const plan = useCurrentPlan();
@@ -1110,11 +1111,35 @@ export default function StocksPage() {
                       </div>
 
                       {activeTab === "valuation" && (
-                        <div className="mt-4 grid grid-cols-1 gap-2 text-xs sm:grid-cols-2">
-                          <MobileMetric label={lang === "th" ? "ราคา" : "Price"} value={formatPrice(s, s.price)} />
-                          <MobileMetric label={lang === "th" ? "มูลค่า" : "Fair Value"} value={isNonStock ? "—" : formatPrice(s, v.fairValue)} accent />
-                          <MobileMetric label="MOS" value={isFund ? "NAV" : s.assetType === "CRYPTO" || s.assetType === "FUTURES" ? "Market" : `${v.marginOfSafety >= 0 ? "+" : ""}${v.marginOfSafety.toFixed(0)}%`} up={v.marginOfSafety >= 0} />
-                          <MobileMetric label="P/E" value={isFinite(v.ratios.pe) ? num(v.ratios.pe, 1) : "—"} />
+                        <div className="mt-4 space-y-3">
+                          <div className="rounded-2xl border border-line bg-bg/55 p-3">
+                            <div className="flex items-start justify-between gap-3">
+                              <div>
+                                <div className="text-[10px] font-black uppercase tracking-wide text-muted">
+                                  {lang === "th" ? "ราคาตลาด" : "Market"}
+                                </div>
+                                <div className="mt-1 font-mono text-base font-black text-ink">{formatPrice(s, s.price)}</div>
+                              </div>
+                              <div className="text-right">
+                                <div className="text-[10px] font-black uppercase tracking-wide text-muted">
+                                  {lang === "th" ? "ราคาเหมาะสม" : "Fair Value"}
+                                </div>
+                                <div className="mt-1 font-mono text-base font-black text-gold">
+                                  {isNonStock ? "—" : formatPrice(s, v.fairValue)}
+                                </div>
+                              </div>
+                            </div>
+                            <ValuationMosBar
+                              mos={v.marginOfSafety}
+                              disabledLabel={isFund ? "NAV" : s.assetType === "CRYPTO" || s.assetType === "FUTURES" ? "Market" : undefined}
+                              compact
+                            />
+                          </div>
+                          <div className="grid grid-cols-3 gap-2">
+                            <MetricChip label="P/E" value={isFinite(v.ratios.pe) ? `${num(v.ratios.pe, 1)}x` : "—"} />
+                            <MetricChip label="Yield" value={`${num(v.ratios.dividendYield, 1)}%`} tone="gold" />
+                            <MetricChip label="ROE" value={isNonStock || isNaN(v.ratios.roe) ? "—" : pct(v.ratios.roe)} tone="brand" />
+                          </div>
                         </div>
                       )}
 
@@ -1171,57 +1196,66 @@ export default function StocksPage() {
             {/* DENSE INSTITUTIONAL TABLE */}
             <Card className="hidden border border-line/80 overflow-hidden md:block">
               <div className="overflow-x-auto">
-                <table className="w-full text-left text-xs border-collapse">
+                <table className={`w-full text-left text-xs border-collapse ${activeTab === "valuation" ? "min-w-[1080px]" : "min-w-[1120px]"}`}>
+                  {activeTab === "valuation" && (
+                    <colgroup>
+                      <col className="w-[260px]" />
+                      <col className="w-[280px]" />
+                      <col className="w-[180px]" />
+                      <col className="w-[340px]" />
+                      <col className="w-[140px]" />
+                      <col className="w-[92px]" />
+                    </colgroup>
+                  )}
                   <thead>
                     <tr className="border-b border-line bg-elevate/50 text-muted font-bold tracking-wider">
-                      <th className="px-4 py-3">{lang === "th" ? "หลักทรัพย์" : "TICKER"}</th>
+                      <th className="whitespace-nowrap px-5 py-3">{lang === "th" ? "หลักทรัพย์" : "TICKER"}</th>
 
                       {activeTab === "valuation" && (
                         <>
-                          <th className="px-4 py-3 text-right">{lang === "th" ? "ราคาปัจจุบัน" : "MARKET PRICE"}</th>
-                          <th className="px-4 py-3 text-center">{lang === "th" ? "เทรนด์ 30 วัน" : "30D SPARK"}</th>
-                          <th className="px-4 py-3 text-right">{lang === "th" ? "มูลค่าเหมาะสม" : "FAIR VALUE"}</th>
-                          <th className="px-4 py-3">{lang === "th" ? "ส่วนลดความปลอดภัย" : "MOS DISCOUNT"}</th>
-                          <th className="px-4 py-3 text-center">{lang === "th" ? "สถานะการประเมิน" : "VERDICT"}</th>
+                          <th className="whitespace-nowrap px-5 py-3">{lang === "th" ? "MOS / สถานะ" : "MOS / STATUS"}</th>
+                          <th className="whitespace-nowrap px-5 py-3 text-right">{lang === "th" ? "ราคา / มูลค่า" : "PRICE / VALUE"}</th>
+                          <th className="whitespace-nowrap px-5 py-3">{lang === "th" ? "ตัวชี้วัดหลัก" : "KEY METRICS"}</th>
+                          <th className="whitespace-nowrap px-4 py-3 text-center">{lang === "th" ? "เทรนด์ 30 วัน" : "30D SPARK"}</th>
                         </>
                       )}
 
                       {activeTab === "performance" && (
                         <>
-                          <th className="px-4 py-3 text-right">{lang === "th" ? "รายได้ (Rev)" : "REVENUE"}</th>
-                          <th className="px-4 py-3 text-right">{lang === "th" ? "กำไรสุทธิ" : "NET INCOME"}</th>
-                          <th className="px-4 py-3 text-right">{lang === "th" ? "อัตรากำไร" : "NET MARGIN"}</th>
-                          <th className="px-4 py-3 text-right">{lang === "th" ? "คาดการณ์การเติบโต" : "FCF GROWTH"}</th>
-                          <th className="px-4 py-3 text-right">EBITDA</th>
-                          <th className="px-4 py-3 text-right">D/E Ratio</th>
-                          <th className="px-4 py-3 text-right">ROE %</th>
+                          <th className="whitespace-nowrap px-4 py-3 text-right">{lang === "th" ? "รายได้ (Rev)" : "REVENUE"}</th>
+                          <th className="whitespace-nowrap px-4 py-3 text-right">{lang === "th" ? "กำไรสุทธิ" : "NET INCOME"}</th>
+                          <th className="whitespace-nowrap px-4 py-3 text-right">{lang === "th" ? "อัตรากำไร" : "NET MARGIN"}</th>
+                          <th className="whitespace-nowrap px-4 py-3 text-right">{lang === "th" ? "คาดการณ์การเติบโต" : "FCF GROWTH"}</th>
+                          <th className="whitespace-nowrap px-4 py-3 text-right">EBITDA</th>
+                          <th className="whitespace-nowrap px-4 py-3 text-right">D/E Ratio</th>
+                          <th className="whitespace-nowrap px-4 py-3 text-right">ROE %</th>
                         </>
                       )}
 
                       {activeTab === "dividends" && (
                         <>
-                          <th className="px-4 py-3 text-right">{lang === "th" ? "ราคาล่าสุด" : "PRICE"}</th>
-                          <th className="px-4 py-3 text-right">{lang === "th" ? "เงินปันผล/หุ้น" : "DPS"}</th>
-                          <th className="px-4 py-3 text-right">{lang === "th" ? "อัตราปันผล" : "DIV YIELD"}</th>
-                          <th className="px-4 py-3 text-right">{lang === "th" ? "อัตราการจ่าย (Payout)" : "PAYOUT RATIO"}</th>
-                          <th className="px-4 py-3 text-right">{lang === "th" ? "กระแสเงินสดอิสระ" : "FREE CASHFLOW"}</th>
-                          <th className="px-4 py-3 text-right">{lang === "th" ? "เงินสดสำรอง" : "CASH BALANCE"}</th>
-                          <th className="px-4 py-3 text-right">{lang === "th" ? "หนี้สินสุทธิ" : "NET DEBT"}</th>
+                          <th className="whitespace-nowrap px-4 py-3 text-right">{lang === "th" ? "ราคาล่าสุด" : "PRICE"}</th>
+                          <th className="whitespace-nowrap px-4 py-3 text-right">{lang === "th" ? "เงินปันผล/หุ้น" : "DPS"}</th>
+                          <th className="whitespace-nowrap px-4 py-3 text-right">{lang === "th" ? "อัตราปันผล" : "DIV YIELD"}</th>
+                          <th className="whitespace-nowrap px-4 py-3 text-right">{lang === "th" ? "อัตราการจ่าย (Payout)" : "PAYOUT RATIO"}</th>
+                          <th className="whitespace-nowrap px-4 py-3 text-right">{lang === "th" ? "กระแสเงินสดอิสระ" : "FREE CASHFLOW"}</th>
+                          <th className="whitespace-nowrap px-4 py-3 text-right">{lang === "th" ? "เงินสดสำรอง" : "CASH BALANCE"}</th>
+                          <th className="whitespace-nowrap px-4 py-3 text-right">{lang === "th" ? "หนี้สินสุทธิ" : "NET DEBT"}</th>
                         </>
                       )}
 
                       {activeTab === "funds" && (
                         <>
-                          <th className="px-4 py-3">{lang === "th" ? "ประเภทกองทุน" : "FUND TYPE"}</th>
-                          <th className="px-4 py-3">{lang === "th" ? "กองทุนหลัก (Master/Feeder)" : "MASTER FUND"}</th>
-                          <th className="px-4 py-3 text-right">{lang === "th" ? "ค่าธรรมเนียม" : "EXPENSE RATIO"}</th>
-                          <th className="px-4 py-3 text-right">{lang === "th" ? "ขนาดสินทรัพย์ (AUM)" : "AUM SIZE"}</th>
-                          <th className="px-4 py-3 text-center">{lang === "th" ? "ความเสี่ยง" : "RISK LEVEL"}</th>
-                          <th className="px-4 py-3 text-center">{lang === "th" ? "ถือครองหลัก" : "TOP HOLDING"}</th>
+                          <th className="whitespace-nowrap px-4 py-3">{lang === "th" ? "ประเภทกองทุน" : "FUND TYPE"}</th>
+                          <th className="whitespace-nowrap px-4 py-3">{lang === "th" ? "กองทุนหลัก (Master/Feeder)" : "MASTER FUND"}</th>
+                          <th className="whitespace-nowrap px-4 py-3 text-right">{lang === "th" ? "ค่าธรรมเนียม" : "EXPENSE RATIO"}</th>
+                          <th className="whitespace-nowrap px-4 py-3 text-right">{lang === "th" ? "ขนาดสินทรัพย์ (AUM)" : "AUM SIZE"}</th>
+                          <th className="whitespace-nowrap px-4 py-3 text-center">{lang === "th" ? "ความเสี่ยง" : "RISK LEVEL"}</th>
+                          <th className="whitespace-nowrap px-4 py-3 text-center">{lang === "th" ? "ถือครองหลัก" : "TOP HOLDING"}</th>
                         </>
                       )}
 
-                      <th className="px-4 py-3 text-right">{lang === "th" ? "วิเคราะห์" : "AUDIT"}</th>
+                      <th className="whitespace-nowrap px-4 py-3 text-right">{lang === "th" ? "วิเคราะห์" : "AUDIT"}</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-line/60">
@@ -1276,7 +1310,6 @@ export default function StocksPage() {
                       visibleRows.map((row) => {
                         const s = row.s;
                         const v = row.v;
-                        const isUp = v.marginOfSafety >= 0;
                         const displayName = lang === "th" ? s.name : s.enName || s.name;
                         const isFund = s.assetType === "FUND" || s.assetType === "US_FUND";
                         const isNonStock = isFund || s.assetType === "CRYPTO" || s.assetType === "FUTURES";
@@ -1309,10 +1342,10 @@ export default function StocksPage() {
                             }`}
                           >
                             {/* Symbol & Name */}
-                            <td className="px-4 py-3">
-                              <div className="flex items-center gap-2.5">
+                            <td className="px-5 py-3">
+                              <div className="flex min-w-0 items-center gap-3">
                                 <AssetLogo symbol={s.symbol} color={s.color} size="sm" />
-                                <div>
+                                <div className="min-w-0">
                                   <div className="flex items-center gap-1">
                                     <span className="font-display font-extrabold text-ink group-hover:text-brand transition">
                                       {s.symbol}
@@ -1348,7 +1381,7 @@ export default function StocksPage() {
                                     )}
                                   </div>
                                   <span
-                                    className="text-[9px] text-muted max-w-[100px] truncate block"
+                                    className="block max-w-[190px] truncate text-[10px] font-semibold text-muted"
                                     title={displayName}
                                   >
                                     {displayName}
@@ -1360,50 +1393,35 @@ export default function StocksPage() {
                             {/* TAB 1: VALUATION HUB */}
                             {activeTab === "valuation" && (
                               <>
-                                <td className="px-4 py-3 text-right font-mono font-bold text-ink">
-                                  {formatPrice(s, s.price)}
+                                <td className="px-5 py-3">
+                                  <div className="flex items-center justify-between gap-3">
+                                    <ValuationMosBar
+                                      mos={v.marginOfSafety}
+                                      disabledLabel={isFund ? "NAV" : s.assetType === "CRYPTO" || s.assetType === "FUTURES" ? "Market" : undefined}
+                                    />
+                                    <Badge tone={verdictColor} className="shrink-0 px-2 py-1 text-[9px] font-bold leading-none">
+                                      {t(`verdict.${v.verdict}`)}
+                                    </Badge>
+                                  </div>
+                                </td>
+                                <td className="px-5 py-3 text-right">
+                                  <div className="font-mono text-[15px] font-black text-ink">{formatPrice(s, s.price)}</div>
+                                  <div className="mt-1 font-mono text-[11px] font-bold text-muted">
+                                    {lang === "th" ? "FV " : "FV "}
+                                    <span className="text-gold">{isNonStock ? "—" : formatPrice(s, v.fairValue)}</span>
+                                  </div>
+                                </td>
+                                <td className="px-5 py-3">
+                                  <div className="flex min-w-[300px] items-stretch gap-2">
+                                    <MetricChip label="P/E" value={isFinite(v.ratios.pe) ? `${num(v.ratios.pe, 1)}x` : "—"} />
+                                    <MetricChip label="Yield" value={`${num(v.ratios.dividendYield, 1)}%`} tone="gold" />
+                                    <MetricChip label="ROE" value={isNonStock || isNaN(v.ratios.roe) ? "—" : pct(v.ratios.roe)} tone="brand" />
+                                  </div>
                                 </td>
                                 <td className="px-4 py-3 text-center align-middle">
                                   <div className="inline-flex items-center justify-center">
                                     <Sparkline history={s.priceHistory} symbol={s.symbol} />
                                   </div>
-                                </td>
-                                <td className="px-4 py-3 text-right font-mono font-bold text-gold">
-                                  {isNonStock ? "—" : formatPrice(s, v.fairValue)}
-                                </td>
-                                <td className="px-4 py-3 min-w-[120px]">
-                                  {isFund ? (
-                                    <span className="text-[10px] text-muted font-mono font-semibold">NAV-Backed</span>
-                                  ) : s.assetType === "CRYPTO" || s.assetType === "FUTURES" ? (
-                                    <span className="text-[10px] text-muted font-mono font-semibold">Market-Driven</span>
-                                  ) : (
-                                    <div className="flex items-center gap-2">
-                                      <span
-                                        className={`font-mono font-extrabold text-xs shrink-0 ${
-                                          isUp ? "text-up" : "text-down"
-                                        }`}
-                                      >
-                                        {isUp ? "+" : ""}
-                                        {v.marginOfSafety.toFixed(0)}%
-                                      </span>
-                                      <div className="h-1.5 w-12 bg-line rounded-full overflow-hidden shrink-0 hidden sm:block">
-                                        <div
-                                          className={`h-full rounded-full ${isUp ? "bg-up" : "bg-down"}`}
-                                          style={{
-                                            width: `${Math.min(
-                                              Math.max(v.marginOfSafety + 50, 0),
-                                              100
-                                            )}%`,
-                                          }}
-                                        />
-                                      </div>
-                                    </div>
-                                  )}
-                                </td>
-                                <td className="px-4 py-3 text-center">
-                                  <Badge tone={verdictColor} className="text-[9px] font-bold py-0.5 px-1.5 leading-none">
-                                    {t(`verdict.${v.verdict}`)}
-                                  </Badge>
                                 </td>
                               </>
                             )}
@@ -2083,6 +2101,78 @@ function MobileMetric({
       >
         {value}
       </span>
+    </div>
+  );
+}
+
+function MetricChip({
+  label,
+  value,
+  tone = "muted",
+}: {
+  label: string;
+  value: string;
+  tone?: MetricTone;
+}) {
+  const toneClass =
+    tone === "up"
+      ? "text-up"
+      : tone === "down"
+        ? "text-down"
+        : tone === "gold"
+          ? "text-gold"
+          : tone === "brand"
+            ? "text-brand"
+            : "text-ink";
+
+  return (
+    <div className="flex min-w-[92px] flex-1 items-center justify-between gap-2 rounded-lg border border-line bg-bg/55 px-3 py-2">
+      <span className="whitespace-nowrap text-[9px] font-black uppercase tracking-wide text-muted">{label}</span>
+      <span className={`whitespace-nowrap font-mono text-[12px] font-black ${toneClass}`} title={value}>
+        {value}
+      </span>
+    </div>
+  );
+}
+
+function ValuationMosBar({
+  mos,
+  disabledLabel,
+  compact = false,
+}: {
+  mos: number;
+  disabledLabel?: string;
+  compact?: boolean;
+}) {
+  if (disabledLabel) {
+    return (
+      <div className={compact ? "mt-3" : "w-full min-w-[150px]"}>
+        <div className="flex items-center justify-between gap-2">
+          <span className="text-[9px] font-black uppercase tracking-wide text-muted">MOS</span>
+          <span className="font-mono text-[11px] font-black text-muted">{disabledLabel}</span>
+        </div>
+        <div className="mt-1.5 h-1.5 rounded-full bg-line">
+          <div className="h-full w-1/2 rounded-full bg-muted/40" />
+        </div>
+      </div>
+    );
+  }
+
+  const positive = mos >= 0;
+  const width = Math.min(Math.max(mos + 50, 0), 100);
+
+  return (
+    <div className={compact ? "mt-3" : "w-full min-w-[150px]"}>
+      <div className="flex items-center justify-between gap-2">
+        <span className="text-[9px] font-black uppercase tracking-wide text-muted">MOS</span>
+        <span className={`font-mono text-[11px] font-black ${positive ? "text-up" : "text-down"}`}>
+          {positive ? "+" : ""}
+          {num(mos, 0)}%
+        </span>
+      </div>
+      <div className="mt-1.5 h-1.5 overflow-hidden rounded-full bg-line">
+        <div className={`h-full rounded-full ${positive ? "bg-up" : "bg-down"}`} style={{ width: `${width}%` }} />
+      </div>
     </div>
   );
 }
