@@ -11,6 +11,7 @@ import { baht, dollar, pct, num } from "@/lib/format";
 import { Sparkline } from "@/components/Charts";
 import { AssetLogo } from "@/components/AssetLogo";
 import { useTranslation } from "@/lib/translations";
+import { useStore } from "@/lib/store";
 import { getBlogArticle } from "@/lib/blogArticles";
 import {
   Calculator,
@@ -55,6 +56,30 @@ interface ValuationOpportunity {
   changePct: number;
   priceHistory: number[];
   href: string;
+}
+
+interface PublicReview {
+  id: number;
+  name: string;
+  emailMask: string;
+  rating: number;
+  title: string;
+  content: string;
+  approvedAt: string | null;
+  createdAt: string;
+}
+
+interface MyReview {
+  id: number;
+  name: string;
+  rating: number;
+  title: string;
+  content: string;
+  status: "pending" | "approved" | "rejected";
+  adminNote: string;
+  approvedAt: string | null;
+  createdAt: string;
+  updatedAt: string;
 }
 
 const FEATURED_ARTICLES_TH: Article[] = [
@@ -165,6 +190,7 @@ function buildHomeBlogArticles(lang: "th" | "en"): Article[] {
 
 export default function Landing() {
   const { t, lang } = useTranslation();
+  const { ready, user, authToken } = useStore();
   const demo = STOCKS[1]; // AOT
   const val = computeValuation(demo, defaultDCFParams(demo));
 
@@ -172,6 +198,12 @@ export default function Landing() {
   const [apiOpportunities, setApiOpportunities] = useState<ValuationOpportunity[]>([]);
   const [activeAssetTab, setActiveAssetTab] = useState<ValuationOpportunity["category"]>("us");
   const [openFaq, setOpenFaq] = useState<number | null>(null);
+  const [reviews, setReviews] = useState<PublicReview[]>([]);
+  const [myReview, setMyReview] = useState<MyReview | null>(null);
+  const [reviewForm, setReviewForm] = useState({ rating: 5, title: "", content: "" });
+  const [reviewSaving, setReviewSaving] = useState(false);
+  const [reviewMessage, setReviewMessage] = useState("");
+  const [reviewError, setReviewError] = useState("");
 
   // Newsletter subscription states
   const [email, setEmail] = useState("");
@@ -260,6 +292,66 @@ export default function Landing() {
       })
       .catch((err) => console.error("Error fetching homepage valuation opportunities:", err));
   }, []);
+
+  const fetchReviews = () => {
+    fetch("/api/reviews?limit=9", {
+      headers: authToken ? { Authorization: `Bearer ${authToken}` } : undefined,
+    })
+      .then((res) => (res.ok ? res.json() : null))
+      .then((payload) => {
+        if (!payload) return;
+        setReviews(Array.isArray(payload.reviews) ? payload.reviews : []);
+        setMyReview(payload.myReview || null);
+        if (payload.myReview) {
+          setReviewForm({
+            rating: payload.myReview.rating || 5,
+            title: payload.myReview.title || "",
+            content: payload.myReview.content || "",
+          });
+        }
+      })
+      .catch((err) => console.error("Error fetching user reviews:", err));
+  };
+
+  useEffect(() => {
+    fetchReviews();
+  }, [user?.email, authToken]);
+
+  const handleReviewSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!user?.email || !authToken) {
+      setReviewError(lang === "th" ? "กรุณาเข้าสู่ระบบก่อนเขียนรีวิว" : "Please sign in before writing a review.");
+      return;
+    }
+
+    setReviewSaving(true);
+    setReviewError("");
+    setReviewMessage("");
+    try {
+      const res = await fetch("/api/reviews", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          token: authToken,
+          rating: reviewForm.rating,
+          title: reviewForm.title,
+          content: reviewForm.content,
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Could not save review");
+      setReviewMessage(lang === "th" ? "บันทึกรีวิวแล้ว รอแอดมินอนุมัติก่อนแสดงหน้าเว็บ" : "Review saved. It will appear after admin approval.");
+      fetchReviews();
+    } catch (err: any) {
+      setReviewError(
+        lang === "th"
+          ? "บันทึกรีวิวไม่สำเร็จ กรุณาตรวจสอบข้อความและลองใหม่"
+          : err.message || "Could not save your review. Please try again."
+      );
+    } finally {
+      setReviewSaving(false);
+    }
+  };
 
   const articlesList = useMemo(() => {
     const homeBlogArticles = buildHomeBlogArticles(lang);
@@ -456,6 +548,19 @@ export default function Landing() {
     { label: lang === "th" ? "เปรียบเทียบหุ้นและ ETF" : "Compare stocks and ETFs", href: "/compare" },
   ];
 
+  const reviewAverage = useMemo(() => {
+    if (!reviews.length) return 0;
+    return reviews.reduce((sum, review) => sum + Number(review.rating || 0), 0) / reviews.length;
+  }, [reviews]);
+
+  const reviewStatusText = myReview
+    ? myReview.status === "approved"
+      ? lang === "th" ? "รีวิวของคุณเผยแพร่แล้ว" : "Your review is published"
+      : myReview.status === "rejected"
+      ? lang === "th" ? "รีวิวของคุณถูกปฏิเสธ สามารถแก้ไขและส่งใหม่ได้" : "Your review was rejected. You can edit and resubmit."
+      : lang === "th" ? "รีวิวของคุณอยู่ระหว่างรอแอดมินอนุมัติ" : "Your review is waiting for admin approval"
+    : "";
+
   // Homepage FAQs
   const homeFaqs = useMemo(() => [
     {
@@ -533,7 +638,34 @@ export default function Landing() {
                   "priceCurrency": "THB",
                   "category": "FreeTrial"
                 },
-                "screenshot": "https://valustock.com/og-image.png"
+                "screenshot": "https://valustock.com/og-image.png",
+                ...(reviews.length
+                  ? {
+                      "aggregateRating": {
+                        "@type": "AggregateRating",
+                        "ratingValue": Number(reviewAverage.toFixed(1)),
+                        "ratingCount": reviews.length,
+                        "bestRating": 5,
+                        "worstRating": 1
+                      },
+                      "review": reviews.slice(0, 6).map((review) => ({
+                        "@type": "Review",
+                        "author": {
+                          "@type": "Person",
+                          "name": review.name
+                        },
+                        "datePublished": review.approvedAt || review.createdAt,
+                        "name": review.title || "ValuStock user review",
+                        "reviewBody": review.content,
+                        "reviewRating": {
+                          "@type": "Rating",
+                          "ratingValue": review.rating,
+                          "bestRating": 5,
+                          "worstRating": 1
+                        }
+                      }))
+                    }
+                  : {})
               },
               {
                 "@type": "WebSite",
@@ -1101,6 +1233,189 @@ export default function Landing() {
               </div>
             );
           })}
+        </div>
+      </section>
+
+      {/* USER REVIEWS */}
+      <section className={borderedSectionClass}>
+        <div className={splitHeaderClass}>
+          <div className="max-w-2xl">
+            <span className={`${eyebrowClass} border-gold/30 bg-gold/10 text-gold`}>
+              <Star className="h-3.5 w-3.5 fill-current" />
+              {lang === "th" ? "รีวิวจากผู้ใช้งานจริง" : "Verified user reviews"}
+            </span>
+            <h2 className={sectionTitleClass}>
+              {lang === "th" ? "นักลงทุนใช้ ValuStock ประเมินมูลค่าหุ้นอย่างไร" : "How investors use ValuStock for stock valuation"}
+            </h2>
+            <p className="mt-2 text-xs font-medium leading-relaxed text-muted">
+              {lang === "th"
+                ? "รวมประสบการณ์จากสมาชิกที่ใช้ ValuStock วิเคราะห์หุ้น DCF, Fair Value, Margin of Safety และจัดการ Watchlist"
+                : "Member experiences from using ValuStock for DCF, fair value, margin of safety and watchlist workflows."}
+            </p>
+          </div>
+          {reviews.length > 0 && (
+            <div className="rounded-2xl border border-line bg-surface/45 px-4 py-3 text-left sm:text-right">
+              <div className="flex items-center gap-1 text-gold sm:justify-end">
+                {Array.from({ length: 5 }).map((_, index) => (
+                  <Star key={index} className={`h-4 w-4 ${index < Math.round(reviewAverage) ? "fill-current" : "opacity-25"}`} />
+                ))}
+              </div>
+              <div className="mt-1 text-xs font-bold text-ink">
+                {reviewAverage.toFixed(1)} / 5.0
+              </div>
+              <div className="text-[10px] font-semibold text-muted">
+                {lang === "th" ? `${reviews.length} รีวิวจากสมาชิก` : `${reviews.length} member reviews`}
+              </div>
+            </div>
+          )}
+        </div>
+
+        <div className="mb-5 flex flex-wrap justify-end gap-2">
+          <Link href="/member-reviews">
+            <Button variant="outline" size="sm">
+              {lang === "th" ? "ดูรีวิวทั้งหมด" : "View All Reviews"} <ArrowRight className="h-4 w-4" />
+            </Button>
+          </Link>
+        </div>
+
+        <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_360px]">
+          <div className="grid gap-4 md:grid-cols-3">
+            {reviews.length === 0 ? (
+              <div className="surface rounded-2xl border border-line p-6 text-center text-xs font-semibold text-muted md:col-span-3">
+                {lang === "th" ? "ยังไม่มีรีวิวจากสมาชิก" : "No member reviews yet."}
+              </div>
+            ) : (
+              reviews.slice(0, 6).map((review) => (
+                <article key={review.id} className="surface flex min-h-[220px] flex-col justify-between rounded-2xl border border-line p-5">
+                  <div>
+                    <div className="flex items-center justify-between gap-3">
+                      <div className="min-w-0">
+                        <h3 className="truncate font-display text-sm font-bold text-ink">
+                          {review.title || (lang === "th" ? "รีวิว ValuStock" : "ValuStock review")}
+                        </h3>
+                        <p className="mt-0.5 truncate text-[10px] font-semibold text-muted">
+                          {review.name} · {review.emailMask}
+                        </p>
+                      </div>
+                      <div className="flex shrink-0 items-center gap-0.5 text-gold">
+                        {Array.from({ length: 5 }).map((_, index) => (
+                          <Star key={index} className={`h-3.5 w-3.5 ${index < review.rating ? "fill-current" : "opacity-25"}`} />
+                        ))}
+                      </div>
+                    </div>
+                    <p className="mt-4 line-clamp-5 text-xs font-medium leading-relaxed text-muted [overflow-wrap:anywhere]">
+                      {review.content}
+                    </p>
+                  </div>
+                  <div className="mt-4 border-t border-line/50 pt-3 text-[10px] font-bold text-muted">
+                    {new Date(review.approvedAt || review.createdAt).toLocaleDateString(lang === "th" ? "th-TH" : "en-US", {
+                      year: "numeric",
+                      month: "short",
+                      day: "numeric",
+                    })}
+                  </div>
+                </article>
+              ))
+            )}
+          </div>
+
+          <div className="surface rounded-2xl border border-line p-5">
+            <h3 className="font-display text-base font-bold text-ink">
+              {lang === "th" ? "เขียนรีวิวของคุณ" : "Write your review"}
+            </h3>
+            <p className="mt-1 text-xs font-medium leading-relaxed text-muted">
+              {lang === "th"
+                ? "สมาชิก 1 คนเขียนได้ 1 รีวิว หากแก้ไข ระบบจะส่งกลับไปรอแอดมินอนุมัติอีกครั้ง"
+                : "Each member can have one review. Editing it sends it back for admin approval."}
+            </p>
+
+            {!ready ? (
+              <div className="mt-5 text-xs font-bold text-muted animate-pulse">{t("common.loading")}</div>
+            ) : !user ? (
+              <div className="mt-5 rounded-xl border border-gold/30 bg-gold/10 p-4 text-xs font-bold text-gold">
+                {lang === "th" ? "กรุณาเข้าสู่ระบบก่อนเขียนรีวิว" : "Please sign in before writing a review."}
+                <Link href="/login" className="mt-3 inline-flex text-brand hover:underline">
+                  {lang === "th" ? "ไปหน้าเข้าสู่ระบบ" : "Go to login"}
+                </Link>
+              </div>
+            ) : (
+              <form onSubmit={handleReviewSubmit} className="mt-5 space-y-4">
+                {reviewStatusText && (
+                  <div className={`rounded-xl border p-3 text-xs font-bold ${
+                    myReview?.status === "approved"
+                      ? "border-up/30 bg-up/10 text-up"
+                      : myReview?.status === "rejected"
+                      ? "border-down/30 bg-down/10 text-down"
+                      : "border-gold/30 bg-gold/10 text-gold"
+                  }`}>
+                    {reviewStatusText}
+                  </div>
+                )}
+
+                <div>
+                  <label className="mb-1 block text-xs font-semibold text-muted">
+                    {lang === "th" ? "คะแนน" : "Rating"}
+                  </label>
+                  <div className="flex gap-1.5">
+                    {Array.from({ length: 5 }).map((_, index) => {
+                      const nextRating = index + 1;
+                      return (
+                        <button
+                          key={nextRating}
+                          type="button"
+                          onClick={() => setReviewForm((current) => ({ ...current, rating: nextRating }))}
+                          className="grid h-9 w-9 place-items-center rounded-xl border border-line bg-bg text-gold transition hover:border-gold/40"
+                          title={`${nextRating}/5`}
+                        >
+                          <Star className={`h-4 w-4 ${nextRating <= reviewForm.rating ? "fill-current" : "opacity-25"}`} />
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                <div>
+                  <label className="mb-1 block text-xs font-semibold text-muted">
+                    {lang === "th" ? "หัวข้อรีวิว" : "Review title"}
+                  </label>
+                  <input
+                    type="text"
+                    value={reviewForm.title}
+                    onChange={(e) => setReviewForm((current) => ({ ...current, title: e.target.value }))}
+                    maxLength={160}
+                    className="input-base text-sm"
+                    placeholder={lang === "th" ? "ช่วยประเมินมูลค่าหุ้นได้เร็วขึ้น" : "Helps me value stocks faster"}
+                  />
+                </div>
+
+                <div>
+                  <label className="mb-1 block text-xs font-semibold text-muted">
+                    {lang === "th" ? "รีวิว" : "Review"}
+                  </label>
+                  <textarea
+                    required
+                    minLength={20}
+                    maxLength={1200}
+                    rows={5}
+                    value={reviewForm.content}
+                    onChange={(e) => setReviewForm((current) => ({ ...current, content: e.target.value }))}
+                    className="input-base resize-none text-sm"
+                    placeholder={lang === "th" ? "เล่าว่า ValuStock ช่วยการวิเคราะห์หุ้นของคุณอย่างไร..." : "Share how ValuStock helps your stock analysis..."}
+                  />
+                </div>
+
+                {reviewError && <div className="text-xs font-bold text-down">{reviewError}</div>}
+                {reviewMessage && <div className="text-xs font-bold text-up">{reviewMessage}</div>}
+
+                <Button type="submit" className="w-full font-bold" disabled={reviewSaving}>
+                  {reviewSaving
+                    ? lang === "th" ? "กำลังบันทึก..." : "Saving..."
+                    : myReview ? lang === "th" ? "แก้ไขและส่งตรวจอีกครั้ง" : "Update and resubmit"
+                    : lang === "th" ? "ส่งรีวิว" : "Submit Review"}
+                </Button>
+              </form>
+            )}
+          </div>
         </div>
       </section>
 

@@ -1,9 +1,10 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { useParams } from "next/navigation";
+import { useState, useEffect, useMemo } from "react";
+import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { getStock, STOCKS } from "@/lib/stocks";
+import { OhlcPoint } from "@/lib/types";
 import { AssetLogo } from "@/components/AssetLogo";
 import {
   computeValuation,
@@ -16,12 +17,13 @@ import { useStore, useCurrentPlan } from "@/lib/store";
 import { baht, num, pct, moneyMB, dollar, nav } from "@/lib/format";
 import { Card, CardHeader, Badge } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
-import { PriceAreaChart, HistoryBars, ValueVsPrice } from "@/components/Charts";
+import { CandlestickChart, PriceAreaChart, HistoryBars, ValueVsPrice } from "@/components/Charts";
 import { DCFCalculator } from "@/components/DCFCalculator";
 import { LockedCard } from "@/components/Paywall";
 import { useTranslation, SECTOR_TRANS } from "@/lib/translations";
 import {
   Star,
+  Search,
   TrendingUp,
   TrendingDown,
   ArrowRight,
@@ -40,6 +42,37 @@ const verdictTone = {
   overvalued: "down",
 } as const;
 
+type PriceChartMode = "line" | "candles";
+type CandleRange = "1M" | "3M" | "6M" | "1Y" | "5Y";
+
+const candleRangeSize: Record<CandleRange, number> = {
+  "1M": 22,
+  "3M": 66,
+  "6M": 132,
+  "1Y": 252,
+  "5Y": 1260,
+};
+
+function buildSyntheticOhlc(priceHistory: number[] = []): OhlcPoint[] {
+  const start = new Date();
+  start.setDate(start.getDate() - priceHistory.length);
+
+  return priceHistory.map((close, index) => {
+    const previous = priceHistory[index - 1] || close * 0.99;
+    const date = new Date(start);
+    date.setDate(start.getDate() + index);
+    const spread = Math.max(close * 0.006, Math.abs(close - previous) * 0.65);
+    return {
+      date: date.toISOString().split("T")[0],
+      open: Math.round(previous * 100) / 100,
+      high: Math.round((Math.max(previous, close) + spread) * 100) / 100,
+      low: Math.round(Math.max(0.01, Math.min(previous, close) - spread) * 100) / 100,
+      close: Math.round(close * 100) / 100,
+      volume: Math.round(500000 + ((index + 5) * 7919) % 3500000),
+    };
+  });
+}
+
 export default function StockDetail() {
   const params = useParams();
   const symbol = (params?.symbol as string) || "";
@@ -51,9 +84,33 @@ export default function StockDetail() {
 
   const [stock, setStock] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [priceChartMode, setPriceChartMode] = useState<PriceChartMode>("line");
+  const [candleRange, setCandleRange] = useState<CandleRange>("6M");
   const plan = useCurrentPlan();
   const { isWatched, toggleWatch } = useStore();
   const { t, lang } = useTranslation();
+  const router = useRouter();
+
+  const searchMatches = useMemo(() => {
+    const query = searchQuery.trim().toLowerCase();
+    if (!query) return [];
+    return STOCKS.filter((item) => {
+      return (
+        item.symbol.toLowerCase().includes(query) ||
+        item.name.toLowerCase().includes(query) ||
+        item.enName.toLowerCase().includes(query)
+      );
+    }).slice(0, 6);
+  }, [searchQuery]);
+
+  const handleStockSearch = (event: React.FormEvent) => {
+    event.preventDefault();
+    const nextSymbol = searchQuery.trim().toUpperCase();
+    if (!nextSymbol) return;
+    router.push(`/stocks/${encodeURIComponent(nextSymbol)}`);
+    setSearchQuery("");
+  };
 
   useEffect(() => {
     if (!symbol) return;
@@ -148,11 +205,62 @@ export default function StockDetail() {
   const evLabel = lang === "th"
     ? (isUS ? "มูลค่ากิจการ EV (ล้านดอลลาร์)" : "มูลค่ากิจการ EV (ล้านบาท)")
     : (isUS ? "Enterprise Value ($M)" : "Enterprise Value (THB Millions)");
+  const candleHistory = stock.ohlcHistory?.length ? stock.ohlcHistory as OhlcPoint[] : buildSyntheticOhlc(stock.priceHistory || []);
+  const visibleCandles = candleHistory.slice(-Math.min(candleRangeSize[candleRange], candleHistory.length));
+  const canUseCandles = plan.limits.dcf;
 
   return (
     <div className="mx-auto max-w-5xl space-y-6 animate-fade-up">
       {/* 1. HEADER CARD */}
       <div className="surface rounded-2xl p-5 border border-line">
+        <form onSubmit={handleStockSearch} className="mb-5">
+          <label className="mb-2 block text-xs font-bold text-muted">
+            {lang === "th" ? "ค้นหาหุ้นอื่น" : "Search another stock"}
+          </label>
+          <div className="relative">
+            <div className="flex gap-2">
+              <div className="relative min-w-0 flex-1">
+                <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted" />
+                <input
+                  type="search"
+                  value={searchQuery}
+                  onChange={(event) => setSearchQuery(event.target.value)}
+                  className="input-base h-11 pl-9 pr-3 text-sm"
+                  placeholder={lang === "th" ? "พิมพ์ชื่อหุ้นหรือ Symbol เช่น KKP, AOT, NVDA" : "Search by name or symbol, e.g. KKP, AOT, NVDA"}
+                  autoComplete="off"
+                />
+              </div>
+              <Button type="submit" size="sm" className="h-11 shrink-0">
+                {lang === "th" ? "ค้นหา" : "Search"}
+              </Button>
+            </div>
+
+            {searchMatches.length > 0 && (
+              <div className="absolute left-0 right-0 top-full z-20 mt-2 overflow-hidden rounded-xl border border-line bg-surface shadow-card">
+                {searchMatches.map((item) => (
+                  <Link
+                    key={item.symbol}
+                    href={`/stocks/${item.symbol}`}
+                    onClick={() => setSearchQuery("")}
+                    className="flex items-center justify-between gap-3 border-b border-line px-3 py-2.5 last:border-b-0 hover:bg-elevate"
+                  >
+                    <div className="flex min-w-0 items-center gap-3">
+                      <AssetLogo symbol={item.symbol} color={item.color} size="sm" />
+                      <div className="min-w-0">
+                        <div className="text-sm font-bold text-ink">{item.symbol}</div>
+                        <div className="truncate text-xs font-medium text-muted">
+                          {lang === "th" ? item.name : item.enName}
+                        </div>
+                      </div>
+                    </div>
+                    <Badge tone="muted">{item.market}</Badge>
+                  </Link>
+                ))}
+              </div>
+            )}
+          </div>
+        </form>
+
         <div className="flex flex-wrap items-center justify-between gap-4">
           <div className="flex items-center gap-4">
             <AssetLogo symbol={stock.symbol} color={stock.color} size="lg" />
@@ -527,9 +635,74 @@ export default function StockDetail() {
           </Card>
 
           <Card className="lg:col-span-3 border border-line">
-            <CardHeader title={lang === "th" ? "ราคาย้อนหลัง" : "Historical Price Action"} subtitle={lang === "th" ? "30 ช่วงเวลาล่าสุด (เดโม)" : "Latest 30 points (demo)"} />
+            <CardHeader
+              title={lang === "th" ? "ราคาย้อนหลัง" : "Historical Price Action"}
+              subtitle={lang === "th" ? "กราฟเส้นสำหรับทุกสมาชิก และแท่งเทียนพร้อม Volume สำหรับแพ็กเกจโปรขึ้นไป" : "Line chart for all members. Candlesticks with volume for Pro and above."}
+              right={
+                <div className="flex flex-wrap gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setPriceChartMode("line")}
+                    className={`h-8 rounded-lg px-3 text-xs font-bold transition ${
+                      priceChartMode === "line" ? "bg-brand text-bg" : "border border-line text-muted hover:text-ink"
+                    }`}
+                  >
+                    {lang === "th" ? "เส้นราคา" : "Line"}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setPriceChartMode("candles")}
+                    className={`h-8 rounded-lg px-3 text-xs font-bold transition ${
+                      priceChartMode === "candles" ? "bg-gold text-bg" : "border border-line text-muted hover:text-ink"
+                    }`}
+                  >
+                    {lang === "th" ? "แท่งเทียน" : "Candles"}
+                  </button>
+                </div>
+              }
+            />
             <div className="p-4">
-              <PriceAreaChart data={stock.priceHistory} />
+              {priceChartMode === "candles" ? (
+                canUseCandles ? (
+                  <div className="space-y-3">
+                    <div className="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-line bg-bg px-3 py-2">
+                      <div className="text-xs font-semibold text-muted">
+                        {lang === "th" ? "ต้องการเครื่องมือครบชุด?" : "Need the full toolset?"}
+                      </div>
+                      <Link href={`/stocks/${stock.symbol}/chart`}>
+                        <Button variant="gold" size="sm">
+                          {lang === "th" ? "เปิดกราฟเทคนิค" : "Open Technical Chart"} <ArrowRight className="h-4 w-4" />
+                        </Button>
+                      </Link>
+                    </div>
+                    <div className="flex flex-wrap gap-1.5">
+                      {(Object.keys(candleRangeSize) as CandleRange[]).map((range) => (
+                        <button
+                          key={range}
+                          type="button"
+                          onClick={() => setCandleRange(range)}
+                          className={`h-8 rounded-lg px-3 text-xs font-bold transition ${
+                            candleRange === range ? "bg-brand-soft text-brand" : "border border-line text-muted hover:text-ink"
+                          }`}
+                        >
+                          {range}
+                        </button>
+                      ))}
+                    </div>
+                    <CandlestickChart data={visibleCandles} />
+                  </div>
+                ) : (
+                  <LockedCard
+                    required="pro"
+                    title={lang === "th" ? "กราฟแท่งเทียนพร้อม Volume" : "Candlestick Chart with Volume"}
+                    desc={lang === "th"
+                      ? "ดูราคาเปิด สูง ต่ำ ปิด และปริมาณซื้อขายย้อนหลัง เพื่อวิเคราะห์จังหวะราคาแบบละเอียด"
+                      : "View open, high, low, close and volume history for deeper price-action analysis."}
+                  />
+                )
+              ) : (
+                <PriceAreaChart data={stock.priceHistory} />
+              )}
             </div>
           </Card>
         </div>

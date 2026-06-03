@@ -24,6 +24,15 @@ export interface YearPoint {
   value: number;
 }
 
+export interface OhlcPoint {
+  date: string;
+  open: number;
+  high: number;
+  low: number;
+  close: number;
+  volume: number;
+}
+
 export interface Financials {
   revenue: number; // ล้านบาท หรือ ล้านดอลลาร์ ปีล่าสุด
   netIncome: number; // ล้านบาท หรือ ล้านดอลลาร์
@@ -52,6 +61,7 @@ export interface Stock {
   revenueHistory: YearPoint[]; // 5 ปี
   fcfHistory: YearPoint[]; // 5 ปี
   priceHistory: number[]; // ราคา 30 จุด (เดโม)
+  ohlcHistory?: OhlcPoint[]; // ราคาเปิด-สูง-ต่ำ-ปิดและ volume สำหรับกราฟแท่งเทียน
   financials: Financials;
   
   // ฟิลด์เพิ่มเติมสำหรับรองรับหลายสินทรัพย์

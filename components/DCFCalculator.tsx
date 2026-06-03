@@ -6,6 +6,7 @@ import { baht, num, pct, dollar } from "@/lib/format";
 import { Card, CardHeader } from "./ui/Card";
 import { Calculator } from "@/lib/icons";
 import { useTranslation } from "@/lib/translations";
+import { DCFProjectionBars } from "./Charts";
 
 function Slider({
   label,
@@ -146,6 +147,36 @@ export function DCFCalculator({ stock }: { stock: Stock }) {
             <Row k={lang === "th" ? "Terminal Value (PV)" : "PV of Terminal Value"} v={formatMoney(res.pvTerminal)} />
           </div>
         </div>
+      </div>
+      <div className="border-t border-line p-5">
+        <div className="mb-4 flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
+          <div>
+            <h4 className="font-display text-sm font-bold text-ink">
+              {lang === "th" ? "กราฟแท่งกระแสเงินสดคาดการณ์" : "Projected Cash Flow Bars"}
+            </h4>
+            <p className="mt-1 text-xs font-medium leading-relaxed text-muted">
+              {lang === "th"
+                ? "เปรียบเทียบ FCF ที่คาดการณ์กับมูลค่าปัจจุบันหลังคิดลดในแต่ละปี"
+                : "Compare projected FCF against each year's discounted present value."}
+            </p>
+          </div>
+          <div className="flex items-center gap-3 text-[11px] font-bold text-muted">
+            <span className="inline-flex items-center gap-1.5">
+              <span className="h-2.5 w-2.5 rounded-sm bg-brand" />
+              {lang === "th" ? "FCF คาดการณ์" : "Projected FCF"}
+            </span>
+            <span className="inline-flex items-center gap-1.5">
+              <span className="h-2.5 w-2.5 rounded-sm bg-gold" />
+              {lang === "th" ? "มูลค่าปัจจุบัน" : "Present Value"}
+            </span>
+          </div>
+        </div>
+        <DCFProjectionBars
+          data={res.projections}
+          fcfLabel={lang === "th" ? "FCF คาดการณ์" : "Projected FCF"}
+          pvLabel={lang === "th" ? "มูลค่าปัจจุบัน" : "Present Value"}
+          unit={isUS ? "USD M" : lang === "th" ? "ลบ." : "THB M"}
+        />
       </div>
     </Card>
   );

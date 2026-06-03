@@ -23,6 +23,7 @@ const DEFAULT: AppData = {
 interface Ctx {
   ready: boolean;
   user: User | null;
+  authToken: string | null;
   watchlist: string[];
   theme: "dark" | "light";
   lang: "th" | "en";
@@ -341,6 +342,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
   const value: Ctx = {
     ready,
     user: data.user,
+    authToken: data.authToken || null,
     watchlist: data.watchlist,
     theme: data.theme,
     lang: data.lang || "th",

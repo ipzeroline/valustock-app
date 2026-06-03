@@ -14,6 +14,7 @@ import {
   Info,
   ArrowRight,
   BarChart3,
+  MessageSquare,
 } from "@/lib/icons";
 
 export default function AdminOverview() {
@@ -25,6 +26,7 @@ export default function AdminOverview() {
   const [payments, setPayments] = useState<any[]>([]);
   const [staffCount, setStaffCount] = useState(0);
   const [newsletterCount, setNewsletterCount] = useState(0);
+  const [pendingReviewCount, setPendingReviewCount] = useState(0);
 
   useEffect(() => {
     fetch("/api/admin/db-status")
@@ -58,6 +60,11 @@ export default function AdminOverview() {
     fetch("/api/admin/newsletter")
       .then((res) => res.json())
       .then((data) => setNewsletterCount(data.subscribers ? data.subscribers.filter((item: any) => item.status === "subscribed").length : 0))
+      .catch((err) => console.error(err));
+
+    fetch("/api/admin/reviews?status=pending")
+      .then((res) => res.json())
+      .then((data) => setPendingReviewCount(data.reviews ? data.reviews.length : 0))
       .catch((err) => console.error(err));
   }, []);
 
@@ -128,6 +135,13 @@ export default function AdminOverview() {
           desc="Marketing subscribers captured from public funnel"
           connected={true}
         />
+        <MonitorCard
+          title={lang === "th" ? "รีวิวรออนุมัติ" : "Pending Reviews"}
+          value={`${pendingReviewCount} Reviews`}
+          desc="User testimonials waiting for publication"
+          connected={pendingReviewCount === 0}
+          isAlert={pendingReviewCount > 0}
+        />
       </div>
 
       {/* 3. Server Configuration Diagnostic & SSH Instructions */}
@@ -160,7 +174,7 @@ export default function AdminOverview() {
       </Card>
 
       {/* 4. Quick Navigation Matrix */}
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-6">
         <Link href="/AdminConsole/users">
           <div className="surface rounded-2xl border border-line p-4.5 hover:border-brand/40 transition cursor-pointer flex justify-between items-center group">
             <div>
@@ -186,6 +200,16 @@ export default function AdminOverview() {
             <div>
               <h3 className="font-display font-semibold text-xs text-ink group-hover:text-brand transition">✍️ เขียนบทความและเนื้อหา</h3>
               <p className="text-[10px] text-muted mt-1">บทวิเคราะห์และคู่มือความรู้</p>
+            </div>
+            <ArrowRight className="h-4 w-4 text-brand group-hover:translate-x-1 transition-transform" />
+          </div>
+        </Link>
+
+        <Link href="/AdminConsole/reviews">
+          <div className="surface rounded-2xl border border-line p-4.5 hover:border-brand/40 transition cursor-pointer flex justify-between items-center group">
+            <div>
+              <h3 className="font-display font-semibold text-xs text-ink group-hover:text-brand transition">⭐ อนุมัติรีวิว</h3>
+              <p className="text-[10px] text-muted mt-1">รีวิวผู้ใช้งานและ SEO schema</p>
             </div>
             <ArrowRight className="h-4 w-4 text-brand group-hover:translate-x-1 transition-transform" />
           </div>

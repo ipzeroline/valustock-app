@@ -22,10 +22,11 @@ import {
   Shield,
   Wallet,
   Mail,
+  MessageSquare,
 } from "@/lib/icons";
 import { Button } from "./ui/Button";
 
-const MARKETING = ["/", "/about", "/pricing", "/login", "/contact"];
+const MARKETING = ["/", "/about", "/pricing", "/login", "/contact", "/member-reviews"];
 function Logo({ compact = false }: { compact?: boolean }) {
   return (
     <Link href="/" className="flex shrink-0 items-center gap-2.5">
@@ -83,6 +84,7 @@ function MarketingHeader() {
         <nav className="hidden items-center gap-7 text-sm text-muted md:flex">
           <Link href="/#features" className="hover:text-ink">{t("common.features")}</Link>
           <Link href="/stocks" className="hover:text-ink">{t("common.searchStocks")}</Link>
+          <Link href="/member-reviews" className="hover:text-ink">{lang === "th" ? "รีวิวจากสมาชิก" : "Member Reviews"}</Link>
           <Link href="/about" className="hover:text-ink">{lang === "th" ? "เกี่ยวกับเรา" : "About"}</Link>
           <Link href="/pricing" className="hover:text-ink">{t("common.pricing")}</Link>
           <Link href="/contact" className="hover:text-ink">ติดต่อทีมงาน</Link>
@@ -118,6 +120,7 @@ function MarketingHeader() {
           <div className="flex flex-col gap-1 text-sm">
             <Link href="/#features" onClick={() => setOpen(false)} className="rounded-lg px-3 py-2.5 hover:bg-elevate">{t("common.features")}</Link>
             <Link href="/stocks" onClick={() => setOpen(false)} className="rounded-lg px-3 py-2.5 hover:bg-elevate">{t("common.searchStocks")}</Link>
+            <Link href="/member-reviews" onClick={() => setOpen(false)} className="rounded-lg px-3 py-2.5 hover:bg-elevate">{lang === "th" ? "รีวิวจากสมาชิก" : "Member Reviews"}</Link>
             <Link href="/about" onClick={() => setOpen(false)} className="rounded-lg px-3 py-2.5 hover:bg-elevate">{lang === "th" ? "เกี่ยวกับเรา" : "About"}</Link>
             <Link href="/pricing" onClick={() => setOpen(false)} className="rounded-lg px-3 py-2.5 hover:bg-elevate">{t("common.pricing")}</Link>
             <Link href="/contact" onClick={() => setOpen(false)} className="rounded-lg px-3 py-2.5 hover:bg-elevate">ติดต่อทีมงาน</Link>
@@ -167,6 +170,7 @@ function SiteFooter() {
       title: lang === "th" ? "บริษัทและความปลอดภัย" : "Company & Trust",
       links: [
         { href: "/about", label: lang === "th" ? "เกี่ยวกับ ValuStock" : "About ValuStock" },
+        { href: "/member-reviews", label: lang === "th" ? "รีวิวจากสมาชิก" : "Member Reviews" },
         { href: "/methodology", label: lang === "th" ? "วิธีคำนวณมูลค่า" : "Methodology" },
         { href: "/disclaimer", label: lang === "th" ? "ข้อปฏิเสธความรับผิด" : "Disclaimer" },
         { href: "/privacy", label: lang === "th" ? "นโยบายความเป็นส่วนตัว" : "Privacy Policy" },
@@ -235,6 +239,7 @@ const NAV = [
   { href: "/portfolio", key: "portfolio", icon: Wallet },
   { href: "/insights", key: "insights", icon: Sparkles },
   { href: "/watchlist", key: "watchlist", icon: Star },
+  { href: "/reviews", icon: MessageSquare, labelTh: "เขียนรีวิว", labelEn: "Write Review" },
   { href: "/compare", key: "compare", icon: Layers },
   { href: "/pricing", key: "pricing", icon: Crown },
   { href: "/contact", key: "contact", icon: Mail },
@@ -265,7 +270,7 @@ function AppSidebar({ pathname }: { pathname: string }) {
               }`}
             >
               <Icon className="h-[18px] w-[18px]" />
-              {t(`common.${item.key}`)}
+              {"key" in item ? t(`common.${item.key}`) : lang === "th" ? item.labelTh : item.labelEn}
             </Link>
           );
         })}
@@ -299,8 +304,8 @@ function AppSidebar({ pathname }: { pathname: string }) {
 }
 
 function AppMobileNav({ pathname }: { pathname: string }) {
-  const { t } = useTranslation();
-  const items = [NAV[0], NAV[1], NAV[2], NAV[3], NAV[6]]; // Dashboard, Search, Insights, Watchlist, Account
+  const { t, lang } = useTranslation();
+  const items = [NAV[0], NAV[1], NAV[2], NAV[5], NAV[9]]; // Dashboard, Search, Portfolio, Reviews, Account
   return (
     <nav className="fixed bottom-0 left-0 right-0 z-40 grid grid-cols-5 border-t border-line bg-surface/95 backdrop-blur-xl lg:hidden">
       {items.map((item) => {
@@ -316,7 +321,7 @@ function AppMobileNav({ pathname }: { pathname: string }) {
             }`}
           >
             <Icon className="h-5 w-5" />
-            {t(`common.${item.key}`)}
+            {"key" in item ? t(`common.${item.key}`) : lang === "th" ? item.labelTh : item.labelEn}
           </Link>
         );
       })}

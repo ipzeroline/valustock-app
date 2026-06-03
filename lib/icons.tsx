@@ -50,6 +50,7 @@ import {
   ChevronUp,
   AlertTriangle,
   Database,
+  MessageSquare,
 } from "lucide-react";
 
 export {
@@ -103,4 +104,5 @@ export {
   ChevronUp,
   AlertTriangle,
   Database,
+  MessageSquare,
 };

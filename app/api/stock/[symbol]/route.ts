@@ -57,6 +57,16 @@ export async function GET(
     if (priceHistory.length === 0) {
       priceHistory = generateMockPrices(100, symbol.charCodeAt(0));
     }
+    const ohlcHistory = rawHistory.length > 0
+      ? rawHistory.map((r: any) => ({
+          date: new Date(r.t).toISOString().split("T")[0],
+          open: Number(r.o),
+          high: Number(r.h),
+          low: Number(r.l),
+          close: Number(r.c),
+          volume: Number(r.v || 0),
+        }))
+      : generateMockOhlc(priceHistory);
 
     const latestPrice = priceHistory.length > 0 ? priceHistory[priceHistory.length - 1] : 150.0;
     const prevClose = priceHistory.length > 1 ? priceHistory[priceHistory.length - 2] : latestPrice;
@@ -221,6 +231,7 @@ export async function GET(
       revenueHistory,
       fcfHistory,
       priceHistory: priceHistory, // Contains full 5 Years history!
+      ohlcHistory,
       financials: {
         revenue: Math.round(revenue),
         netIncome: Math.round(netIncome),
@@ -305,6 +316,7 @@ function getSimulatedStock(symbol: string): any {
   }
 
   const priceHistory = generateMockPrices(price, sym.charCodeAt(0));
+  const ohlcHistory = generateMockOhlc(priceHistory);
   const shares = 100 + ((sym.charCodeAt(0) * 5) % 2500);
   const revenue = price * shares * 1.6;
   const netIncome = price * shares * 0.18;
@@ -340,6 +352,7 @@ function getSimulatedStock(symbol: string): any {
     revenueHistory,
     fcfHistory,
     priceHistory,
+    ohlcHistory,
     financials: {
       revenue: Math.round(revenue),
       netIncome: Math.round(netIncome),
@@ -378,6 +391,30 @@ function generateMockPrices(base: number, seed: number): number[] {
   }
   out[out.length - 1] = base;
   return out;
+}
+
+function generateMockOhlc(priceHistory: number[]) {
+  const start = new Date();
+  start.setDate(start.getDate() - priceHistory.length);
+
+  return priceHistory.map((close, index) => {
+    const prev = priceHistory[index - 1] || close * 0.99;
+    const date = new Date(start);
+    date.setDate(start.getDate() + index);
+    const open = prev;
+    const spread = Math.max(close * 0.006, Math.abs(close - open) * 0.65);
+    const high = Math.max(open, close) + spread;
+    const low = Math.max(0.01, Math.min(open, close) - spread);
+    const volume = Math.round(500000 + ((index + 3) * 7919) % 3500000);
+    return {
+      date: date.toISOString().split("T")[0],
+      open: Math.round(open * 100) / 100,
+      high: Math.round(high * 100) / 100,
+      low: Math.round(low * 100) / 100,
+      close: Math.round(close * 100) / 100,
+      volume,
+    };
+  });
 }
 
 function translateSector(sicDesc: string): string {

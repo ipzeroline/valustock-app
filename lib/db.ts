@@ -59,6 +59,7 @@ export async function ensureColumn(table: string, column: string, definition: st
     "active_sessions",
     "comparison_sets",
     "newsletter_subscribers",
+    "reviews",
   ]);
 
   if (!allowedTables.has(table)) {
@@ -240,6 +241,25 @@ export async function initDatabase(): Promise<boolean> {
       ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
     `);
 
+    // 12. User reviews: one review per member, displayed only after admin approval
+    await query(`
+      CREATE TABLE IF NOT EXISTS reviews (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        user_email VARCHAR(255) NOT NULL,
+        user_name VARCHAR(255) NOT NULL,
+        rating TINYINT NOT NULL DEFAULT 5,
+        title VARCHAR(160),
+        content TEXT NOT NULL,
+        status VARCHAR(30) DEFAULT 'pending',
+        admin_note TEXT,
+        approved_at TIMESTAMP NULL,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+        UNIQUE KEY unique_review_user (user_email),
+        INDEX idx_reviews_status_created (status, created_at)
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+    `);
+
     await ensureColumn("users", "email", "VARCHAR(255) UNIQUE NOT NULL");
     await ensureColumn("users", "name", "VARCHAR(255)");
     await ensureColumn("users", "plan", "VARCHAR(50) DEFAULT 'free'");
@@ -322,6 +342,17 @@ export async function initDatabase(): Promise<boolean> {
     await ensureColumn("newsletter_subscribers", "status", "VARCHAR(30) DEFAULT 'subscribed'");
     await ensureColumn("newsletter_subscribers", "created_at", "TIMESTAMP DEFAULT CURRENT_TIMESTAMP");
     await ensureColumn("newsletter_subscribers", "updated_at", "TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP");
+
+    await ensureColumn("reviews", "user_email", "VARCHAR(255) NOT NULL");
+    await ensureColumn("reviews", "user_name", "VARCHAR(255) NOT NULL");
+    await ensureColumn("reviews", "rating", "TINYINT NOT NULL DEFAULT 5");
+    await ensureColumn("reviews", "title", "VARCHAR(160)");
+    await ensureColumn("reviews", "content", "TEXT NOT NULL");
+    await ensureColumn("reviews", "status", "VARCHAR(30) DEFAULT 'pending'");
+    await ensureColumn("reviews", "admin_note", "TEXT");
+    await ensureColumn("reviews", "approved_at", "TIMESTAMP NULL");
+    await ensureColumn("reviews", "created_at", "TIMESTAMP DEFAULT CURRENT_TIMESTAMP");
+    await ensureColumn("reviews", "updated_at", "TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP");
 
     console.log("🎉 Database tables successfully initialized!");
     return true;

@@ -11,6 +11,7 @@ const staticRoutes = [
   "/stocks",
   "/pricing",
   "/contact",
+  "/member-reviews",
   "/compare",
   "/insights",
   "/blog",
