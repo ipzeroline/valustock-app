@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { isDbConnected, query } from "@/lib/db";
 import { signToken } from "@/lib/auth";
 import { createSingleActiveSession } from "@/lib/sessions";
+import { normalizeMemberEmail } from "@/lib/member-identity";
 
 function getCookieValue(req: Request, name: string) {
   const cookieHeader = req.headers.get("cookie") || "";
@@ -71,10 +72,11 @@ export async function GET(req: Request) {
     }
 
     const googleUser = await userinfoResponse.json();
-    const email = googleUser.email?.toLowerCase().trim();
+    const googleEmail = googleUser.email?.toLowerCase().trim();
+    const email = googleEmail ? normalizeMemberEmail(googleEmail) : "";
     const name = googleUser.name || email.split("@")[0] || "นักลงทุน";
 
-    if (!email) {
+    if (!googleEmail || !email) {
       throw new Error("Google userinfo did not contain email address");
     }
 

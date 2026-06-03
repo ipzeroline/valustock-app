@@ -2,9 +2,10 @@ import { NextResponse } from "next/server";
 import { getDbConnectionStatus, query } from "@/lib/db";
 import { signToken } from "@/lib/auth";
 import { createSingleActiveSession } from "@/lib/sessions";
+import { normalizeMemberEmail } from "@/lib/member-identity";
 
 function normalizeEmail(value: unknown) {
-  return typeof value === "string" ? value.trim().toLowerCase() : "";
+  return typeof value === "string" ? normalizeMemberEmail(value) : "";
 }
 
 function isValidEmail(email: string) {

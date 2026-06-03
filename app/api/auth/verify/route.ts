@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { isDbConnected, query } from "@/lib/db";
 import { shouldRefreshToken, signToken, verifyToken } from "@/lib/auth";
 import { validateActiveSession } from "@/lib/sessions";
+import { normalizeMemberEmail } from "@/lib/member-identity";
 
 export async function POST(req: Request) {
   try {
@@ -16,7 +17,8 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Invalid or expired token" }, { status: 401 });
     }
 
-    const email = payload.email;
+    const loginEmail = payload.email;
+    const email = normalizeMemberEmail(payload.email);
     const sessionId = payload.sessionId;
     let name = payload.name;
     let plan = "free";
@@ -26,7 +28,8 @@ export async function POST(req: Request) {
     const dbConnected = await isDbConnected();
     if (dbConnected) {
       try {
-        const active = await validateActiveSession("member", email, sessionId);
+        const active = await validateActiveSession("member", loginEmail, sessionId) ||
+          await validateActiveSession("member", email, sessionId);
         if (!active) {
           return NextResponse.json(
             { error: "Session was replaced by a newer login", code: "SESSION_REPLACED" },

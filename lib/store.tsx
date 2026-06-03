@@ -153,6 +153,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
 
   const PLAN_OVERRIDES = new Map<string, { plan: PlanId; billing: "monthly" | "yearly" | "lifetime"; name?: string }>([
     ["zeroline@live.com", { plan: "lifetime", billing: "lifetime", name: "Zeroline VIP" }],
+    ["ipzeroline@gmail.com", { plan: "lifetime", billing: "lifetime", name: "Zeroline VIP" }],
     ["tayasit.pea@gmail.com", { plan: "premium", billing: "yearly" }],
   ]);
 

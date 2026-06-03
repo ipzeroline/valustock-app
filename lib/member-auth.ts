@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { verifyToken } from "@/lib/auth";
 import { validateActiveSession } from "@/lib/sessions";
+import { normalizeMemberEmail } from "@/lib/member-identity";
 
 function getBearerToken(req: Request) {
   const header = req.headers.get("authorization") || "";
@@ -25,7 +26,9 @@ export async function requireMember(req: Request) {
     };
   }
 
-  const active = await validateActiveSession("member", payload.email, payload.sessionId);
+  const normalizedEmail = normalizeMemberEmail(payload.email);
+  const active = await validateActiveSession("member", payload.email, payload.sessionId) ||
+    await validateActiveSession("member", normalizedEmail, payload.sessionId);
   if (!active) {
     return {
       error: NextResponse.json({ error: "Session was replaced by a newer login", code: "SESSION_REPLACED" }, { status: 401 }),
@@ -36,7 +39,7 @@ export async function requireMember(req: Request) {
   return {
     error: null,
     member: {
-      email: payload.email.trim().toLowerCase(),
+      email: normalizedEmail,
       name: payload.name,
       sessionId: payload.sessionId,
     },
