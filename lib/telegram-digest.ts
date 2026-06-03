@@ -25,6 +25,122 @@ function stockStatus(mos: number, dividendYield: number, changePct: number) {
   return "ติดตามต่อ";
 }
 
+function metricLabel(metric: string) {
+  if (metric === "yield") return "Dividend Yield";
+  if (metric === "roe") return "ROE";
+  if (metric === "margin") return "Net Margin";
+  return "Margin of Safety";
+}
+
+function netMargin(stock: any) {
+  return stock.financials.revenue > 0 ? (stock.financials.netIncome / stock.financials.revenue) * 100 : 0;
+}
+
+function compareScore(row: {
+  valuation: ReturnType<typeof computeValuation>;
+  stock: NonNullable<ReturnType<typeof getStock>>;
+  changePct: number;
+}) {
+  return (
+    row.valuation.marginOfSafety * 1.4 +
+    (row.valuation.ratios.dividendYield || 0) * 1.2 +
+    (Number.isFinite(row.valuation.ratios.roe) ? row.valuation.ratios.roe : 0) * 0.35 +
+    Math.max(0, -row.changePct) * 0.4
+  );
+}
+
+function metricValue(row: {
+  valuation: ReturnType<typeof computeValuation>;
+  stock: NonNullable<ReturnType<typeof getStock>>;
+}, metric: string) {
+  if (metric === "yield") return row.valuation.ratios.dividendYield || 0;
+  if (metric === "roe") return Number.isFinite(row.valuation.ratios.roe) ? row.valuation.ratios.roe : 0;
+  if (metric === "margin") return netMargin(row.stock);
+  return row.valuation.marginOfSafety;
+}
+
+export function buildCompareTelegramSummaryMessage({
+  email,
+  name,
+  symbols,
+  chartMetric = "mos",
+  siteUrl,
+}: {
+  email: string;
+  name: string;
+  symbols: string[];
+  chartMetric?: string;
+  siteUrl: string;
+}) {
+  const rows = Array.from(new Set(symbols.map((symbol) => symbol.toUpperCase())))
+    .map((symbol) => {
+      const stock = getStock(symbol);
+      if (!stock) return null;
+      const valuation = computeValuation(stock, defaultDCFParams(stock));
+      const changePct = stock.prevClose > 0 ? ((stock.price - stock.prevClose) / stock.prevClose) * 100 : 0;
+      return {
+        stock,
+        valuation,
+        changePct,
+        score: 0,
+      };
+    })
+    .filter(Boolean) as Array<{
+      stock: NonNullable<ReturnType<typeof getStock>>;
+      valuation: ReturnType<typeof computeValuation>;
+      changePct: number;
+      score: number;
+    }>;
+
+  rows.forEach((row) => {
+    row.score = compareScore(row);
+  });
+
+  if (rows.length < 2) {
+    return [
+      "<b>ValuStock Compare Alert</b>",
+      "",
+      "ยังไม่มีหลักทรัพย์เพียงพอสำหรับสรุปผลเปรียบเทียบ",
+      `บัญชี: <b>${escapeHtml(email)}</b>`,
+      `${siteUrl}/compare`,
+    ].join("\n");
+  }
+
+  const ranked = [...rows].sort((a, b) => b.score - a.score);
+  const mosLeader = [...rows].sort((a, b) => b.valuation.marginOfSafety - a.valuation.marginOfSafety)[0];
+  const yieldLeader = [...rows].sort((a, b) => (b.valuation.ratios.dividendYield || 0) - (a.valuation.ratios.dividendYield || 0))[0];
+  const roeLeader = [...rows].sort((a, b) => metricValue(b, "roe") - metricValue(a, "roe"))[0];
+  const activeLeader = [...rows].sort((a, b) => metricValue(b, chartMetric) - metricValue(a, chartMetric))[0];
+
+  const lines = ranked.map((row, index) => {
+    const dividendYield = row.valuation.ratios.dividendYield || 0;
+    return [
+      `<b>${index + 1}. ${escapeHtml(row.stock.symbol)}</b> - ${escapeHtml(row.stock.name)}`,
+      `ราคา: <b>${formatPriceValue(row.stock, row.stock.price)}</b> (${row.changePct >= 0 ? "+" : ""}${num(row.changePct, 2)}%)`,
+      `Fair Value: <b>${formatPriceValue(row.stock, row.valuation.fairValue)}</b> | MOS: <b>${row.valuation.marginOfSafety >= 0 ? "+" : ""}${num(row.valuation.marginOfSafety, 0)}%</b>`,
+      `P/E: <b>${Number.isFinite(row.valuation.ratios.pe) ? `${num(row.valuation.ratios.pe, 1)}x` : "-"}</b> | ROE: <b>${Number.isFinite(row.valuation.ratios.roe) ? `${num(row.valuation.ratios.roe, 1)}%` : "-"}</b> | Yield: <b>${num(dividendYield, 2)}%</b>`,
+      `${siteUrl}/stocks/${encodeURIComponent(row.stock.symbol)}`,
+      "",
+    ];
+  }).flat();
+
+  return [
+    "<b>ValuStock Compare Alert</b>",
+    `ชุด: <b>${escapeHtml(name || symbols.join(" vs "))}</b>`,
+    `บัญชี: <b>${escapeHtml(email)}</b>`,
+    "",
+    `<b>ผู้ชนะจากคะแนนรวม:</b> ${escapeHtml(ranked[0].stock.symbol)}`,
+    `<b>MOS สูงสุด:</b> ${escapeHtml(mosLeader.stock.symbol)} (${mosLeader.valuation.marginOfSafety >= 0 ? "+" : ""}${num(mosLeader.valuation.marginOfSafety, 0)}%)`,
+    `<b>Yield สูงสุด:</b> ${escapeHtml(yieldLeader.stock.symbol)} (${num(yieldLeader.valuation.ratios.dividendYield || 0, 2)}%)`,
+    `<b>ROE สูงสุด:</b> ${escapeHtml(roeLeader.stock.symbol)} (${num(metricValue(roeLeader, "roe"), 1)}%)`,
+    `<b>${escapeHtml(metricLabel(chartMetric))} leader:</b> ${escapeHtml(activeLeader.stock.symbol)} (${num(metricValue(activeLeader, chartMetric), 1)}%)`,
+    "",
+    ...lines,
+    "หมายเหตุ: ข้อมูลนี้ใช้เพื่อการติดตามและวิเคราะห์ ไม่ใช่คำแนะนำซื้อขายหลักทรัพย์",
+    `${siteUrl}/compare`,
+  ].join("\n");
+}
+
 export function buildWatchlistTelegramSummary({
   email,
   symbols,

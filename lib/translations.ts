@@ -273,7 +273,7 @@ export const translations = {
       screenerLimit: "เครื่องมือคัดกรองหุ้นแบบพรีเมียม",
       watchlistLimit: "รายการโปรดสูงสุด {count} ตัว",
       compareLimit: "ระบบเปรียบเทียบหุ้นเคียงข้างกัน",
-      alertLimit: "การแจ้งเตือนราคาผ่าน In-app และ Telegram",
+      alertLimit: "Telegram Watchlist และ Compare Alerts",
       exportLimit: "ส่งออกข้อมูลเป็น Excel/CSV",
     },
     account: {
@@ -552,7 +552,7 @@ export const translations = {
       screenerLimit: "Advanced stock filters and screeners",
       watchlistLimit: "Track up to {count} active ideas",
       compareLimit: "Side-by-Side quantitative comparisons",
-      alertLimit: "Immediate in-app and Telegram price alerts",
+      alertLimit: "Telegram Watchlist and Compare Alerts",
       exportLimit: "Direct data exports (Excel & CSV formats)",
     },
     account: {

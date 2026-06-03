@@ -28,6 +28,7 @@ import {
   Shield,
   CheckCircle,
   Trash2,
+  Bell,
 } from "@/lib/icons";
 
 const verdictTone = {
@@ -48,7 +49,7 @@ type SavedComparisonSet = {
 
 export default function ComparePage() {
   const plan = useCurrentPlan();
-  const { user } = useStore();
+  const { user, authToken } = useStore();
   const { t, lang } = useTranslation();
 
   // Picked stocks (up to 4)
@@ -58,6 +59,7 @@ export default function ComparePage() {
   const [savedSets, setSavedSets] = useState<SavedComparisonSet[]>([]);
   const [setName, setSetName] = useState("");
   const [savingSet, setSavingSet] = useState(false);
+  const [telegramSending, setTelegramSending] = useState(false);
   const [setsLoading, setSetsLoading] = useState(false);
   const [setMessage, setSetMessage] = useState("");
   const [openSections, setOpenSections] = useState<Record<string, boolean>>({
@@ -307,6 +309,43 @@ export default function ComparePage() {
     }
   };
 
+  const sendCompareTelegram = async (set?: SavedComparisonSet) => {
+    if (!authToken) {
+      setSetMessage(lang === "th" ? "กรุณา login ก่อนส่ง Telegram alert" : "Please log in before sending a Telegram alert.");
+      return;
+    }
+    const symbols = set?.symbols || picked;
+    if (symbols.length < 2) {
+      setSetMessage(lang === "th" ? "เลือกอย่างน้อย 2 หลักทรัพย์ก่อนส่ง Telegram" : "Pick at least 2 assets before sending Telegram.");
+      return;
+    }
+
+    setTelegramSending(true);
+    setSetMessage("");
+    try {
+      const res = await fetch("/api/compare/telegram", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${authToken}` },
+        body: JSON.stringify(
+          set
+            ? { setId: set.id }
+            : {
+                name: setName || picked.join(" vs "),
+                symbols: picked,
+                chartMetric: activeChartMetric,
+              }
+        ),
+      });
+      const data = await res.json();
+      if (!res.ok || !data.success) throw new Error(data.error || "Telegram compare alert failed");
+      setSetMessage(lang === "th" ? "ส่งสรุปเปรียบเทียบเข้า Telegram แล้ว" : "Comparison summary sent to Telegram.");
+    } catch (err: any) {
+      setSetMessage(err.message || (lang === "th" ? "ส่ง Telegram ไม่สำเร็จ" : "Unable to send Telegram."));
+    } finally {
+      setTelegramSending(false);
+    }
+  };
+
   const formatPrice = (s: any, p: number) => {
     if (s.assetType === "US_STOCK" || s.currency === "USD") return dollar(p);
     if (s.assetType === "FUND") return nav(p);
@@ -497,6 +536,34 @@ export default function ComparePage() {
                   : (lang === "th" ? "บันทึกชุดนี้" : "Save Set")}
               </Button>
             </div>
+            <div className="mt-3 rounded-xl border border-gold/25 bg-gold/10 p-3">
+              <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                <div className="min-w-0">
+                  <div className="flex items-center gap-2 text-xs font-black text-ink">
+                    <Bell className="h-4 w-4 text-gold" />
+                    {lang === "th" ? "Telegram Compare Alert" : "Telegram Compare Alert"}
+                  </div>
+                  <p className="mt-1 text-[11px] font-semibold leading-relaxed text-muted">
+                    {lang === "th"
+                      ? "ส่งสรุปอันดับหุ้นในชุดนี้ พร้อม MOS, Yield, ROE และ Fair Value เข้า Telegram ของสมาชิก"
+                      : "Send the current comparison ranking with MOS, yield, ROE, and fair value to your connected Telegram."}
+                  </p>
+                </div>
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="gold"
+                  onClick={() => sendCompareTelegram()}
+                  disabled={telegramSending || picked.length < 2 || !authToken}
+                  className="w-full shrink-0 sm:w-auto"
+                >
+                  <Bell className="h-4 w-4" />
+                  {telegramSending
+                    ? (lang === "th" ? "กำลังส่ง..." : "Sending...")
+                    : (lang === "th" ? "ส่ง Telegram" : "Send Telegram")}
+                </Button>
+              </div>
+            </div>
             {!user?.email && (
               <p className="mt-2 text-[11px] font-semibold text-gold">
                 {lang === "th" ? "ต้อง login ก่อนจึงจะบันทึกลง database ได้" : "Log in to save comparison sets to the database."}
@@ -536,6 +603,15 @@ export default function ComparePage() {
                       <div className="mt-0.5 truncate font-mono text-[10px] font-semibold text-muted">
                         {set.symbols.join(" / ")} · {set.chartMetric.toUpperCase()}
                       </div>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => sendCompareTelegram(set)}
+                      disabled={telegramSending || !authToken}
+                      className="grid h-8 w-8 shrink-0 place-items-center rounded-lg text-muted transition hover:bg-gold/15 hover:text-gold disabled:opacity-40"
+                      title={lang === "th" ? "ส่งชุดนี้เข้า Telegram" : "Send this set to Telegram"}
+                    >
+                      <Bell className="h-3.5 w-3.5" />
                     </button>
                     <button
                       type="button"

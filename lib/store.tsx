@@ -11,6 +11,7 @@ import { AppData, User, PlanId } from "./types";
 import { getPlan } from "./plans";
 
 const KEY = "valustock.v1";
+const SESSION_VERIFY_INTERVAL_MS = 1000 * 60 * 30;
 
 const DEFAULT: AppData = {
   user: null,
@@ -157,6 +158,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     if (!ready || !data.user?.email || !data.authToken) return;
+    const email = data.user.email.trim().toLowerCase();
 
     const verifyCurrentSession = () => {
       fetch("/api/auth/verify", {
@@ -168,12 +170,29 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
           if (!res.ok) throw new Error("Session is no longer active");
           return res.json();
         })
+        .then((payload) => {
+          if (!payload?.success) throw new Error("Session verification failed");
+          setData((current) => {
+            if (!current.user || current.user.email.trim().toLowerCase() !== email) return current;
+            return {
+              ...current,
+              user: {
+                ...current.user,
+                name: payload.name || current.user.name,
+                plan: payload.plan || current.user.plan,
+                billing: payload.billing || current.user.billing,
+              },
+              authToken: payload.token || current.authToken,
+            };
+          });
+        })
         .catch(() => {
           setData((current) => ({ ...current, user: null, authToken: null }));
         });
     };
 
-    const timer = window.setInterval(verifyCurrentSession, 10000);
+    verifyCurrentSession();
+    const timer = window.setInterval(verifyCurrentSession, SESSION_VERIFY_INTERVAL_MS);
     return () => window.clearInterval(timer);
   }, [ready, data.user?.email, data.authToken]);
 

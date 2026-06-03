@@ -15,12 +15,28 @@ export interface AuthTokenPayload {
   exp: number;
 }
 
+const DAY_MS = 1000 * 60 * 60 * 24;
+
+function getSessionDays() {
+  const raw = Number(process.env.AUTH_SESSION_DAYS || 30);
+  if (!Number.isFinite(raw)) return 30;
+  return Math.min(Math.max(Math.floor(raw), 1), 90);
+}
+
+export function getSessionDurationMs() {
+  return getSessionDays() * DAY_MS;
+}
+
+export function shouldRefreshToken(exp: number) {
+  return exp - Date.now() < 7 * DAY_MS;
+}
+
 /**
  * Signs a payload with a cryptographic HMAC signature.
  * Returns a URL-safe token.
  */
 export function signToken(payload: Omit<AuthTokenPayload, "exp"> & { exp?: number }): string {
-  const exp = payload.exp || Date.now() + 1000 * 60 * 15; // default 15 minutes
+  const exp = payload.exp || Date.now() + getSessionDurationMs();
   const fullPayload: AuthTokenPayload = { ...payload, exp };
   
   const payloadStr = Buffer.from(JSON.stringify(fullPayload)).toString("base64url");

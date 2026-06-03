@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { PLANS } from "@/lib/plans";
 import { PlanCard, PLAN_TRANS } from "@/components/PlanCard";
 import { useStore } from "@/lib/store";
@@ -36,8 +37,13 @@ export default function PricingPage() {
   const [checkoutLoading, setCheckoutLoading] = useState(false);
   const [checkoutError, setCheckoutError] = useState("");
   const [openFaq, setOpenFaq] = useState<number | null>(0);
+  const isLifetimeMember = user?.plan === "lifetime" || user?.billing === "lifetime";
 
   const choose = (id: PlanId) => {
+    if (isLifetimeMember) {
+      router.push("/account");
+      return;
+    }
     if (id === "free") {
       if (process.env.NODE_ENV !== "production") {
         setPlan("free", billing);
@@ -157,12 +163,12 @@ export default function PricingPage() {
       badge: lang === "th" ? "ครบสุด" : "Full access",
       desc:
         lang === "th"
-          ? "เหมาะกับคนมีพอร์ตจริงจัง ต้องการเปรียบเทียบหุ้นหลายตัว ตั้ง Alert Center ผ่าน Telegram, ทำ Backtest/Scenario และส่งออกข้อมูลไปวิเคราะห์ต่อ"
-          : "Best for active portfolios that need comparisons, Telegram Alert Center, backtests/scenarios, and data exports.",
+          ? "เหมาะกับคนมีพอร์ตจริงจัง ต้องการเปรียบเทียบหุ้นหลายตัว รับ Telegram Watchlist/Compare Alerts, ทำ Backtest/Scenario และส่งออกข้อมูลไปวิเคราะห์ต่อ"
+          : "Best for active portfolios that need comparisons, Telegram Watchlist/Compare Alerts, backtests/scenarios, and data exports.",
       points:
         lang === "th"
-          ? ["Compare หุ้นหลายตัว", "Telegram Alert Center + MOS alerts", "Backtest, Scenario และ CSV Export"]
-          : ["Multi-asset comparison", "Telegram Alert Center + MOS alerts", "Backtest, scenarios, and CSV export"],
+          ? ["Compare หุ้นหลายตัว", "Telegram Watchlist + Compare Alerts", "Backtest, Scenario และ CSV Export"]
+          : ["Multi-asset comparison", "Telegram Watchlist + Compare Alerts", "Backtest, scenarios, and CSV export"],
     },
     {
       id: "lifetime" as PlanId,
@@ -171,12 +177,12 @@ export default function PricingPage() {
       badge: lang === "th" ? "จ่ายครั้งเดียว" : "One-time",
       desc:
         lang === "th"
-          ? "เหมาะกับผู้ใช้ระยะยาวที่ต้องการ Premium ครบ พร้อมงาน export/backtest/scenario และแนวคิด bulk historical data จาก Flat Files"
-          : "Best for long-term users who want Premium access plus export/backtest workflows inspired by bulk historical flat files.",
+          ? "เหมาะกับผู้ใช้ระยะยาวที่ต้องการ Premium ครบ รวม Telegram Watchlist/Compare Alerts, export/backtest/scenario และแนวคิด bulk historical data จาก Flat Files"
+          : "Best for long-term users who want Premium access, Telegram Watchlist/Compare Alerts, and export/backtest workflows inspired by bulk historical flat files.",
       points:
         lang === "th"
-          ? ["จ่ายครั้งเดียว 888 บาท", "เหมาะกับใช้งานเกิน 10 เดือน", "Premium ครบทุกโมดูลตลอดชีพ"]
-          : ["One-time 888 THB", "Best beyond 10 months", "Lifetime Premium modules"],
+          ? ["จ่ายครั้งเดียว 888 บาท", "Telegram alerts ครบทุกโมดูล", "Premium ครบทุกโมดูลตลอดชีพ"]
+          : ["One-time 888 THB", "All Telegram alert modules", "Lifetime Premium modules"],
     },
   ];
 
@@ -218,8 +224,22 @@ export default function PricingPage() {
       q: lang === "th" ? "ควรเลือก Pro หรือ Premium?" : "Should I choose Pro or Premium?",
       a:
         lang === "th"
-          ? "ถ้าเน้นคำนวณ DCF, หามูลค่าเหมาะสม และสกรีนหุ้น Pro เพียงพอสำหรับนักลงทุนส่วนใหญ่ แต่ถ้าต้องการเปรียบเทียบหลายหุ้น ตั้งแจ้งเตือน และส่งออกข้อมูล ควรเลือก Premium"
-          : "Pro is enough for DCF, fair value, and screening. Premium is better if you need comparisons, alerts, and exports.",
+          ? "ถ้าเน้นคำนวณ DCF, หามูลค่าเหมาะสม และสกรีนหุ้น Pro เพียงพอสำหรับนักลงทุนส่วนใหญ่ แต่ถ้าต้องการเปรียบเทียบหลายหุ้น ส่งสรุป Watchlist/Compare เข้า Telegram และส่งออกข้อมูล ควรเลือก Premium"
+          : "Pro is enough for DCF, fair value, and screening. Premium is better if you need comparisons, Telegram Watchlist/Compare Alerts, and exports.",
+    },
+    {
+      q: lang === "th" ? "Telegram Alert ใน Premium ส่งอะไรได้บ้าง?" : "What does Premium Telegram Alert send?",
+      a:
+        lang === "th"
+          ? "Premium และ Lifetime ส่งสรุปรายการโปรดรายวัน/รายสัปดาห์ และส่งสรุปชุดเปรียบเทียบหุ้นจากหน้า Compare ได้ โดยมี MOS, Fair Value, Yield, ROE และอันดับหุ้นเด่นในชุดนั้น"
+          : "Premium and Lifetime can send daily/weekly watchlist summaries and Compare page summaries with MOS, fair value, yield, ROE, and ranked leaders.",
+    },
+    {
+      q: lang === "th" ? "Lifetime คุ้มกว่ารายเดือนเมื่อไหร่?" : "When is Lifetime better than monthly billing?",
+      a:
+        lang === "th"
+          ? "Lifetime เหมาะกับสมาชิกที่ตั้งใจใช้ ValuStock ต่อเนื่องเกินประมาณ 10 เดือน และต้องการ Premium ครบทุกโมดูล เช่น Compare, Telegram Alert, Backtest, Scenario DCF และ CSV Export โดยไม่ต้องต่ออายุรายเดือนหรือรายปี"
+          : "Lifetime is best when you plan to use ValuStock for more than about 10 months and want all Premium modules such as Compare, Telegram Alert, backtests, scenario DCF, and CSV exports without monthly or annual renewal.",
     },
     {
       q: lang === "th" ? "ข้อมูลในระบบใช้แทนคำแนะนำลงทุนได้ไหม?" : "Is ValuStock investment advice?",
@@ -281,10 +301,24 @@ export default function PricingPage() {
       {/* SECTION 1: HERO */}
       <div className="text-center animate-fade-up">
         <span className="chip border-gold/30 bg-gold/10 text-gold shadow-glow">
-          <Crown className="h-3.5 w-3.5 text-gold" /> {t("common.pricing")}
+          <Crown className="h-3.5 w-3.5 text-gold" /> {isLifetimeMember ? (lang === "th" ? "สมาชิกตลอดชีพ" : "Lifetime member") : t("common.pricing")}
         </span>
         <h1 className="mx-auto mt-4 max-w-[22rem] font-display text-3xl font-extrabold leading-tight tracking-tight text-ink [overflow-wrap:anywhere] sm:max-w-none sm:text-4xl md:text-5xl">
-          {lang === "th" ? (
+          {isLifetimeMember ? (
+            lang === "th" ? (
+              <>
+                คุณเป็นสมาชิก
+                <br />
+                ตลอดชีพแล้ว
+              </>
+            ) : (
+              <>
+                Lifetime access
+                <br />
+                is active
+              </>
+            )
+          ) : lang === "th" ? (
             <>
               เลือกแพ็กเกจ
               <br />
@@ -295,13 +329,18 @@ export default function PricingPage() {
           )}
         </h1>
         <p className="mx-auto mt-3 max-w-[20rem] text-sm leading-relaxed text-muted sm:max-w-xl">
-          {lang === "th" 
+          {isLifetimeMember
+            ? lang === "th"
+              ? "บัญชีนี้ได้รับสิทธิ์ Premium ครบทุกโมดูลตลอดชีพแล้ว ไม่จำเป็นต้องซื้อแพ็กเกจซ้ำ สามารถดูสิทธิ์และตั้งค่าบัญชีได้จากหน้านี้"
+              : "This account already has lifetime Premium access. Checkout is disabled to prevent duplicate purchases."
+            : lang === "th" 
             ? "เริ่มต้นฟรี ไม่ต้องใช้บัตรเครดิต เลือกสไตล์การลงทุนที่ตรงใจ ปลดล็อคฟีเจอร์ระดับสถาบันการเงินได้ทันที" 
             : "Start free, no credit card required. Upgrade or downgrade your plan anytime to fit your trading habits."}
         </p>
 
         {/* billing toggle */}
-        <div className="mt-7 inline-flex items-center gap-1 rounded-full border border-line bg-surface p-1 shadow-inner">
+        {!isLifetimeMember && (
+          <div className="mt-7 inline-flex items-center gap-1 rounded-full border border-line bg-surface p-1 shadow-inner">
           <button
             onClick={() => setBilling("monthly")}
             className={`rounded-full px-5 py-2 text-xs font-semibold transition ${
@@ -321,8 +360,34 @@ export default function PricingPage() {
               -20%
             </span>
           </button>
-        </div>
+          </div>
+        )}
       </div>
+
+      {isLifetimeMember && (
+        <section className="rounded-2xl border border-gold/35 bg-gold/10 p-5 shadow-glow animate-fade-up [animation-delay:60ms]">
+          <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+            <div className="flex items-start gap-3">
+              <span className="grid h-11 w-11 shrink-0 place-items-center rounded-xl bg-gold/15 text-gold">
+                <CheckCircle className="h-5 w-5" />
+              </span>
+              <div>
+                <h2 className="font-display text-xl font-extrabold text-ink">
+                  {lang === "th" ? "สถานะสมาชิกตลอดชีพเปิดใช้งานแล้ว" : "Lifetime membership is active"}
+                </h2>
+                <p className="mt-1 text-sm font-medium leading-relaxed text-muted">
+                  {lang === "th"
+                    ? "คุณมีสิทธิ์ Premium ครบทุกฟีเจอร์ รวมกราฟเทคนิค, Alert Center ผ่าน Telegram, Backtest, Scenario และ Export โดยไม่ต้องต่ออายุรายเดือน/รายปี"
+                    : "You have full Premium access including technical charts, Telegram Alert Center, backtests, scenarios, and exports without monthly or annual renewal."}
+                </p>
+              </div>
+            </div>
+            <Button variant="gold" onClick={() => router.push("/account")}>
+              {lang === "th" ? "ดูบัญชีสมาชิก" : "View account"}
+            </Button>
+          </div>
+        </section>
+      )}
 
       {/* SECTION 2: PLANS CARD GRID */}
       <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-4 animate-fade-up [animation-delay:80ms]">
@@ -332,6 +397,16 @@ export default function PricingPage() {
             plan={p}
             billing={billing}
             current={user?.plan === p.id}
+            disabled={isLifetimeMember}
+            actionLabel={
+              isLifetimeMember
+                ? p.id === "lifetime"
+                  ? t("pricing.currentPlanBadge")
+                  : lang === "th"
+                    ? "รวมอยู่ใน Lifetime แล้ว"
+                    : "Included in Lifetime"
+                : undefined
+            }
             onSelect={() => choose(p.id)}
           />
         ))}
@@ -426,12 +501,12 @@ export default function PricingPage() {
           },
           {
             icon: Zap,
-            title: lang === "th" ? "WebSocket Signals" : "WebSocket Signals",
+            title: lang === "th" ? "Telegram Alert Signals" : "Telegram Alert Signals",
             plan: "Premium 88",
             desc:
               lang === "th"
-                ? "เหมาะกับ dashboard สด การแจ้งเตือนราคา และสัญญาณพอร์ตแบบใกล้ real-time ตามแนวทาง Massive WebSocket"
-                : "Built for live dashboards, price alerts, and near real-time portfolio signals inspired by Massive WebSocket.",
+                ? "เหมาะกับสรุป Watchlist อัตโนมัติและส่ง Compare Alert เข้า Telegram ส่วนตัว พร้อมอันดับ MOS, Yield, ROE และ Fair Value"
+                : "Built for automated watchlist summaries and personal Telegram Compare Alerts with MOS, yield, ROE, and fair value leaders.",
           },
           {
             icon: Database,
@@ -465,7 +540,7 @@ export default function PricingPage() {
       <Card className="border border-line/80 overflow-hidden animate-fade-up [animation-delay:120ms] bg-surface/30">
         <CardHeader
           title={lang === "th" ? "ตารางเปรียบเทียบฟังก์ชันการใช้งานแบบละเอียด" : "Detailed Feature Comparison Matrix"}
-          subtitle={lang === "th" ? "เจาะลึก 15 ฟังก์ชันการวิเคราะห์ กราฟเทคนิค การแจ้งเตือน และพอร์ต" : "Granular breakdown of all 15 key research, charting, alert, and portfolio modules"}
+          subtitle={lang === "th" ? "เจาะลึก 16 ฟังก์ชันการวิเคราะห์ กราฟเทคนิค การแจ้งเตือน และพอร์ต" : "Granular breakdown of all 16 key research, charting, alert, and portfolio modules"}
           icon={<Layers className="h-4.5 w-4.5 text-brand" />}
         />
         <div className="overflow-x-auto">
@@ -578,7 +653,14 @@ export default function PricingPage() {
                 label={lang === "th" ? "12. ช่องทางแจ้งเตือน" : "12. Alert Channels"}
                 free="❌"
                 pro="❌"
-                premium={lang === "th" ? "In-app + Telegram" : "In-app + Telegram"}
+                premium={lang === "th" ? "In-app + Telegram ส่วนตัว" : "In-app + personal Telegram"}
+                premiumStyle="gold"
+              />
+              <MatrixRow
+                label={lang === "th" ? "13. Telegram Compare Set Alert" : "13. Telegram Compare Set Alert"}
+                free="❌"
+                pro="❌"
+                premium={lang === "th" ? "สรุปอันดับ MOS/Yield/ROE จากชุดเปรียบเทียบ" : "Ranked MOS/Yield/ROE summary from compare sets"}
                 premiumStyle="gold"
               />
 
@@ -589,19 +671,19 @@ export default function PricingPage() {
                 </td>
               </tr>
               <MatrixRow
-                label={lang === "th" ? "13. บันทึกซื้อขายและ Portfolio Tracker" : "13. Investment Ledger & Portfolio Tracker"}
+                label={lang === "th" ? "14. บันทึกซื้อขายและ Portfolio Tracker" : "14. Investment Ledger & Portfolio Tracker"}
                 free="❌"
                 pro={lang === "th" ? "บันทึกพอร์ตต้นทุนเฉลี่ย" : "Virtual portfolio tracker"}
                 premium={lang === "th" ? "บันทึกพอร์ตต้นทุนเฉลี่ย" : "Virtual portfolio tracker"}
               />
               <MatrixRow
-                label={lang === "th" ? "14. ข่าวสารที่ลิ้งก์ตรงอิงหุ้น" : "14. News-Related Equities"}
+                label={lang === "th" ? "15. ข่าวสารที่ลิ้งก์ตรงอิงหุ้น" : "15. News-Related Equities"}
                 free={lang === "th" ? "หัวข้อข่าวย่อทั่วไป" : "Basic News"}
                 pro={lang === "th" ? "เจาะลึกข่าววิเคราะห์เชิงดัชนี" : "Audit Sentiment News"}
                 premium={lang === "th" ? "เจาะลึกข่าววิเคราะห์เชิงดัชนี" : "Audit Sentiment News"}
               />
               <MatrixRow
-                label={lang === "th" ? "15. Watchlist และจำนวนหุ้นที่ติดตาม" : "15. Watchlists & Tracked Assets"}
+                label={lang === "th" ? "16. Watchlist และจำนวนหุ้นที่ติดตาม" : "16. Watchlists & Tracked Assets"}
                 free={lang === "th" ? "บันทึกได้ 3 รายการ" : "Track 3 items"}
                 pro={lang === "th" ? "ไม่จำกัดรายการ" : "Unlimited items"}
                 premium={lang === "th" ? "ไม่จำกัดรายการ" : "Unlimited items"}
@@ -612,7 +694,59 @@ export default function PricingPage() {
         </div>
       </Card>
 
-      {/* SECTION 6: DEFAULT FEATURES */}
+      {/* SECTION 6: SEO BUYER GUIDE */}
+      <section className="grid gap-5 rounded-2xl border border-line bg-surface/35 p-6 animate-fade-up [animation-delay:125ms] lg:grid-cols-[minmax(0,1.15fr)_minmax(320px,0.85fr)]">
+        <div>
+          <span className="inline-flex items-center gap-1 rounded-full border border-brand/25 bg-brand/10 px-3 py-1 text-[11px] font-black text-brand">
+            <Info className="h-3.5 w-3.5" />
+            {lang === "th" ? "คู่มือเลือกแพ็กเกจ" : "Plan buying guide"}
+          </span>
+          <h2 className="mt-3 font-display text-2xl font-extrabold leading-tight text-ink">
+            {lang === "th"
+              ? "แพ็กเกจ ValuStock สำหรับวิเคราะห์หุ้นไทย หุ้นสหรัฐ และพอร์ตลงทุน"
+              : "ValuStock plans for Thai stocks, US stocks, and portfolio research"}
+          </h2>
+          <div className="mt-3 space-y-3 text-sm font-medium leading-relaxed text-muted">
+            <p>
+              {lang === "th"
+                ? "ValuStock เป็นโปรแกรมวิเคราะห์หุ้นและเครื่องมือประเมินมูลค่าหุ้นสำหรับนักลงทุนที่ต้องการดู DCF Calculator, Stock Screener, Portfolio Tracker, Watchlist และกราฟแท่งเทียนในที่เดียว แพ็กเกจ Free เหมาะสำหรับทดลองข้อมูลพื้นฐาน ส่วน Pro เหมาะกับการวิเคราะห์รายตัวด้วยมูลค่าเหมาะสม, Margin of Safety, Graham Number และเครื่องมือเทคนิคอย่าง MA, EMA, RSI, MACD และ Bollinger"
+                : "ValuStock is a stock analysis and valuation platform for investors who need a DCF calculator, stock screener, portfolio tracker, watchlist, and candlestick charts in one workspace. Free is for basic exploration, while Pro fits single-stock research with fair value, margin of safety, Graham Number, and technical indicators such as MA, EMA, RSI, MACD, and Bollinger."}
+            </p>
+            <p>
+              {lang === "th"
+                ? "สำหรับสมาชิกที่ต้องติดตามพอร์ตจริงจัง Premium และ Lifetime จะปลดล็อก Compare, Backtest, Scenario DCF, CSV Export และการแจ้งเตือนหุ้นผ่าน Telegram ทั้งสรุปรายการโปรดและ Compare Set Alert เพื่อดูว่าหุ้นตัวไหนในกลุ่มมี MOS, Yield หรือ ROE เด่นขึ้น เหมาะกับนักลงทุนที่เปรียบเทียบหุ้นธนาคาร หุ้นปันผล หุ้นเติบโต หรือหุ้นสหรัฐหลายตัวก่อนตัดสินใจ"
+                : "For active members, Premium and Lifetime unlock Compare, backtesting, scenario DCF, CSV exports, and Telegram stock alerts, including watchlist summaries and Compare Set Alerts that show which asset leads on MOS, yield, or ROE. This is useful when comparing banks, dividend stocks, growth names, or multiple US stocks before making a decision."}
+            </p>
+          </div>
+        </div>
+
+        <div className="rounded-xl border border-line bg-elevate/35 p-4">
+          <h3 className="font-display text-sm font-black text-ink">
+            {lang === "th" ? "เครื่องมือหลักที่เกี่ยวข้อง" : "Related research tools"}
+          </h3>
+          <div className="mt-3 grid gap-2 text-xs font-bold text-muted sm:grid-cols-2 lg:grid-cols-1">
+            {[
+              { href: "/stock-valuation", label: lang === "th" ? "คู่มือประเมินมูลค่าหุ้น" : "Stock valuation guide" },
+              { href: "/dcf-calculator", label: lang === "th" ? "DCF Calculator" : "DCF calculator" },
+              { href: "/screeners", label: lang === "th" ? "Stock Screener" : "Stock screener" },
+              { href: "/portfolio", label: lang === "th" ? "Portfolio Tracker" : "Portfolio tracker" },
+              { href: "/compare", label: lang === "th" ? "Compare หุ้นหลายตัว" : "Compare multiple stocks" },
+              { href: "/watchlist", label: lang === "th" ? "Watchlist และ Telegram Digest" : "Watchlist and Telegram digest" },
+            ].map((item) => (
+              <Link
+                key={item.href}
+                href={item.href}
+                className="flex items-center justify-between rounded-lg border border-line bg-surface/50 px-3 py-2 transition hover:border-brand hover:text-brand"
+              >
+                <span>{item.label}</span>
+                <ArrowRight className="h-3.5 w-3.5" />
+              </Link>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* SECTION 7: DEFAULT FEATURES */}
       <div className="rounded-2xl border border-line bg-surface p-6 animate-fade-up [animation-delay:120ms]">
         <h3 className="font-display text-lg font-semibold text-ink">
           {lang === "th" ? "ทุกแพ็กเกจรวมฟีเจอร์พื้นฐาน" : "Every Plan Includes Core Features"}
@@ -632,7 +766,7 @@ export default function PricingPage() {
           : "Prices include VAT. Secured by Stripe Checkout for recurring subscriptions and one-time payments."}
       </p>
 
-      {/* SECTION 7: FAQ */}
+      {/* SECTION 8: FAQ */}
       <section className="mx-auto max-w-3xl space-y-4 animate-fade-up [animation-delay:180ms]">
         <div className="text-center">
           <h2 className="font-display text-2xl font-extrabold text-ink">
@@ -672,7 +806,7 @@ export default function PricingPage() {
         </div>
       </section>
 
-      {/* SECTION 8: FINAL CTA */}
+      {/* SECTION 9: FINAL CTA */}
       <section className="rounded-2xl border border-brand/30 bg-brand/10 p-6 text-center animate-fade-up [animation-delay:200ms]">
         <span className="inline-flex items-center gap-1 rounded-full border border-brand/35 bg-bg/50 px-3 py-1 text-[11px] font-black text-brand">
           <Info className="h-3.5 w-3.5" />

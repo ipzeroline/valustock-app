@@ -48,7 +48,7 @@ export const PLAN_TRANS = {
         "ทุกอย่างในแพ็กเกจโปร",
         "ข้อมูล Crypto & Futures",
         "เปรียบเทียบหุ้นหลายตัวพร้อมกัน",
-        "แจ้งเตือนผ่าน Telegram เมื่อราคาต่ำกว่ามูลค่า",
+        "Telegram Watchlist และ Compare Alerts",
         "ส่งออกข้อมูลเป็น CSV",
         "Backtest และ Alert Center ในพอร์ต",
         "สมมติฐาน/Scenario การประเมินขั้นสูง",
@@ -64,7 +64,7 @@ export const PLAN_TRANS = {
         "สิทธิ์ใช้งานตลอดชีพ",
         "รองรับ Bulk historical/Flat Files workflow",
         "ส่งออกข้อมูล CSV สำหรับ backtest",
-        "Telegram alerts และเปรียบเทียบหุ้นครบ",
+        "Telegram Watchlist/Compare Alerts ครบ",
         "เหมาะกับคนใช้ต่อเนื่องเกิน 10 เดือน",
       ]
     }
@@ -104,7 +104,7 @@ export const PLAN_TRANS = {
         "Everything in the Pro plan",
         "Crypto & Futures data access",
         "Side-by-side asset comparison tool",
-        "Telegram alerts for below-value triggers",
+        "Telegram Watchlist and Compare Alerts",
         "Prism direct exports (Excel & CSV)",
         "Portfolio backtest and Alert Center",
         "Advanced valuation scenario workflows",
@@ -120,7 +120,7 @@ export const PLAN_TRANS = {
         "Lifetime access",
         "Bulk historical / Flat Files workflow",
         "CSV exports for backtesting",
-        "Telegram alerts and comparison tools",
+        "Full Telegram Watchlist/Compare Alerts",
         "Best if you use it beyond 10 months",
       ]
     }
@@ -131,11 +131,15 @@ export function PlanCard({
   plan,
   billing,
   current,
+  actionLabel,
+  disabled,
   onSelect,
 }: {
   plan: Plan;
   billing: "monthly" | "yearly";
   current?: boolean;
+  actionLabel?: string;
+  disabled?: boolean;
   onSelect?: () => void;
 }) {
   const { lang, t } = useTranslation();
@@ -215,9 +219,11 @@ export function PlanCard({
         variant={highlight ? "primary" : plan.id === "premium" || plan.id === "lifetime" ? "gold" : "outline"}
         className="mt-6 w-full"
         onClick={onSelect}
-        disabled={current}
+        disabled={current || disabled}
       >
-        {current
+        {actionLabel
+          ? actionLabel
+          : current
           ? t("pricing.currentPlanBadge")
           : plan.id === "free"
           ? t("common.startFree")

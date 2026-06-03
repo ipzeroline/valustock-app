@@ -77,6 +77,12 @@ function MarketingHeader() {
   const { user } = useStore();
   const [open, setOpen] = useState(false);
   const { t, lang } = useTranslation();
+  const pricingLabel =
+    user?.plan === "lifetime" || user?.billing === "lifetime"
+      ? lang === "th"
+        ? "สถานะสมาชิก"
+        : "Membership"
+      : t("common.pricing");
   return (
     <header className="sticky top-0 z-40 border-b border-line/60 bg-bg/80 backdrop-blur-xl">
       <div className="mx-auto flex h-16 max-w-6xl items-center justify-between px-5">
@@ -86,7 +92,7 @@ function MarketingHeader() {
           <Link href="/stocks" className="hover:text-ink">{t("common.searchStocks")}</Link>
           <Link href="/member-reviews" className="hover:text-ink">{lang === "th" ? "รีวิวจากสมาชิก" : "Member Reviews"}</Link>
           <Link href="/about" className="hover:text-ink">{lang === "th" ? "เกี่ยวกับเรา" : "About"}</Link>
-          <Link href="/pricing" className="hover:text-ink">{t("common.pricing")}</Link>
+          <Link href="/pricing" className="hover:text-ink">{pricingLabel}</Link>
           <Link href="/contact" className="hover:text-ink">ติดต่อทีมงาน</Link>
         </nav>
         <div className="flex items-center gap-2.5">
@@ -122,7 +128,7 @@ function MarketingHeader() {
             <Link href="/stocks" onClick={() => setOpen(false)} className="rounded-lg px-3 py-2.5 hover:bg-elevate">{t("common.searchStocks")}</Link>
             <Link href="/member-reviews" onClick={() => setOpen(false)} className="rounded-lg px-3 py-2.5 hover:bg-elevate">{lang === "th" ? "รีวิวจากสมาชิก" : "Member Reviews"}</Link>
             <Link href="/about" onClick={() => setOpen(false)} className="rounded-lg px-3 py-2.5 hover:bg-elevate">{lang === "th" ? "เกี่ยวกับเรา" : "About"}</Link>
-            <Link href="/pricing" onClick={() => setOpen(false)} className="rounded-lg px-3 py-2.5 hover:bg-elevate">{t("common.pricing")}</Link>
+            <Link href="/pricing" onClick={() => setOpen(false)} className="rounded-lg px-3 py-2.5 hover:bg-elevate">{pricingLabel}</Link>
             <Link href="/contact" onClick={() => setOpen(false)} className="rounded-lg px-3 py-2.5 hover:bg-elevate">ติดต่อทีมงาน</Link>
             <Link href="/login" onClick={() => setOpen(false)} className="rounded-lg px-3 py-2.5 hover:bg-elevate">{t("common.logIn")}</Link>
           </div>
@@ -249,6 +255,7 @@ const NAV = [
 function AppSidebar({ pathname }: { pathname: string }) {
   const plan = useCurrentPlan();
   const { t, lang } = useTranslation();
+  const pricingLabel = plan.id === "lifetime" ? (lang === "th" ? "สถานะสมาชิก" : "Membership") : t("common.pricing");
   return (
     <aside className="sticky top-0 hidden h-screen w-60 shrink-0 flex-col border-r border-line bg-surface px-3 py-5 lg:flex">
       <div className="px-2">
@@ -270,7 +277,7 @@ function AppSidebar({ pathname }: { pathname: string }) {
               }`}
             >
               <Icon className="h-[18px] w-[18px]" />
-              {"key" in item ? t(`common.${item.key}`) : lang === "th" ? item.labelTh : item.labelEn}
+              {item.href === "/pricing" ? pricingLabel : "key" in item ? t(`common.${item.key}`) : lang === "th" ? item.labelTh : item.labelEn}
             </Link>
           );
         })}

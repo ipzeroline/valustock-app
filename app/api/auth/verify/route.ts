@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { isDbConnected, query } from "@/lib/db";
-import { verifyToken } from "@/lib/auth";
+import { shouldRefreshToken, signToken, verifyToken } from "@/lib/auth";
 import { validateActiveSession } from "@/lib/sessions";
 
 export async function POST(req: Request) {
@@ -54,6 +54,10 @@ export async function POST(req: Request) {
       );
     }
 
+    const refreshedToken = shouldRefreshToken(payload.exp)
+      ? signToken({ email, name, sessionId })
+      : null;
+
     return NextResponse.json({
       success: true,
       email,
@@ -61,6 +65,8 @@ export async function POST(req: Request) {
       plan,
       billing,
       sessionId,
+      token: refreshedToken || token,
+      tokenRefreshed: Boolean(refreshedToken),
     });
   } catch (err: any) {
     console.error("Token verification exception:", err.message);
