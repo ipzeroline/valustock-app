@@ -30,6 +30,8 @@ type TelegramState = {
   telegramUsername: string | null;
   chatIdMask: string | null;
   notificationsEnabled: boolean;
+  watchlistDigestEnabled: boolean;
+  watchlistDigestFrequency: "daily" | "weekly";
   connectedAt: string | null;
   lastTestAt: string | null;
   botUsername: string | null;
@@ -122,6 +124,52 @@ export default function AccountPage() {
       await loadTelegram();
     } catch (err) {
       setTelegramMessage(err instanceof Error ? err.message : "Telegram test failed");
+    } finally {
+      setTelegramLoading(false);
+    }
+  };
+
+  const sendWatchlistSummary = async () => {
+    if (!authToken) return;
+    setTelegramLoading(true);
+    setTelegramMessage("");
+    try {
+      const res = await fetch("/api/account/telegram", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${authToken}` },
+        body: JSON.stringify({ action: "watchlist_summary" }),
+      });
+      const data = await res.json();
+      if (!res.ok || !data.success) throw new Error(data.error || "Watchlist summary failed");
+      setTelegramMessage(lang === "th" ? "ส่งสรุปรายการโปรดเข้า Telegram แล้ว" : "Watchlist summary sent to Telegram.");
+      await loadTelegram();
+    } catch (err) {
+      setTelegramMessage(err instanceof Error ? err.message : "Watchlist summary failed");
+    } finally {
+      setTelegramLoading(false);
+    }
+  };
+
+  const updateTelegramDigest = async (enabled: boolean, frequency: "daily" | "weekly" = telegram?.watchlistDigestFrequency || "daily") => {
+    if (!authToken) return;
+    setTelegramLoading(true);
+    setTelegramMessage("");
+    try {
+      const res = await fetch("/api/account/telegram", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${authToken}` },
+        body: JSON.stringify({
+          action: "update_preferences",
+          watchlistDigestEnabled: enabled,
+          watchlistDigestFrequency: frequency,
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok || !data.success) throw new Error(data.error || "Unable to update Telegram preferences");
+      setTelegram(data.telegram);
+      setTelegramMessage(lang === "th" ? "บันทึกการตั้งค่า Telegram แล้ว" : "Telegram preferences saved.");
+    } catch (err) {
+      setTelegramMessage(err instanceof Error ? err.message : "Unable to update Telegram preferences");
     } finally {
       setTelegramLoading(false);
     }
@@ -406,6 +454,41 @@ export default function AccountPage() {
                         </span>
                       </div>
                     </div>
+                    <div className="mt-3 rounded-xl border border-line/70 bg-bg/35 p-3">
+                      <div className="text-[10px] font-black uppercase tracking-wide text-sky-300">
+                        {lang === "th" ? "ข้อมูลที่ ValuStock ใช้" : "Data ValuStock Uses"}
+                      </div>
+                      <div className="mt-2 grid gap-2 text-[11px] font-semibold leading-relaxed text-muted sm:grid-cols-3">
+                        <span>{lang === "th" ? "อีเมลสมาชิก" : "Member email"}</span>
+                        <span>{lang === "th" ? "Telegram chat id" : "Telegram chat ID"}</span>
+                        <span>{lang === "th" ? "สถานะเปิดแจ้งเตือน" : "Alert status"}</span>
+                      </div>
+                      <p className="mt-2 text-[11px] font-semibold leading-relaxed text-muted">
+                        {lang === "th"
+                          ? "ข้อมูลนี้ใช้เฉพาะสำหรับส่งแจ้งเตือนจาก ValuStock Bot ไปยังบัญชี Telegram ของคุณเท่านั้น ไม่แสดง chat id เต็มบนหน้าเว็บ และยกเลิกการเชื่อมต่อได้ทุกเมื่อ"
+                          : "This data is used only to deliver ValuStock Bot alerts to your Telegram account. Full chat IDs are hidden on the web and can be disconnected anytime."}
+                      </p>
+                    </div>
+                    <div className="mt-3 rounded-xl border border-brand/25 bg-brand/10 p-3">
+                      <div className="text-[10px] font-black uppercase tracking-wide text-brand">
+                        {lang === "th" ? "Telegram จะส่งอะไรให้สมาชิก" : "What Telegram Sends"}
+                      </div>
+                      <div className="mt-2 grid gap-2 text-[11px] font-semibold leading-relaxed text-muted sm:grid-cols-2">
+                        <div className="rounded-lg border border-line/60 bg-bg/35 p-2">
+                          <span className="block font-black text-ink">{lang === "th" ? "Alert ทันที" : "Instant alerts"}</span>
+                          {lang === "th" ? "ราคาถึงเป้า, MOS เข้าเกณฑ์, หุ้นที่ตั้ง alert ไว้" : "Target price hits, MOS conditions, configured alert symbols"}
+                        </div>
+                        <div className="rounded-lg border border-line/60 bg-bg/35 p-2">
+                          <span className="block font-black text-ink">{lang === "th" ? "สรุปรายการโปรด" : "Watchlist summary"}</span>
+                          {lang === "th" ? "ส่งครบทุกตัวใน Watchlist และแบ่งข้อความให้อ่านง่าย" : "All Watchlist stocks, split into readable message batches"}
+                        </div>
+                      </div>
+                      <p className="mt-2 text-[11px] font-semibold leading-relaxed text-muted">
+                        {lang === "th"
+                          ? "ทุกตัวจะมีราคา, Fair Value, MOS, Dividend Yield, เหตุผลที่ติดตาม และลิงก์กลับไปหน้าหุ้น โดยใช้คำว่าเข้าโซนติดตาม ไม่ใช่คำแนะนำซื้อขาย"
+                          : "Every stock includes price, fair value, MOS, dividend yield, reason, and a stock link. Messages are watch signals, not buy/sell advice."}
+                      </p>
+                    </div>
                   </div>
                 </div>
                 <div className="flex shrink-0 flex-wrap gap-2 sm:justify-end">
@@ -428,6 +511,11 @@ export default function AccountPage() {
                       <div className="text-[10px] font-black uppercase tracking-wide text-sky-300">
                         {lang === "th" ? "ส่งคำสั่งนี้ให้ Bot ภายใน 10 นาที" : "Send this command to the bot within 10 minutes"}
                       </div>
+                      <p className="mt-1 text-[11px] font-semibold leading-relaxed text-muted">
+                        {lang === "th"
+                          ? "ใช้โค้ดนี้ครั้งเดียวเพื่อยืนยันว่า Telegram นี้เป็นของสมาชิกที่ล็อกอินอยู่"
+                          : "Use this one-time code to confirm this Telegram account belongs to the logged-in member."}
+                      </p>
                       <div className="mt-2 rounded-xl border border-line bg-bg px-3 py-2 font-mono text-sm font-black text-ink [overflow-wrap:anywhere]">
                         {telegramCode.command}
                       </div>
@@ -450,8 +538,8 @@ export default function AccountPage() {
                 <div className="text-[11px] font-semibold leading-relaxed text-muted">
                   {plan.limits.alerts
                     ? lang === "th"
-                      ? "Premium/Lifetime สามารถส่งข้อความทดสอบและรับ alert จริงเมื่อ worker ตรวจพบเงื่อนไข"
-                      : "Premium/Lifetime can send test messages and receive real alerts when the alert worker detects matching conditions."
+                      ? "Premium/Lifetime สามารถส่งข้อความทดสอบและรับแจ้งเตือนจริงเมื่อราคาหรือ MOS เข้าเงื่อนไขที่ตั้งไว้"
+                      : "Premium/Lifetime can send test messages and receive real alerts when price or MOS conditions match."
                     : lang === "th"
                       ? "เชื่อมบัญชีไว้ล่วงหน้าได้ แต่การส่ง alert ใช้งานใน Premium/Lifetime"
                       : "You can connect in advance. Alert delivery is available on Premium/Lifetime."}
@@ -465,6 +553,46 @@ export default function AccountPage() {
                       {lang === "th" ? "ยกเลิกเชื่อมต่อ" : "Disconnect"}
                     </Button>
                   )}
+                </div>
+              </div>
+
+              <div className="border-t border-line/60 bg-bg/25 p-4">
+                <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                  <div>
+                    <div className="text-sm font-black text-ink">
+                      {lang === "th" ? "สรุปรายการโปรดผ่าน Telegram" : "Telegram Watchlist Summary"}
+                    </div>
+                    <p className="mt-1 text-[11px] font-semibold leading-relaxed text-muted">
+                      {lang === "th"
+                        ? "ส่งสรุปหุ้นครบทุกตัวจาก Watchlist ของคุณ โดยจัดอันดับจาก MOS, Dividend Yield และการเปลี่ยนแปลงราคา หากมีหลายตัวระบบจะแบ่งเป็นหลายข้อความ"
+                        : "Send every stock in your Watchlist, ranked by MOS, dividend yield, and price movement. Large lists are split into multiple messages."}
+                    </p>
+                  </div>
+                  <div className="flex shrink-0 flex-wrap gap-2">
+                    <Button
+                      size="sm"
+                      variant={telegram?.watchlistDigestEnabled ? "primary" : "outline"}
+                      onClick={() => updateTelegramDigest(!telegram?.watchlistDigestEnabled)}
+                      disabled={telegramLoading || !authToken}
+                    >
+                      {telegram?.watchlistDigestEnabled
+                        ? lang === "th" ? "เปิด Digest" : "Digest on"
+                        : lang === "th" ? "ปิด Digest" : "Digest off"}
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => updateTelegramDigest(true, telegram?.watchlistDigestFrequency === "weekly" ? "daily" : "weekly")}
+                      disabled={telegramLoading || !authToken}
+                    >
+                      {telegram?.watchlistDigestFrequency === "weekly"
+                        ? lang === "th" ? "รายสัปดาห์" : "Weekly"
+                        : lang === "th" ? "รายวัน" : "Daily"}
+                    </Button>
+                    <Button size="sm" variant="gold" onClick={sendWatchlistSummary} disabled={telegramLoading || !telegram?.connected || !plan.limits.alerts}>
+                      {lang === "th" ? "ส่งสรุปทดสอบ" : "Send summary"}
+                    </Button>
+                  </div>
                 </div>
               </div>
 

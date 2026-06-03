@@ -65,8 +65,10 @@ export async function POST(req: Request) {
       text: [
         "<b>ValuStock Telegram Alerts</b>",
         "",
-        "โค้ดเชื่อมต่อหมดอายุหรือไม่ถูกต้อง",
-        "กรุณากลับไปที่หน้า Account แล้วสร้างโค้ดใหม่",
+        "ไม่สามารถเชื่อมต่อบัญชีได้",
+        "โค้ดนี้หมดอายุหรือไม่ถูกต้อง",
+        "",
+        "กรุณากลับไปที่หน้า Account ของ ValuStock แล้วกดสร้างโค้ดใหม่",
       ].join("\n"),
     }).catch(() => {
       /* Telegram already reached us; do not fail webhook delivery for a reply error. */
@@ -92,8 +94,13 @@ export async function POST(req: Request) {
     text: [
       "<b>ValuStock Telegram Alerts</b>",
       "",
-      `เชื่อมต่อบัญชี <b>${match.user_email}</b> สำเร็จ`,
-      "คุณจะได้รับการแจ้งเตือนราคาหุ้นและ Margin of Safety จาก Alert Center เมื่อเปิดใช้งาน",
+      "เชื่อมต่อ Telegram สำเร็จ",
+      `บัญชี: <b>${match.user_email}</b>`,
+      "",
+      "คุณสามารถกลับไปที่หน้า Account แล้วกดรีเฟรชเพื่อตรวจสอบสถานะ",
+      "เมื่อเปิดใช้งาน Alert Center ระบบจะส่งแจ้งเตือนราคาและ Margin of Safety มาที่ Telegram นี้",
+      "",
+      "หากต้องการหยุดรับแจ้งเตือน สามารถยกเลิกการเชื่อมต่อได้จากหน้า Account",
     ].join("\n"),
   }).catch(() => {
     /* keep connection even if confirmation reply fails */

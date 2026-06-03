@@ -61,6 +61,7 @@ export async function ensureColumn(table: string, column: string, definition: st
     "newsletter_subscribers",
     "reviews",
     "telegram_connections",
+    "telegram_delivery_logs",
   ]);
 
   if (!allowedTables.has(table)) {
@@ -128,11 +129,28 @@ export async function initDatabase(): Promise<boolean> {
         connect_code_hash VARCHAR(128),
         connect_code_expires_at TIMESTAMP NULL,
         notifications_enabled BOOLEAN DEFAULT TRUE,
+        watchlist_digest_enabled BOOLEAN DEFAULT TRUE,
+        watchlist_digest_frequency VARCHAR(20) DEFAULT 'daily',
         connected_at TIMESTAMP NULL,
         last_test_at TIMESTAMP NULL,
         updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
         INDEX idx_telegram_code (connect_code_hash, connect_code_expires_at),
         INDEX idx_telegram_chat (telegram_chat_id)
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+    `);
+
+    await query(`
+      CREATE TABLE IF NOT EXISTS telegram_delivery_logs (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        user_email VARCHAR(255) NOT NULL,
+        delivery_type VARCHAR(50) NOT NULL,
+        delivery_date VARCHAR(10) NOT NULL,
+        status VARCHAR(30) DEFAULT 'sent',
+        messages_sent INT DEFAULT 0,
+        error TEXT,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        UNIQUE KEY unique_telegram_delivery (user_email, delivery_type, delivery_date),
+        INDEX idx_telegram_delivery_date (delivery_type, delivery_date)
       ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
     `);
 
@@ -321,9 +339,20 @@ export async function initDatabase(): Promise<boolean> {
     await ensureColumn("telegram_connections", "connect_code_hash", "VARCHAR(128)");
     await ensureColumn("telegram_connections", "connect_code_expires_at", "TIMESTAMP NULL");
     await ensureColumn("telegram_connections", "notifications_enabled", "BOOLEAN DEFAULT TRUE");
+    await ensureColumn("telegram_connections", "watchlist_digest_enabled", "BOOLEAN DEFAULT TRUE");
+    await ensureColumn("telegram_connections", "watchlist_digest_frequency", "VARCHAR(20) DEFAULT 'daily'");
     await ensureColumn("telegram_connections", "connected_at", "TIMESTAMP NULL");
     await ensureColumn("telegram_connections", "last_test_at", "TIMESTAMP NULL");
     await ensureColumn("telegram_connections", "updated_at", "TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP");
+
+    await ensureColumn("telegram_delivery_logs", "id", "INT AUTO_INCREMENT PRIMARY KEY");
+    await ensureColumn("telegram_delivery_logs", "user_email", "VARCHAR(255) NOT NULL");
+    await ensureColumn("telegram_delivery_logs", "delivery_type", "VARCHAR(50) NOT NULL");
+    await ensureColumn("telegram_delivery_logs", "delivery_date", "VARCHAR(10) NOT NULL");
+    await ensureColumn("telegram_delivery_logs", "status", "VARCHAR(30) DEFAULT 'sent'");
+    await ensureColumn("telegram_delivery_logs", "messages_sent", "INT DEFAULT 0");
+    await ensureColumn("telegram_delivery_logs", "error", "TEXT");
+    await ensureColumn("telegram_delivery_logs", "created_at", "TIMESTAMP DEFAULT CURRENT_TIMESTAMP");
 
     await ensureColumn("articles", "slug", "VARCHAR(255) UNIQUE NOT NULL");
     await ensureColumn("articles", "title", "VARCHAR(255) NOT NULL");
