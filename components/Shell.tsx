@@ -25,7 +25,7 @@ import {
 } from "@/lib/icons";
 import { Button } from "./ui/Button";
 
-const MARKETING = ["/", "/pricing", "/login", "/contact"];
+const MARKETING = ["/", "/about", "/pricing", "/login", "/contact"];
 function Logo({ compact = false }: { compact?: boolean }) {
   return (
     <Link href="/" className="flex shrink-0 items-center gap-2.5">
@@ -75,7 +75,7 @@ function LangToggle() {
 function MarketingHeader() {
   const { user } = useStore();
   const [open, setOpen] = useState(false);
-  const { t } = useTranslation();
+  const { t, lang } = useTranslation();
   return (
     <header className="sticky top-0 z-40 border-b border-line/60 bg-bg/80 backdrop-blur-xl">
       <div className="mx-auto flex h-16 max-w-6xl items-center justify-between px-5">
@@ -83,6 +83,7 @@ function MarketingHeader() {
         <nav className="hidden items-center gap-7 text-sm text-muted md:flex">
           <Link href="/#features" className="hover:text-ink">{t("common.features")}</Link>
           <Link href="/stocks" className="hover:text-ink">{t("common.searchStocks")}</Link>
+          <Link href="/about" className="hover:text-ink">{lang === "th" ? "เกี่ยวกับเรา" : "About"}</Link>
           <Link href="/pricing" className="hover:text-ink">{t("common.pricing")}</Link>
           <Link href="/contact" className="hover:text-ink">ติดต่อทีมงาน</Link>
         </nav>
@@ -117,6 +118,7 @@ function MarketingHeader() {
           <div className="flex flex-col gap-1 text-sm">
             <Link href="/#features" onClick={() => setOpen(false)} className="rounded-lg px-3 py-2.5 hover:bg-elevate">{t("common.features")}</Link>
             <Link href="/stocks" onClick={() => setOpen(false)} className="rounded-lg px-3 py-2.5 hover:bg-elevate">{t("common.searchStocks")}</Link>
+            <Link href="/about" onClick={() => setOpen(false)} className="rounded-lg px-3 py-2.5 hover:bg-elevate">{lang === "th" ? "เกี่ยวกับเรา" : "About"}</Link>
             <Link href="/pricing" onClick={() => setOpen(false)} className="rounded-lg px-3 py-2.5 hover:bg-elevate">{t("common.pricing")}</Link>
             <Link href="/contact" onClick={() => setOpen(false)} className="rounded-lg px-3 py-2.5 hover:bg-elevate">ติดต่อทีมงาน</Link>
             <Link href="/login" onClick={() => setOpen(false)} className="rounded-lg px-3 py-2.5 hover:bg-elevate">{t("common.logIn")}</Link>
@@ -124,6 +126,106 @@ function MarketingHeader() {
         </div>
       )}
     </header>
+  );
+}
+
+function SiteFooter() {
+  const { lang } = useTranslation();
+  const year = new Date().getFullYear();
+  const groups = [
+    {
+      title: lang === "th" ? "เครื่องมือวิเคราะห์หุ้น" : "Stock Tools",
+      links: [
+        { href: "/stocks", label: lang === "th" ? "โปรแกรมคัดกรองหุ้น" : "Stock Screener" },
+        { href: "/undervalued-stocks", label: lang === "th" ? "หุ้น Undervalue" : "Undervalued Stocks" },
+        { href: "/dividend-stocks", label: lang === "th" ? "หุ้นปันผลสูง" : "Dividend Stocks" },
+        { href: "/dcf-calculator", label: "DCF Calculator" },
+        { href: "/compare", label: lang === "th" ? "เปรียบเทียบหุ้น" : "Compare Stocks" },
+      ],
+    },
+    {
+      title: lang === "th" ? "บทความ SEO ยอดนิยม" : "Popular Research",
+      links: [
+        { href: "/blog/best-stocks-to-buy-thailand-2026", label: lang === "th" ? "หุ้นตัวไหนดี 2569" : "Best Thai Stocks 2026" },
+        { href: "/blog/high-dividend-stocks-thailand-2026", label: lang === "th" ? "หุ้นปันผลสูง 2569" : "High Dividend Stocks" },
+        { href: "/blog/tisco-stock-worth-buying", label: "TISCO" },
+        { href: "/blog/kbank-stock-worth-buying", label: "KBANK" },
+        { href: "/blog/pttep-stock-worth-buying", label: "PTTEP" },
+      ],
+    },
+    {
+      title: lang === "th" ? "หุ้นอเมริกาและ ETF" : "US Stocks & ETFs",
+      links: [
+        { href: "/blog/how-to-invest-sp500-thailand", label: "S&P 500" },
+        { href: "/blog/how-to-invest-nasdaq-thailand", label: "Nasdaq" },
+        { href: "/blog/how-to-buy-nasdaq-100-etf", label: "Nasdaq-100 ETF" },
+        { href: "/stocks/spy", label: "SPY" },
+        { href: "/stocks/qqq", label: "QQQ" },
+      ],
+    },
+    {
+      title: lang === "th" ? "บริษัทและความปลอดภัย" : "Company & Trust",
+      links: [
+        { href: "/about", label: lang === "th" ? "เกี่ยวกับ ValuStock" : "About ValuStock" },
+        { href: "/methodology", label: lang === "th" ? "วิธีคำนวณมูลค่า" : "Methodology" },
+        { href: "/disclaimer", label: lang === "th" ? "ข้อปฏิเสธความรับผิด" : "Disclaimer" },
+        { href: "/privacy", label: lang === "th" ? "นโยบายความเป็นส่วนตัว" : "Privacy Policy" },
+        { href: "/contact", label: lang === "th" ? "ติดต่อทีมงาน" : "Contact" },
+      ],
+    },
+  ];
+
+  return (
+    <footer className="border-t border-line bg-surface/60">
+      <div className="mx-auto max-w-6xl px-5 py-10">
+        <div className="grid gap-8 lg:grid-cols-[1.15fr_2fr]">
+          <div>
+            <Logo />
+            <p className="mt-4 max-w-sm text-xs font-semibold leading-relaxed text-muted">
+              {lang === "th"
+                ? "ValuStock คือเครื่องมือวิเคราะห์หุ้นสำหรับนักลงทุนไทย ช่วยประเมินมูลค่าหุ้นไทย หุ้นอเมริกา ETF ด้วย DCF, Fair Value, Margin of Safety และหุ้นปันผลสูง"
+                : "ValuStock helps Thai investors analyze Thai stocks, U.S. stocks, ETFs, DCF, fair value, margin of safety and dividend opportunities."}
+            </p>
+            <div className="mt-4 flex flex-wrap gap-2">
+              {["DCF", "Fair Value", "Undervalue", "Dividend", "ETF"].map((item) => (
+                <span key={item} className="rounded-full border border-line bg-bg px-2.5 py-1 text-[10px] font-bold text-muted">
+                  {item}
+                </span>
+              ))}
+            </div>
+          </div>
+
+          <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
+            {groups.map((group) => (
+              <div key={group.title}>
+                <h2 className="font-display text-sm font-black text-ink">{group.title}</h2>
+                <div className="mt-3 space-y-2">
+                  {group.links.map((link) => (
+                    <Link key={link.href} href={link.href} className="block text-xs font-semibold text-muted hover:text-brand">
+                      {link.label}
+                    </Link>
+                  ))}
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        <div className="mt-8 border-t border-line pt-5 text-[11px] font-semibold leading-relaxed text-muted">
+          <p>
+            {lang === "th"
+              ? "ข้อมูลบน ValuStock จัดทำเพื่อการศึกษาและการวิเคราะห์เท่านั้น ไม่ใช่คำแนะนำซื้อ ขาย หรือถือหลักทรัพย์ นักลงทุนควรตรวจสอบข้อมูลล่าสุดและประเมินความเสี่ยงด้วยตนเองก่อนตัดสินใจลงทุน"
+              : "ValuStock content is for education and research only. It is not personalized investment advice. Investors should verify current data and assess risk before making decisions."}
+          </p>
+          <div className="mt-3 flex flex-wrap items-center gap-x-3 gap-y-1">
+            <span>© {year} ValuStock</span>
+            <Link href="/terms" className="hover:text-brand">{lang === "th" ? "เงื่อนไข" : "Terms"}</Link>
+            <Link href="/privacy" className="hover:text-brand">{lang === "th" ? "ความเป็นส่วนตัว" : "Privacy"}</Link>
+            <Link href="/disclaimer" className="hover:text-brand">{lang === "th" ? "ข้อชี้แจง" : "Disclaimer"}</Link>
+          </div>
+        </div>
+      </div>
+    </footer>
   );
 }
 
@@ -281,6 +383,7 @@ export function Shell({ children }: { children: React.ReactNode }) {
       <div className="min-h-screen">
         <MarketingHeader />
         <main>{children}</main>
+        <SiteFooter />
       </div>
     );
   }

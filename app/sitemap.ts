@@ -7,6 +7,7 @@ const SITE_URL = "https://valustock.com";
 
 const staticRoutes = [
   "",
+  "/about",
   "/stocks",
   "/pricing",
   "/contact",
