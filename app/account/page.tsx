@@ -22,6 +22,7 @@ import {
   Shield,
   MessageSquare,
   Key,
+  ArrowRight,
 } from "@/lib/icons";
 
 type TelegramState = {
@@ -488,6 +489,55 @@ export default function AccountPage() {
                           ? "ทุกตัวจะมีราคา, Fair Value, MOS, Dividend Yield, เหตุผลที่ติดตาม และลิงก์กลับไปหน้าหุ้น โดยใช้คำว่าเข้าโซนติดตาม ไม่ใช่คำแนะนำซื้อขาย"
                           : "Every stock includes price, fair value, MOS, dividend yield, reason, and a stock link. Messages are watch signals, not buy/sell advice."}
                       </p>
+                    </div>
+                    <div className="mt-3 rounded-xl border border-gold/30 bg-gold/10 p-3">
+                      <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                        <div className="min-w-0">
+                          <div className="text-[10px] font-black uppercase tracking-wide text-gold">
+                            {lang === "th" ? "Telegram Mini App" : "Telegram Mini App"}
+                          </div>
+                          <p className="mt-1 text-[11px] font-semibold leading-relaxed text-muted">
+                            {lang === "th"
+                              ? "Mini App ไม่ต้อง login เว็บซ้ำ ระบบใช้ Telegram ที่เชื่อมจากหน้านี้เป็นกุญแจยืนยันตัวตน แล้วดึงข้อมูลสมาชิกจากบัญชีที่ผูกไว้เท่านั้น"
+                              : "The Mini App does not require another web login. It uses this connected Telegram account as the identity key and only loads data for the linked member account."}
+                          </p>
+                          <div className="mt-2 grid gap-2 text-[11px] font-semibold leading-relaxed text-muted sm:grid-cols-2">
+                            {[
+                              lang === "th" ? "Portfolio summary" : "Portfolio summary",
+                              lang === "th" ? "Compare Sets ที่บันทึกไว้" : "Saved Compare Sets",
+                              lang === "th" ? "Watchlist แบบย่อ" : "Compact Watchlist",
+                              lang === "th" ? "ส่ง Watchlist Summary" : "Send Watchlist Summary",
+                              lang === "th" ? "ส่ง Compare Alert รายชุด" : "Send Compare Set Alerts",
+                            ].map((item) => (
+                              <span key={item} className="rounded-lg border border-line/60 bg-bg/35 px-2 py-1">
+                                {item}
+                              </span>
+                            ))}
+                          </div>
+                        </div>
+                        <div className="flex shrink-0 flex-wrap gap-2">
+                          {telegram?.botUsername && (
+                            <a href={`https://t.me/${telegram.botUsername}`} target="_blank" rel="noreferrer">
+                              <Button size="sm" variant="gold" disabled={!telegram?.connected}>
+                                {lang === "th" ? "เปิด Bot" : "Open Bot"}
+                                <ArrowRight className="h-4 w-4" />
+                              </Button>
+                            </a>
+                          )}
+                          <Link href="/telegram">
+                            <Button size="sm" variant="outline">
+                              {lang === "th" ? "ดูหน้า Mini App" : "Preview"}
+                            </Button>
+                          </Link>
+                        </div>
+                      </div>
+                      {!telegram?.connected && (
+                        <p className="mt-2 text-[11px] font-bold text-gold">
+                          {lang === "th"
+                            ? "ต้องเชื่อม Telegram ก่อน Mini App จึงจะดึง Portfolio, Compare และ Watchlist ได้"
+                            : "Connect Telegram first before the Mini App can load Portfolio, Compare, and Watchlist data."}
+                        </p>
+                      )}
                     </div>
                   </div>
                 </div>

@@ -190,7 +190,7 @@ export default function TelegramMiniAppPage() {
               <p className="mt-1 text-xs font-semibold leading-relaxed text-muted">
                 {summary
                   ? `${summary.member.email} · ${summary.member.plan.toUpperCase()}`
-                  : "เปิดจาก Telegram เพื่อดูข้อมูลสมาชิกแบบปลอดภัย"}
+                  : "ใช้ Telegram connection key จากหน้า Account ไม่ต้อง login เว็บซ้ำ"}
               </p>
             </div>
             <button
@@ -212,7 +212,7 @@ export default function TelegramMiniAppPage() {
               ต้องเปิดผ่าน Telegram
             </div>
             <p className="mt-2">
-              หน้านี้ต้องเปิดจาก Mini App ของ @valustockbot เพื่อให้ระบบตรวจตัวตนด้วย Telegram initData
+              หน้านี้ต้องเปิดจาก Mini App ของ @valustockbot ระบบจะใช้ Telegram connection key ที่เชื่อมจากหน้า Account เพื่อดึง Portfolio, Compare Sets และ Watchlist โดยไม่ต้อง login เว็บซ้ำ
             </p>
             <Link href="/" className="mt-3 inline-flex items-center gap-1 text-brand">
               กลับเว็บหลัก <ArrowRight className="h-4 w-4" />
