@@ -252,7 +252,7 @@ export default function Dashboard() {
       </section>
 
       {/* 3. REAL-TIME MARKET INDICES ROW */}
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
         <MarketIndexCard
           title={t("dashboard.thaiMarket")}
           value="1,385.42"
@@ -948,17 +948,17 @@ function MarketIndexCard({
 }) {
   const data = points.map((v) => parseFloat(v));
   return (
-    <Card className="p-4 border border-line flex items-center justify-between bg-surface/30">
-      <div>
-        <span className="text-xs text-muted font-bold">{title}</span>
-        <div className="mt-1 flex items-baseline gap-2">
-          <span className="num font-display text-lg font-bold text-ink">{value}</span>
-          <span className={`num text-xs font-semibold ${up ? "text-up" : "text-down"}`}>
+    <Card className="flex min-w-0 items-center justify-between gap-3 overflow-hidden border border-line bg-surface/30 p-4">
+      <div className="min-w-0 flex-1">
+        <span className="block truncate text-xs font-bold text-muted" title={title}>{title}</span>
+        <div className="mt-1 flex min-w-0 flex-wrap items-baseline gap-x-2 gap-y-0.5">
+          <span className="num truncate font-display text-lg font-bold text-ink">{value}</span>
+          <span className={`num shrink-0 text-xs font-semibold ${up ? "text-up" : "text-down"}`}>
             {up ? "▲" : "▼"} {change}
           </span>
         </div>
       </div>
-      <div className="h-10 w-24 shrink-0">
+      <div className="h-10 w-20 shrink-0 overflow-hidden sm:w-24">
         <Sparkline data={data} up={up} />
       </div>
     </Card>
