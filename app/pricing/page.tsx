@@ -102,7 +102,7 @@ export default function PricingPage() {
   const defaultIncludedFeatures = lang === "th" 
     ? [
         "ข้อมูลหุ้นไทย SET และสหรัฐฯ",
-        "กราฟราคาย้อนหลัง",
+        "กราฟเส้นราคาย้อนหลังพื้นฐาน",
         "ธีมสว่าง/มืด",
         "ใช้งานบนมือถือและเดสก์ท็อป",
         "อัปเดตข้อมูลสม่ำเสมอ",
@@ -129,7 +129,7 @@ export default function PricingPage() {
       badge: lang === "th" ? "เริ่มต้น" : "Starter",
       desc:
         lang === "th"
-          ? "เหมาะสำหรับทดลองดูข้อมูลหุ้นพื้นฐาน กราฟย้อนหลัง และทำความเข้าใจมูลค่าหุ้นก่อนอัปเกรด"
+          ? "เหมาะสำหรับทดลองดูข้อมูลหุ้นพื้นฐาน กราฟเส้นย้อนหลัง และทำความเข้าใจมูลค่าหุ้นก่อนอัปเกรด"
           : "Best for trying core stock data, historical charts, and basic valuation concepts before upgrading.",
       points:
         lang === "th"
@@ -143,12 +143,12 @@ export default function PricingPage() {
       badge: lang === "th" ? "แนะนำ" : "Recommended",
       desc:
         lang === "th"
-          ? "เหมาะกับนักลงทุน VI ที่ต้องการคำนวณ DCF, Graham Number, คัดกรองหุ้น undervalue และติดตามหุ้นได้ไม่จำกัด"
-          : "Best for value investors who need DCF, Graham Number, undervalued stock screening, and unlimited watchlists.",
+          ? "เหมาะกับนักลงทุน VI ที่ต้องการ DCF, Screener, Portfolio Tracker และกราฟแท่งเทียนระดับเทคนิคสำหรับวิเคราะห์รายตัว"
+          : "Best for value investors who need DCF, screening, portfolio tracking, and a technical candlestick workspace.",
       points:
         lang === "th"
-          ? ["DCF และมูลค่าเหมาะสม", "สกรีนหุ้นราคาต่ำกว่ามูลค่า", "ดูหุ้นได้ครบทั้งระบบ"]
-          : ["DCF and fair value", "Undervalued stock screener", "Full asset access"],
+          ? ["DCF และมูลค่าเหมาะสม", "กราฟแท่งเทียน + Volume + Custom Range", "Indicators: MA, EMA, RSI, MACD, Bollinger"]
+          : ["DCF and fair value", "Candlesticks + volume + custom range", "Indicators: MA, EMA, RSI, MACD, Bollinger"],
     },
     {
       id: "premium" as PlanId,
@@ -157,12 +157,12 @@ export default function PricingPage() {
       badge: lang === "th" ? "ครบสุด" : "Full access",
       desc:
         lang === "th"
-          ? "เหมาะกับคนมีพอร์ตจริงจัง ต้องการเปรียบเทียบหุ้นหลายตัว ตั้งแจ้งเตือน MOS และส่งออกข้อมูลไปวิเคราะห์ต่อ"
-          : "Best for active portfolios that need comparisons, margin-of-safety alerts, and data exports.",
+          ? "เหมาะกับคนมีพอร์ตจริงจัง ต้องการเปรียบเทียบหุ้นหลายตัว ตั้ง Alert Center, ทำ Backtest/Scenario และส่งออกข้อมูลไปวิเคราะห์ต่อ"
+          : "Best for active portfolios that need comparisons, Alert Center, backtests/scenarios, and data exports.",
       points:
         lang === "th"
-          ? ["แนวคิดข้อมูลสดแบบ WebSocket", "แจ้งเตือนราคาต่ำกว่ามูลค่า", "ส่งออก CSV"]
-          : ["WebSocket-style live signals", "Below-value price alerts", "CSV export"],
+          ? ["Compare หุ้นหลายตัว", "Alert Center + MOS alerts", "Backtest, Scenario และ CSV Export"]
+          : ["Multi-asset comparison", "Alert Center + MOS alerts", "Backtest, scenarios, and CSV export"],
     },
     {
       id: "lifetime" as PlanId,
@@ -171,12 +171,12 @@ export default function PricingPage() {
       badge: lang === "th" ? "จ่ายครั้งเดียว" : "One-time",
       desc:
         lang === "th"
-          ? "เหมาะกับผู้ใช้ระยะยาวที่ต้องการ Premium ครบ พร้อมงาน export/backtest และแนวคิด bulk historical data จาก Flat Files"
+          ? "เหมาะกับผู้ใช้ระยะยาวที่ต้องการ Premium ครบ พร้อมงาน export/backtest/scenario และแนวคิด bulk historical data จาก Flat Files"
           : "Best for long-term users who want Premium access plus export/backtest workflows inspired by bulk historical flat files.",
       points:
         lang === "th"
-          ? ["จ่ายครั้งเดียว 888 บาท", "เหมาะกับใช้งานเกิน 10 เดือน", "รองรับงานข้อมูลย้อนหลังจำนวนมาก"]
-          : ["One-time 888 THB", "Best beyond 10 months", "Bulk historical workflow"],
+          ? ["จ่ายครั้งเดียว 888 บาท", "เหมาะกับใช้งานเกิน 10 เดือน", "Premium ครบทุกโมดูลตลอดชีพ"]
+          : ["One-time 888 THB", "Best beyond 10 months", "Lifetime Premium modules"],
     },
   ];
 
@@ -273,7 +273,7 @@ export default function PricingPage() {
   ];
 
   return (
-    <div className="mx-auto max-w-6xl px-5 py-16 space-y-12">
+    <div className="mx-auto w-full max-w-[100vw] overflow-x-hidden px-5 py-16 space-y-12 xl:max-w-6xl">
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredData) }}
@@ -283,10 +283,18 @@ export default function PricingPage() {
         <span className="chip border-gold/30 bg-gold/10 text-gold shadow-glow">
           <Crown className="h-3.5 w-3.5 text-gold" /> {t("common.pricing")}
         </span>
-        <h1 className="mt-4 font-display text-4xl font-extrabold tracking-tight md:text-5xl text-ink">
-          {t("pricing.title")}
+        <h1 className="mx-auto mt-4 max-w-[22rem] font-display text-3xl font-extrabold leading-tight tracking-tight text-ink [overflow-wrap:anywhere] sm:max-w-none sm:text-4xl md:text-5xl">
+          {lang === "th" ? (
+            <>
+              เลือกแพ็กเกจ
+              <br />
+              ที่เหมาะกับคุณ
+            </>
+          ) : (
+            t("pricing.title")
+          )}
         </h1>
-        <p className="mt-3 text-muted text-sm max-w-xl mx-auto leading-relaxed">
+        <p className="mx-auto mt-3 max-w-[20rem] text-sm leading-relaxed text-muted sm:max-w-xl">
           {lang === "th" 
             ? "เริ่มต้นฟรี ไม่ต้องใช้บัตรเครดิต เลือกสไตล์การลงทุนที่ตรงใจ ปลดล็อคฟีเจอร์ระดับสถาบันการเงินได้ทันที" 
             : "Start free, no credit card required. Upgrade or downgrade your plan anytime to fit your trading habits."}
@@ -347,7 +355,7 @@ export default function PricingPage() {
             return (
               <Card
                 key={guide.id}
-                className={`border p-5 ${
+                className={`min-w-0 border p-5 ${
                   guide.id === "pro"
                     ? "border-brand/55 bg-brand/5"
                     : "border-line bg-surface/35"
@@ -368,12 +376,12 @@ export default function PricingPage() {
                     <h3 className="font-display text-base font-black text-ink">{guide.title}</h3>
                   </div>
                 </div>
-                <p className="mt-3 text-xs font-semibold leading-relaxed text-muted">{guide.desc}</p>
+                <p className="mt-3 text-xs font-semibold leading-relaxed text-muted [overflow-wrap:anywhere]">{guide.desc}</p>
                 <ul className="mt-4 space-y-2">
                   {guide.points.map((point) => (
                     <li key={point} className="flex items-start gap-2 text-xs font-semibold text-ink/85">
                       <CheckCircle className="mt-0.5 h-3.5 w-3.5 shrink-0 text-brand" />
-                      <span>{point}</span>
+                      <span className="[overflow-wrap:anywhere]">{point}</span>
                     </li>
                   ))}
                 </ul>
@@ -457,7 +465,7 @@ export default function PricingPage() {
       <Card className="border border-line/80 overflow-hidden animate-fade-up [animation-delay:120ms] bg-surface/30">
         <CardHeader
           title={lang === "th" ? "ตารางเปรียบเทียบฟังก์ชันการใช้งานแบบละเอียด" : "Detailed Feature Comparison Matrix"}
-          subtitle={lang === "th" ? "เจาะลึก 12 ฟังก์ชันการวิเคราะห์ การแจ้งเตือน และการทำธุรกรรม" : "Granular breakdown of all 12 key financial terminal modules"}
+          subtitle={lang === "th" ? "เจาะลึก 15 ฟังก์ชันการวิเคราะห์ กราฟเทคนิค การแจ้งเตือน และพอร์ต" : "Granular breakdown of all 15 key research, charting, alert, and portfolio modules"}
           icon={<Layers className="h-4.5 w-4.5 text-brand" />}
         />
         <div className="overflow-x-auto">
@@ -503,73 +511,101 @@ export default function PricingPage() {
                 premium={lang === "th" ? "ปลดล็อคตัวกรองละเอียด" : "Unlocked Sliders"}
               />
               <MatrixRow
-                label={lang === "th" ? "5. การทดสอบย้อนหลังโมเดล" : "5. Valuation Backtesting"}
+                label={lang === "th" ? "5. Portfolio Backtest / Scenario DCF" : "5. Portfolio Backtest / Scenario DCF"}
                 free="❌"
                 freeStyle="muted"
                 pro="❌"
                 proStyle="muted"
-                premium={lang === "th" ? "ทดสอบประวัติย้อนหลังแม่นยำ" : "Valuation Backtest Engine"}
+                premium={lang === "th" ? "Backtest + Bull/Bear/Base Case" : "Backtest + Bull/Bear/Base Case"}
                 premiumStyle="gold"
               />
 
               {/* Category Header 2 */}
               <tr className="bg-elevate/25">
                 <td colSpan={5} className="px-5 py-2 font-display font-extrabold text-[10px] uppercase text-muted tracking-wider">
-                  🔔 {lang === "th" ? "การแจ้งเตือนราคาและความปลอดภัยพอร์ต" : "Notifications & Dynamic Price Alerts"}
+                  📊 {lang === "th" ? "กราฟราคาและเครื่องมือเทคนิค" : "Charting & Technical Tools"}
                 </td>
               </tr>
               <MatrixRow
-                label={lang === "th" ? "6. การแจ้งเตือนราคา & ความจำ" : "6. Price Alerts & Reminders"}
+                label={lang === "th" ? "6. กราฟราคาพื้นฐาน" : "6. Basic Price Chart"}
+                free={lang === "th" ? "กราฟเส้นย้อนหลัง" : "Historical line chart"}
+                pro={lang === "th" ? "กราฟเส้น + แท่งเทียน" : "Line + candlestick"}
+                premium={lang === "th" ? "กราฟเส้น + แท่งเทียน" : "Line + candlestick"}
+              />
+              <MatrixRow
+                label={lang === "th" ? "7. Technical Chart Workspace" : "7. Technical Chart Workspace"}
                 free="❌"
-                pro="❌"
-                premium={lang === "th" ? "ส่งเสียงเตือน/อีเมลสด" : "Live Push Alerts"}
+                pro={lang === "th" ? "Candlestick + Volume + Fullscreen" : "Candlestick + volume + fullscreen"}
+                premium={lang === "th" ? "Candlestick + Volume + Fullscreen" : "Candlestick + volume + fullscreen"}
                 premiumStyle="gold"
               />
               <MatrixRow
-                label={lang === "th" ? "7. การแจ้งเตือนราคาถูกของพอร์ต" : "7. Watchlist MOS Alerts"}
+                label={lang === "th" ? "8. Indicators และ Custom Range" : "8. Indicators & Custom Range"}
                 free="❌"
-                pro="❌"
-                premium={lang === "th" ? "เตือนทันทีเมื่อตกเขต MOS" : "Undervalued triggers"}
+                pro={lang === "th" ? "MA/EMA/RSI/MACD/Bollinger" : "MA/EMA/RSI/MACD/Bollinger"}
+                premium={lang === "th" ? "MA/EMA/RSI/MACD/Bollinger" : "MA/EMA/RSI/MACD/Bollinger"}
                 premiumStyle="gold"
               />
               <MatrixRow
-                label={lang === "th" ? "8. การแจ้งเตือนสูตรคัดกรองใหม่" : "8. Screener Match Alerts"}
+                label={lang === "th" ? "9. Drawing Tools" : "9. Drawing Tools"}
                 free="❌"
-                pro="❌"
-                premium={lang === "th" ? "เตือนเมื่อมีหุ้นตรงเงื่อนไขใหม่" : "Auto-screener matches"}
+                pro={lang === "th" ? "Support line + Trendline" : "Support line + trendline"}
+                premium={lang === "th" ? "Support line + Trendline" : "Support line + trendline"}
                 premiumStyle="gold"
               />
 
               {/* Category Header 3 */}
               <tr className="bg-elevate/25">
                 <td colSpan={5} className="px-5 py-2 font-display font-extrabold text-[10px] uppercase text-muted tracking-wider">
+                  🔔 {lang === "th" ? "การแจ้งเตือนราคาและความปลอดภัยพอร์ต" : "Notifications & Dynamic Price Alerts"}
+                </td>
+              </tr>
+              <MatrixRow
+                label={lang === "th" ? "10. Alert Center ในพอร์ต" : "10. Portfolio Alert Center"}
+                free="❌"
+                pro="❌"
+                premium={lang === "th" ? "ตั้งเงื่อนไขและติดตามสถานะ" : "Rules and status tracking"}
+                premiumStyle="gold"
+              />
+              <MatrixRow
+                label={lang === "th" ? "11. การแจ้งเตือน Margin of Safety" : "11. Margin-of-Safety Alerts"}
+                free="❌"
+                pro="❌"
+                premium={lang === "th" ? "เตือนเมื่อหุ้นเข้าโซน MOS" : "Undervalued triggers"}
+                premiumStyle="gold"
+              />
+              <MatrixRow
+                label={lang === "th" ? "12. ช่องทางแจ้งเตือน" : "12. Alert Channels"}
+                free="❌"
+                pro="❌"
+                premium={lang === "th" ? "In-app + Email + LINE" : "In-app + email + LINE"}
+                premiumStyle="gold"
+              />
+
+              {/* Category Header 4 */}
+              <tr className="bg-elevate/25">
+                <td colSpan={5} className="px-5 py-2 font-display font-extrabold text-[10px] uppercase text-muted tracking-wider">
                   💼 {lang === "th" ? "การจัดการพอร์ตและข่าวกระแสเงินสด" : "Portfolios, Watchlists & Inbound News"}
                 </td>
               </tr>
               <MatrixRow
-                label={lang === "th" ? "9. บันทึกซื้อขายกำไรลงทุน" : "9. Investment Portfolio Ledger"}
+                label={lang === "th" ? "13. บันทึกซื้อขายและ Portfolio Tracker" : "13. Investment Ledger & Portfolio Tracker"}
                 free="❌"
                 pro={lang === "th" ? "บันทึกพอร์ตต้นทุนเฉลี่ย" : "Virtual portfolio tracker"}
                 premium={lang === "th" ? "บันทึกพอร์ตต้นทุนเฉลี่ย" : "Virtual portfolio tracker"}
               />
               <MatrixRow
-                label={lang === "th" ? "10. ข่าวสารที่ลิ้งก์ตรงอิงหุ้น" : "10. News-Related Equities"}
+                label={lang === "th" ? "14. ข่าวสารที่ลิ้งก์ตรงอิงหุ้น" : "14. News-Related Equities"}
                 free={lang === "th" ? "หัวข้อข่าวย่อทั่วไป" : "Basic News"}
                 pro={lang === "th" ? "เจาะลึกข่าววิเคราะห์เชิงดัชนี" : "Audit Sentiment News"}
                 premium={lang === "th" ? "เจาะลึกข่าววิเคราะห์เชิงดัชนี" : "Audit Sentiment News"}
               />
               <MatrixRow
-                label={lang === "th" ? "11. จำนวน Watchlist" : "11. Watchlists Folder Capacity"}
+                label={lang === "th" ? "15. Watchlist และจำนวนหุ้นที่ติดตาม" : "15. Watchlists & Tracked Assets"}
                 free={lang === "th" ? "บันทึกได้ 3 รายการ" : "Track 3 items"}
                 pro={lang === "th" ? "ไม่จำกัดรายการ" : "Unlimited items"}
                 premium={lang === "th" ? "ไม่จำกัดรายการ" : "Unlimited items"}
                 premiumStyle="gold"
-              />
-              <MatrixRow
-                label={lang === "th" ? "12. จำนวนหุ้นในแต่ละ Watchlist" : "12. Watchlist Item Limits"}
-                free={lang === "th" ? "จำกัด 3 หุ้นต่อโฟลเดอร์" : "Max 3 Tickers"}
-                pro={lang === "th" ? "บันทึกได้ไม่จำกัด" : "Unlimited"}
-                premium={lang === "th" ? "บันทึกได้ไม่จำกัด" : "Unlimited"}
               />
             </tbody>
           </table>
@@ -647,8 +683,8 @@ export default function PricingPage() {
         </h2>
         <p className="mx-auto mt-2 max-w-2xl text-sm font-semibold leading-relaxed text-muted">
           {lang === "th"
-            ? "เริ่มจาก Free ได้เลย หรือเลือก Pro เพื่อปลดล็อก DCF, Graham Number, Stock Screener และ Watchlist แบบเต็มระบบ"
-            : "Start with Free, or choose Pro to unlock DCF, Graham Number, stock screening, and full watchlist access."}
+            ? "เริ่มจาก Free ได้เลย หรือเลือก Pro เพื่อปลดล็อก DCF, Stock Screener, Portfolio Tracker และ Technical Chart แบบเต็มระบบ"
+            : "Start with Free, or choose Pro to unlock DCF, screening, portfolio tracking, and the full Technical Chart workspace."}
         </p>
         <div className="mt-5 flex flex-col items-center justify-center gap-3 sm:flex-row">
           <Button size="lg" onClick={() => choose("pro")} className="w-full sm:w-auto">

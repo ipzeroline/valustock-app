@@ -144,27 +144,26 @@ export default function AdminOverview() {
         />
       </div>
 
-      {/* 3. Server Configuration Diagnostic & SSH Instructions */}
+      {/* 3. Server Configuration Diagnostic */}
       <Card className={`relative overflow-hidden border ${dbConnected ? "border-brand/30 bg-brand/5" : "border-gold/30 bg-gold/5"} p-6`}>
         <div className="aurora absolute inset-0 -z-10 opacity-30" />
         <h3 className="font-display font-bold text-sm text-ink flex items-center gap-2">
           <Sparkles className="h-4.5 w-4.5 text-gold shrink-0 animate-pulse" />
-          {lang === "th" ? "ระบบจัดการฐานข้อมูล SQL (165.22.247.92)" : "SQL Database Diagnostics (165.22.247.92)"}
+          {lang === "th" ? "ระบบจัดการฐานข้อมูล SQL" : "SQL Database Diagnostics"}
         </h3>
         <p className="text-xs text-muted leading-relaxed mt-2.5 max-w-4xl">
           {dbConnected
-            ? `การเชื่อมต่อฐานข้อมูลทำงานร่วมกับ MariaDB บนเซิร์ฟเวอร์หลักได้อย่างสมบูรณ์ ข้อมูลธุรกรรม สมาชิก watchlists บทความ และสิทธิ์เจ้าหน้าที่ทั้งหมดจัดเก็บอย่างปลอดภัยบน VPS (DB: ${dbInfo?.database}, User: ${dbInfo?.user})`
-            : `ฐานข้อมูลยังเชื่อมต่อไม่ได้ (${dbInfo?.code || "UNKNOWN"}): ${dbInfo?.error || "ตรวจสอบสิทธิ์ผู้ใช้ MariaDB และ remote grants บน VPS"}`}
+            ? `การเชื่อมต่อฐานข้อมูลทำงานร่วมกับ MariaDB ได้สมบูรณ์ ข้อมูลธุรกรรม สมาชิก watchlists บทความ และสิทธิ์เจ้าหน้าที่จัดเก็บบนฐานข้อมูล production (DB: ${dbInfo?.database || "configured"}, User: ${dbInfo?.user || "configured"})`
+            : `ฐานข้อมูลยังเชื่อมต่อไม่ได้ (${dbInfo?.code || "UNKNOWN"}): ${dbInfo?.error || "ตรวจสอบ DB_HOST, DB_NAME, DB_USER, DB_PASSWORD และสิทธิ์ผู้ใช้บน server"}`}
         </p>
 
         {!dbConnected && (
           <div className="mt-4 pt-4 border-t border-line/50 space-y-2">
-            <span className="text-xs font-bold text-ink block">🔗 คำสั่ง SQL รันบนเซิร์ฟเวอร์ VPS:</span>
+            <span className="text-xs font-bold text-ink block">🔗 แนวทางตรวจสอบฐานข้อมูล:</span>
             <div className="rounded-xl border border-line bg-bg p-3.5 text-xs font-mono text-ink leading-relaxed select-all">
-              CREATE USER IF NOT EXISTS 'vscpost_db'@'%' IDENTIFIED BY '&lt;DB_PASSWORD&gt;';<br />
-              ALTER USER 'vscpost_db'@'%' IDENTIFIED BY '&lt;DB_PASSWORD&gt;';<br />
-              GRANT ALL PRIVILEGES ON vscpost_db.* TO 'vscpost_db'@'%';<br />
-              FLUSH PRIVILEGES;
+              1. ตรวจสอบค่า DB_HOST, DB_PORT, DB_NAME, DB_USER, DB_PASSWORD บน production<br />
+              2. ตรวจสอบสิทธิ์ user ให้เข้าถึง database ที่กำหนดใน DB_NAME<br />
+              3. รัน migration/init เฉพาะผ่าน server shell หรือ deployment job ที่ปลอดภัย
             </div>
             <p className="text-[11px] font-semibold leading-relaxed text-muted">
               ใช้รหัสผ่านจริงจาก environment บน server เท่านั้น อย่าแสดงรหัสผ่านในหน้าเว็บหรือ commit ลง git

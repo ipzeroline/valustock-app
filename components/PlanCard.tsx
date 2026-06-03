@@ -21,7 +21,7 @@ export const PLAN_TRANS = {
       features: [
         "ดูข้อมูลหุ้นได้ 5 ตัว",
         "อัตราส่วนพื้นฐาน (P/E, P/B, ปันผล)",
-        "ราคาและกราฟย้อนหลัง",
+        "กราฟเส้นราคาย้อนหลัง",
         "บันทึกรายการโปรดได้ 3 ตัว",
       ]
     },
@@ -34,9 +34,10 @@ export const PLAN_TRANS = {
         "เครื่องคำนวณ DCF แบบปรับค่าได้",
         "Graham Number & มูลค่าเหมาะสม",
         "สกรีนเนอร์คัดกรองหุ้นถูก",
+        "กราฟแท่งเทียน + Volume",
+        "Technical Chart: MA, EMA, RSI, MACD",
         "รายการโปรดไม่จำกัด",
         "Portfolio Tracker ไม่จำกัด",
-        "อัตราส่วนการเงินครบทุกตัว",
       ]
     },
     premium: {
@@ -49,7 +50,8 @@ export const PLAN_TRANS = {
         "เปรียบเทียบหุ้นหลายตัวพร้อมกัน",
         "แจ้งเตือนเมื่อราคาต่ำกว่ามูลค่า",
         "ส่งออกข้อมูลเป็น CSV",
-        "สมมติฐานการประเมินขั้นสูง",
+        "Backtest และ Alert Center ในพอร์ต",
+        "สมมติฐาน/Scenario การประเมินขั้นสูง",
         "สนับสนุนแบบเร่งด่วน",
       ]
     },
@@ -75,7 +77,7 @@ export const PLAN_TRANS = {
       features: [
         "Research up to 5 assets",
         "Basic ratios (P/E, P/B, yield)",
-        "Historical prices & charts",
+        "Historical line price charts",
         "Track up to 3 watchlist items",
       ]
     },
@@ -88,9 +90,10 @@ export const PLAN_TRANS = {
         "Interactive DCF modeling engine",
         "Graham Number & Fair Value calculations",
         "High Margin-of-Safety stock screener",
+        "Candlestick chart with volume",
+        "Technical chart: MA, EMA, RSI, MACD",
         "Unlimited synced watchlist tracking",
         "Unlimited Portfolio Tracker",
-        "Full institutional financial ratios",
       ]
     },
     premium: {
@@ -103,7 +106,8 @@ export const PLAN_TRANS = {
         "Side-by-side asset comparison tool",
         "Under-intrinsic-value price alert triggers",
         "Prism direct exports (Excel & CSV)",
-        "Advanced valuation growth constraints",
+        "Portfolio backtest and Alert Center",
+        "Advanced valuation scenario workflows",
         "Institutional priority support",
       ]
     },
@@ -149,7 +153,7 @@ export function PlanCard({
 
   return (
     <div
-      className={`relative flex flex-col rounded-2xl border p-6 transition ${
+      className={`relative mx-auto flex w-full max-w-sm min-w-0 flex-col rounded-2xl border p-6 transition md:max-w-none ${
         highlight
           ? "border-brand bg-surface shadow-glow"
           : "border-line bg-surface"
@@ -176,9 +180,9 @@ export function PlanCard({
         >
           <Icon className="h-5 w-5" />
         </span>
-        <div>
+        <div className="min-w-0">
           <div className="font-display text-lg font-bold">{localPlan.name}</div>
-          <div className="text-xs text-muted">{localPlan.tagline}</div>
+          <div className="text-xs text-muted [overflow-wrap:anywhere]">{localPlan.tagline}</div>
         </div>
       </div>
 
@@ -202,7 +206,7 @@ export function PlanCard({
         {localPlan.features.map((f) => (
           <li key={f} className="flex items-start gap-2.5 text-sm">
             <Check className="mt-0.5 h-4 w-4 shrink-0 text-brand" />
-            <span className="text-ink/90">{f}</span>
+            <span className="min-w-0 text-ink/90 [overflow-wrap:anywhere]">{f}</span>
           </li>
         ))}
       </ul>

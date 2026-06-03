@@ -179,7 +179,7 @@ export default function AdminPayments() {
           <Sparkles className="h-4.5 w-4.5 text-gold animate-pulse shrink-0" />
           <span>
             {lang === "th"
-              ? "Sandbox Active: การกระทำทั้งหมดจัดเก็บลง Memory ชั่วคราวเนื่องจากเซิร์ฟเวอร์ฐานข้อมูล SQL 165.22.247.92 ปฏิเสธการเข้าถึง"
+              ? "Sandbox Active: การกระทำทั้งหมดจัดเก็บลง Memory ชั่วคราวเนื่องจากฐานข้อมูล production ยังเชื่อมต่อไม่ได้"
               : "Sandbox Active: Action is operating on memory state because MariaDB SQL server connection is offline."}
           </span>
         </div>

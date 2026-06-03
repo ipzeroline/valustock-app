@@ -17,9 +17,9 @@ export async function GET(req: Request) {
     connected: status.connected,
     error: status.error,
     code: status.code,
-    host: process.env.DB_HOST || "165.22.247.92",
-    database: process.env.DB_NAME || "vscpost_db",
-    user: process.env.DB_USER || "vscpost_db",
-    port: 3306,
+    host: process.env.DB_HOST || "not configured",
+    database: process.env.DB_NAME || "not configured",
+    user: process.env.DB_USER || "not configured",
+    port: Number(process.env.DB_PORT || 3306),
   });
 }

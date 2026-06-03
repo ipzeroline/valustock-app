@@ -10,7 +10,7 @@ export const PLANS: Plan[] = [
     features: [
       "ดูข้อมูลหุ้น TH & US ได้ 5 ตัว",
       "อัตราส่วนพื้นฐาน (P/E, P/B, ปันผล, ROA)",
-      "ราคาและกราฟราคาย้อนหลัง 3 ปี",
+      "กราฟเส้นราคาย้อนหลังพื้นฐาน",
       "บันทึกรายการโปรดได้ 3 ตัว",
     ],
     limits: {
@@ -42,6 +42,8 @@ export const PLANS: Plan[] = [
       "สแกนเนอร์หุ้น undervalue และ dividend",
       "เครื่องคำนวณ DCF & Graham Number",
       "ประวัติราคา/งบย้อนหลังสำหรับวิเคราะห์รายตัว",
+      "กราฟแท่งเทียนพร้อม Volume และ Custom Range",
+      "Technical Chart: MA, EMA, RSI, MACD, Bollinger",
       "Watchlist และ Portfolio Tracker ไม่จำกัด",
     ],
     limits: {
@@ -74,6 +76,7 @@ export const PLANS: Plan[] = [
       "ประเมิน DCF หลายสมมติฐาน (Bull/Bear/Base Case)",
       "แจ้งเตือนราคาและ Margin of Safety",
       "ส่งออกข้อมูลทางการเงินเป็นไฟล์ CSV",
+      "Backtest และ Alert Center สำหรับพอร์ต",
     ],
     limits: {
       maxStocks: "unlimited",
