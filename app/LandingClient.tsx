@@ -11,6 +11,7 @@ import { baht, dollar, pct, num } from "@/lib/format";
 import { Sparkline } from "@/components/Charts";
 import { AssetLogo } from "@/components/AssetLogo";
 import { useTranslation } from "@/lib/translations";
+import { getBlogArticle } from "@/lib/blogArticles";
 import {
   Calculator,
   Gauge,
@@ -35,6 +36,7 @@ interface Article {
   summary: string;
   tag: string;
   gradient: string;
+  href?: string;
 }
 
 interface ValuationOpportunity {
@@ -121,6 +123,46 @@ const FEATURED_ARTICLES_EN: Article[] = [
   }
 ];
 
+const homeBlogSlugs = [
+  "best-stocks-to-buy-thailand-2026",
+  "high-dividend-stocks-thailand-2026",
+  "tisco-stock-worth-buying",
+  "kbank-stock-worth-buying",
+  "pttep-stock-worth-buying",
+  "how-to-invest-sp500-thailand",
+];
+
+function buildHomeBlogArticles(lang: "th" | "en"): Article[] {
+  const tones = [
+    "from-emerald-600/20 to-teal-600/20 text-teal-400 border-teal-500/20",
+    "from-amber-600/20 to-red-600/20 text-amber-400 border-amber-500/20",
+    "from-blue-600/20 to-cyan-600/20 text-cyan-400 border-cyan-500/20",
+    "from-lime-600/20 to-emerald-600/20 text-emerald-400 border-emerald-500/20",
+    "from-orange-600/20 to-amber-600/20 text-amber-400 border-amber-500/20",
+    "from-violet-600/20 to-blue-600/20 text-blue-400 border-blue-500/20",
+  ];
+
+  const articles: Article[] = [];
+
+  homeBlogSlugs.forEach((slug, index) => {
+    const article = getBlogArticle(slug);
+    if (!article) return;
+    articles.push({
+        id: article.slug,
+        title: lang === "th" ? article.titleTh : article.titleEn,
+        category: lang === "th" ? article.category : article.category,
+        date: lang === "th" ? "3 มิ.ย. 2026" : "Jun 3, 2026",
+        readTime: article.readTime,
+        tag: article.symbol,
+        gradient: tones[index % tones.length],
+        summary: lang === "th" ? article.descriptionTh : article.descriptionEn,
+        href: `/blog/${article.slug}`,
+    });
+  });
+
+  return articles;
+}
+
 export default function Landing() {
   const { t, lang } = useTranslation();
   const demo = STOCKS[1]; // AOT
@@ -134,12 +176,46 @@ export default function Landing() {
   // Newsletter subscription states
   const [email, setEmail] = useState("");
   const [subscribed, setSubscribed] = useState(false);
+  const [subscribing, setSubscribing] = useState(false);
+  const [subscribeError, setSubscribeError] = useState("");
+  const [newsletterStartedAt, setNewsletterStartedAt] = useState(() => Date.now());
+  const [newsletterWebsite, setNewsletterWebsite] = useState("");
 
-  const handleSubscribe = (e: React.FormEvent) => {
+  const handleSubscribe = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (email.includes("@")) {
+    const normalizedEmail = email.trim().toLowerCase();
+    if (!normalizedEmail.includes("@")) return;
+
+    setSubscribing(true);
+    setSubscribeError("");
+    try {
+      const res = await fetch("/api/newsletter", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          email: normalizedEmail,
+          source: "landing-newsletter",
+          lang,
+          website: newsletterWebsite,
+          elapsedMs: Date.now() - newsletterStartedAt,
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        throw new Error(data.error || "Newsletter subscription failed");
+      }
       setSubscribed(true);
       setEmail("");
+      setNewsletterWebsite("");
+      setNewsletterStartedAt(Date.now());
+    } catch (err: any) {
+      setSubscribeError(
+        lang === "th"
+          ? "บันทึกอีเมลไม่สำเร็จ กรุณาลองใหม่อีกครั้ง"
+          : err.message || "Could not save your subscription. Please try again."
+      );
+    } finally {
+      setSubscribing(false);
     }
   };
 
@@ -186,8 +262,9 @@ export default function Landing() {
   }, []);
 
   const articlesList = useMemo(() => {
+    const homeBlogArticles = buildHomeBlogArticles(lang);
     const mocks = lang === "th" ? FEATURED_ARTICLES_TH : FEATURED_ARTICLES_EN;
-    const combined = [...dbArticles, ...mocks];
+    const combined = [...homeBlogArticles, ...dbArticles, ...mocks];
     const seen = new Set<string>();
     const unique: Article[] = [];
     for (const art of combined) {
@@ -196,7 +273,7 @@ export default function Landing() {
         unique.push(art);
       }
     }
-    return unique.slice(0, 3); // Show top 3 featured articles
+    return unique.slice(0, 6);
   }, [dbArticles, lang]);
 
   // Real-time top 3 undervalued stocks from DB
@@ -882,12 +959,17 @@ export default function Landing() {
               <Sparkles className="h-3.5 w-3.5" /> Hot Value Reports
             </span>
             <h2 className={`${sectionTitleClass} md:text-4xl`}>
-              {lang === "th" ? "เกาะติดวิเคราะห์มูลค่า & เทรนด์การลงทุน" : "Latest Financial Intelligence Reports"}
+              {lang === "th" ? "บทความที่คนค้นก่อนซื้อหุ้นจริง" : "Pre-Buy Stock Research Guides"}
             </h2>
+            <p className="mt-2 text-xs sm:text-sm text-muted font-semibold leading-relaxed">
+              {lang === "th"
+                ? "รวมคำค้นที่มีโอกาสเปลี่ยนเป็นสมาชิกสูง เช่น หุ้นตัวไหนดี 2569, หุ้นปันผลสูง, TISCO, KBANK, PTTEP และ S&P 500"
+                : "High-intent guides for users searching before they buy, from Thai stock picks and dividends to S&P 500 investing."}
+            </p>
           </div>
-          <Link href="/insights">
+          <Link href="/blog">
             <Button variant="outline" className="flex items-center gap-2 font-bold hover:scale-[1.02] active:scale-95 transition text-xs sm:text-sm">
-              {lang === "th" ? "อ่านวิเคราะห์ทั้งหมด" : "Explore All News"} 
+              {lang === "th" ? "อ่านบทความ SEO ทั้งหมด" : "Explore All Guides"} 
               <ArrowRight className="h-4 w-4" />
             </Button>
           </Link>
@@ -895,6 +977,7 @@ export default function Landing() {
 
         <div className="grid gap-4 md:grid-cols-3">
           {articlesList.map((art, idx) => {
+            const articleHref = art.href || (art.id === "dcf-for-beginners" ? "/insights/dcf-calculator-stock-valuation" : `/insights?article=${art.id}`);
             return (
               <article 
                 key={art.id} 
@@ -911,7 +994,7 @@ export default function Landing() {
                   </div>
 
                   <h3 className="font-display text-sm sm:text-base font-bold text-ink leading-snug group-hover:text-brand transition duration-200">
-                    <Link href={art.id === "dcf-for-beginners" ? "/insights/dcf-calculator-stock-valuation" : `/insights?article=${art.id}`}>
+                    <Link href={articleHref}>
                       {art.title}
                     </Link>
                   </h3>
@@ -925,7 +1008,7 @@ export default function Landing() {
                   <span className="text-[10px] text-muted font-bold tracking-wider font-mono">
                     📅 {art.date}
                   </span>
-                  <Link href={art.id === "dcf-for-beginners" ? "/insights/dcf-calculator-stock-valuation" : `/insights?article=${art.id}`} className="text-xs text-brand font-extrabold flex items-center gap-1 hover:underline">
+                  <Link href={articleHref} className="text-xs text-brand font-extrabold flex items-center gap-1 hover:underline">
                     {lang === "th" ? "อ่านต่อบทความ" : "Read Full"} 
                     <ChevronRight className="h-3.5 w-3.5 group-hover:translate-x-1 transition duration-200" />
                   </Link>
@@ -1036,19 +1119,37 @@ export default function Landing() {
           </p>
 
           {!subscribed ? (
-            <form onSubmit={handleSubscribe} className="mt-4 flex flex-col sm:flex-row max-w-md mx-auto gap-2">
-              <input
-                type="email"
-                required
-                placeholder={lang === "th" ? "กรอกอีเมลของคุณ..." : "Enter your email address..."}
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                className="flex-1 rounded-xl border border-line bg-bg px-4 py-2 text-xs text-ink focus:border-brand focus:ring-1 focus:ring-brand outline-none font-bold"
-              />
-              <Button type="submit" size="sm" className="font-bold shrink-0">
-                {lang === "th" ? "สมัครรับข้อมูล" : "Subscribe Now"}
-              </Button>
-            </form>
+            <>
+              <form onSubmit={handleSubscribe} className="mt-4 flex flex-col sm:flex-row max-w-md mx-auto gap-2">
+                <input
+                  type="email"
+                  required
+                  placeholder={lang === "th" ? "กรอกอีเมลของคุณ..." : "Enter your email address..."}
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  className="flex-1 rounded-xl border border-line bg-bg px-4 py-2 text-xs text-ink focus:border-brand focus:ring-1 focus:ring-brand outline-none font-bold"
+                />
+                <input
+                  type="text"
+                  tabIndex={-1}
+                  autoComplete="off"
+                  value={newsletterWebsite}
+                  onChange={(e) => setNewsletterWebsite(e.target.value)}
+                  className="absolute -left-[9999px] h-px w-px opacity-0"
+                  aria-hidden="true"
+                />
+                <Button type="submit" size="sm" className="font-bold shrink-0">
+                  {subscribing
+                    ? (lang === "th" ? "กำลังบันทึก..." : "Saving...")
+                    : (lang === "th" ? "สมัครรับข้อมูล" : "Subscribe Now")}
+                </Button>
+              </form>
+              {subscribeError && (
+                <div className="mt-3 text-xs font-bold text-down">
+                  {subscribeError}
+                </div>
+              )}
+            </>
           ) : (
             <div className="mt-4 p-4 border border-up/30 bg-up/10 rounded-2xl max-w-md mx-auto animate-fade-up text-xs text-up font-bold">
               🎉 {lang === "th" ? "สำเร็จ! เราได้ส่งรายงานต้อนรับพอร์ตคุณค่าไปยังอีเมลของคุณเรียบร้อย" : "Success! Welcome package and value checklist sent to your inbox."}

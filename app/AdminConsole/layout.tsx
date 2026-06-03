@@ -16,6 +16,7 @@ import {
   BarChart3,
   Sparkles,
   Info,
+  Mail,
 } from "@/lib/icons";
 
 function Logo() {
@@ -116,6 +117,7 @@ export default function AdminConsoleLayout({
     { href: "/AdminConsole/users", label: lang === "th" ? "จัดการสมาชิก" : "Manage Members", icon: User },
     { href: "/AdminConsole/payments", label: lang === "th" ? "ระบบชำระเงิน" : "Manage Payments", icon: Crown },
     { href: "/AdminConsole/articles", label: lang === "th" ? "จัดการเนื้อหา" : "Manage Content", icon: Layers },
+    { href: "/AdminConsole/newsletter", label: lang === "th" ? "Newsletter" : "Newsletter", icon: Mail },
     { href: "/AdminConsole/staff", label: lang === "th" ? "จัดการเจ้าหน้าที่" : "Manage Staff", icon: Shield },
   ];
 

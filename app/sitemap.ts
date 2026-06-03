@@ -1,5 +1,7 @@
 import type { MetadataRoute } from "next";
 import { STOCKS, SECTORS } from "@/lib/stocks";
+import { blogArticles } from "@/lib/blogArticles";
+import { compareLinks } from "@/lib/seoClusters";
 
 const SITE_URL = "https://valustock.com";
 
@@ -10,6 +12,9 @@ const staticRoutes = [
   "/contact",
   "/compare",
   "/insights",
+  "/blog",
+  "/dividend",
+  "/screeners",
   "/insights/dcf-calculator-stock-valuation",
   "/dcf-calculator",
   "/intrinsic-value-calculator",
@@ -55,10 +60,15 @@ export default function sitemap(): MetadataRoute.Sitemap {
     .filter(Boolean)
     .map((slug) => entry(`/sector/${slug}`, 0.7));
 
+  const blogRoutes = blogArticles.map((article) => entry(`/blog/${article.slug}`, 0.85));
+  const compareRoutes = compareLinks.map((item) => entry(item.href, 0.8));
+
   return [
     ...staticRoutes.map((route) => entry(route, route === "" ? 1 : 0.8)),
     entry("/country/thailand", 0.7),
     entry("/country/usa", 0.7),
+    ...blogRoutes,
+    ...compareRoutes,
     ...sectorRoutes,
     ...stockRoutes,
   ];

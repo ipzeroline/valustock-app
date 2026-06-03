@@ -106,7 +106,7 @@ W-8BEN (Certificate of Foreign Status of Beneficial Owner for United States Tax 
 - แบบฟอร์มมีอายุ 3 ปีปฏิทิน (ต้องกรอกใหม่เมื่อครบกำหนด)
 
 **ขั้นตอนยื่นผ่านโบรกเกอร์ไทยหรือโบรกเกอร์นอก:**
-1. โบรกเกอร์ส่วนใหญ่ในไทย (เช่น InnovestX, Dime) และโบรกเกอร์นอก (เช่น Interactive Brokers) จะมีระบบกรอก W-8BEN อิเล็กทรอนิกส์ให้คุณทันทีก่อนเริ่มซื้อขายหุ้นต่างประเทศ
+1. โบรกเกอร์ดิจิทัลในไทยและโบรกเกอร์นอกหลายแห่ง (เช่น Interactive Brokers) จะมีระบบกรอก W-8BEN อิเล็กทรอนิกส์ให้คุณทันทีก่อนเริ่มซื้อขายหุ้นต่างประเทศ
 2. ตรวจสอบข้อมูลชื่อ-ที่อยู่ให้ตรงกับพาสปอร์ตไทย
 3. กรอกหมายเลขบัตรประชาชนไทยในช่อง Foreign Tax Identifying Number (TIN)`
   },
@@ -192,7 +192,7 @@ W-8BEN (Certificate of Foreign Status of Beneficial Owner for United States Tax 
 - Remains valid for 3 calendar years (requires refiling thereafter).
 
 **Filing Guide via Local and Foreign Brokers:**
-1. Digital brokerages (e.g., Dime, InnovestX) and international firms (e.g., Interactive Brokers) offer integrated electronic W-8BEN forms during account setup.
+1. Many Thai digital brokerages and international firms (e.g., Interactive Brokers) offer integrated electronic W-8BEN forms during account setup.
 2. Ensure your legal name and address align exactly with your Thai passport.
 3. Insert your 13-digit Thai national ID under the Foreign Tax Identifying Number (TIN) field.`
   },

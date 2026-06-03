@@ -58,6 +58,7 @@ export async function ensureColumn(table: string, column: string, definition: st
     "staff",
     "active_sessions",
     "comparison_sets",
+    "newsletter_subscribers",
   ]);
 
   if (!allowedTables.has(table)) {
@@ -227,6 +228,18 @@ export async function initDatabase(): Promise<boolean> {
       ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
     `);
 
+    // 11. Newsletter subscribers: marketing opt-in from public landing pages
+    await query(`
+      CREATE TABLE IF NOT EXISTS newsletter_subscribers (
+        email VARCHAR(255) PRIMARY KEY,
+        source VARCHAR(100) DEFAULT 'landing',
+        lang VARCHAR(10) DEFAULT 'th',
+        status VARCHAR(30) DEFAULT 'subscribed',
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+    `);
+
     await ensureColumn("users", "email", "VARCHAR(255) UNIQUE NOT NULL");
     await ensureColumn("users", "name", "VARCHAR(255)");
     await ensureColumn("users", "plan", "VARCHAR(50) DEFAULT 'free'");
@@ -302,6 +315,13 @@ export async function initDatabase(): Promise<boolean> {
     await ensureColumn("comparison_sets", "chart_metric", "VARCHAR(50) DEFAULT 'mos'");
     await ensureColumn("comparison_sets", "created_at", "TIMESTAMP DEFAULT CURRENT_TIMESTAMP");
     await ensureColumn("comparison_sets", "updated_at", "TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP");
+
+    await ensureColumn("newsletter_subscribers", "email", "VARCHAR(255) PRIMARY KEY");
+    await ensureColumn("newsletter_subscribers", "source", "VARCHAR(100) DEFAULT 'landing'");
+    await ensureColumn("newsletter_subscribers", "lang", "VARCHAR(10) DEFAULT 'th'");
+    await ensureColumn("newsletter_subscribers", "status", "VARCHAR(30) DEFAULT 'subscribed'");
+    await ensureColumn("newsletter_subscribers", "created_at", "TIMESTAMP DEFAULT CURRENT_TIMESTAMP");
+    await ensureColumn("newsletter_subscribers", "updated_at", "TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP");
 
     console.log("🎉 Database tables successfully initialized!");
     return true;

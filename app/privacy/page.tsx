@@ -32,8 +32,8 @@ export default function PrivacyPage() {
           </h3>
           <p>
             {lang === "th"
-              ? "เพื่อให้บริการจัดพอร์ตโฟลิโอและรายการเฝ้าติดตามจำลองได้อย่างเต็มประสิทธิภาพ ระบบจะเก็บรวบรวมข้อมูลส่วนบุคคลที่จำเป็นเฉพาะเมื่อคุณลงทะเบียน เช่น ชื่อ อีเมล และหลักทรัพย์ที่คุณเลือกเพิ่มในรายการเฝ้าดู (Watchlist)"
-              : "To serve custom simulated portfolios and watchlists, we store standard credentials during registration: user name, email address, and dynamic asset tags selected for watchlist tracking."}
+              ? "เพื่อให้บริการจัดพอร์ตโฟลิโอ รายการเฝ้าติดตาม และการสื่อสารบทวิเคราะห์ได้อย่างเต็มประสิทธิภาพ ระบบจะเก็บข้อมูลเท่าที่จำเป็น เช่น ชื่อ อีเมล แผนสมาชิก หลักทรัพย์ที่เพิ่มใน Watchlist รายการพอร์ต การแจ้งเตือน และอีเมลที่สมัครรับ Newsletter"
+              : "To serve portfolios, watchlists, and research communication, we store only necessary data such as name, email address, membership plan, watchlist assets, portfolio entries, alerts, and newsletter subscription emails."}
           </p>
         </div>
 

@@ -194,18 +194,34 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
       authToken: authToken || d.authToken || null,
     }));
 
-    fetch("/api/admin/users", {
+    fetch("/api/auth/email", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         email: normalizedEmail,
         name: nextUser.name,
-        plan: nextUser.plan,
-        billing: nextUser.billing,
       }),
-    }).catch(() => {
-      /* local login remains available while offline */
-    });
+    })
+      .then((res) => (res.ok ? res.json() : null))
+      .then((payload) => {
+        if (!payload?.success) return;
+        setData((current) => {
+          if (current.user?.email !== normalizedEmail) return current;
+          return {
+            ...current,
+            user: {
+              ...current.user,
+              name: payload.name || current.user.name,
+              plan: payload.plan || current.user.plan,
+              billing: payload.billing || current.user.billing,
+            },
+            authToken: payload.token || current.authToken,
+          };
+        });
+      })
+      .catch(() => {
+        /* local login remains available while offline */
+      });
   }, []);
 
   const logout = useCallback(() => {
@@ -258,14 +274,12 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
 
       setTimeout(() => {
         if (!nextUserForSync) return;
-        fetch("/api/admin/users", {
+        fetch("/api/auth/email", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             email: nextUserForSync.email.trim().toLowerCase(),
             name: nextUserForSync.name,
-            plan: nextUserForSync.plan,
-            billing: nextUserForSync.billing,
           }),
         }).catch(() => {
           /* local membership remains available while offline */
