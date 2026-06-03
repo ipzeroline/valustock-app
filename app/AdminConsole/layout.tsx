@@ -20,6 +20,16 @@ import {
   MessageSquare,
 } from "@/lib/icons";
 
+async function readJsonSafe(res: Response) {
+  const text = await res.text();
+  if (!text) return null;
+  try {
+    return JSON.parse(text);
+  } catch {
+    return null;
+  }
+}
+
 function Logo() {
   return (
     <Link href="/dashboard" className="flex items-center gap-2.5">
@@ -50,8 +60,8 @@ export default function AdminConsoleLayout({
 
   useEffect(() => {
     fetch("/api/admin/auth")
-      .then((res) => res.json())
-      .then((data) => setIsLoggedIn(Boolean(data.authenticated)))
+      .then(readJsonSafe)
+      .then((data) => setIsLoggedIn(Boolean(data?.authenticated)))
       .catch((err) => {
         console.error("Error checking admin auth:", err);
         setIsLoggedIn(false);
@@ -63,7 +73,7 @@ export default function AdminConsoleLayout({
 
     const checkAdminSession = () => {
       fetch("/api/admin/auth")
-        .then((res) => (res.ok ? res.json() : null))
+        .then((res) => (res.ok ? readJsonSafe(res) : null))
         .then((data) => {
           if (!data?.authenticated) {
             setIsLoggedIn(false);
@@ -77,8 +87,8 @@ export default function AdminConsoleLayout({
     };
 
     fetch("/api/admin/db-status")
-      .then((res) => res.json())
-      .then((data) => setDbConnected(Boolean(data.connected)))
+      .then(readJsonSafe)
+      .then((data) => setDbConnected(Boolean(data?.connected)))
       .catch((err) => console.error("Error fetching db status:", err));
 
     const timer = window.setInterval(checkAdminSession, 10000);
