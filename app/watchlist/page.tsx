@@ -9,9 +9,11 @@ import { Card, Badge } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import { useTranslation } from "@/lib/translations";
 import { AssetLogo } from "@/components/AssetLogo";
+import { QuoteLoadingCard } from "@/components/QuoteLoading";
 import { computeValuation, defaultDCFParams } from "@/lib/valuation";
 import { baht, dollar, pct } from "@/lib/format";
 import { Stock } from "@/lib/types";
+import { hasQuoteProvider, useLiveQuotes } from "@/lib/realtime-quotes";
 import { 
   Star, 
   Search, 
@@ -473,48 +475,35 @@ export default function WatchlistPage() {
     return () => clearInterval(interval);
   }, []);
 
-  // Dynamic Watchlist Stocks (for NASDAQ stocks that are loaded on the fly)
-  const [dynamicWatchlistStocks, setDynamicWatchlistStocks] = useState<Stock[]>([]);
+  // Dynamic Watchlist Stocks (for NASDAQ/live stocks that are loaded on the fly)
   
-  // Find symbols that are in the watchlist but are NOT preloaded in static STOCKS
-  const missingSymbols = useMemo(() => {
-    return watchlist.filter(symbol => !getStock(symbol));
-  }, [watchlist]);
-
-  useEffect(() => {
-    if (missingSymbols.length === 0) return;
-    
-    // Fetch live details for missing symbols in parallel
-    Promise.all(
-      missingSymbols.map(sym => 
-        fetch(`/api/stock/${sym}`)
-          .then(res => res.json())
-          .catch(err => {
-            console.error(`Error loading watchlist stock ${sym}:`, err);
-            return null;
-          })
-      )
-    ).then(results => {
-      const valid = results.filter(res => res && !res.error) as Stock[];
-      setDynamicWatchlistStocks(prev => {
-        // Merge without duplicates
-        const existing = new Set(prev.map(s => s.symbol.toUpperCase()));
-        const uniqueNew = valid.filter(s => !existing.has(s.symbol.toUpperCase()));
-        return [...prev, ...uniqueNew];
-      });
+  // Fetch symbols that are missing from static data, plus static US seed rows that
+  // need live prices to stay aligned with stock detail pages.
+  const symbolsToRefresh = useMemo(() => {
+    return watchlist.filter((symbol) => {
+      const stock = getStock(symbol);
+      return !stock || hasQuoteProvider(stock);
     });
-  }, [missingSymbols]);
+  }, [watchlist]);
+  const { liveStocks: dynamicWatchlistStocks } = useLiveQuotes(symbolsToRefresh);
 
   const stocks = useMemo(() => {
-    const staticStocks = watchlist.map(getStock).filter(Boolean) as Stock[];
+    const dynamicSymbols = new Set(dynamicWatchlistStocks.map((s) => s.symbol.toUpperCase()));
+    const staticStocks = watchlist
+      .map(getStock)
+      .filter((stock): stock is Stock => {
+        if (!stock) return false;
+        const key = stock.symbol.toUpperCase();
+        return !hasQuoteProvider(stock) || dynamicSymbols.has(key);
+      });
     // Filter dynamicWatchlistStocks to make sure they are still in the active watchlist
     const activeWatchlistSet = new Set(watchlist.map(s => s.toUpperCase()));
     const activeDynamic = dynamicWatchlistStocks.filter(s => activeWatchlistSet.has(s.symbol.toUpperCase()));
     
-    // Combine static and dynamic watchlist stocks, deduplicating by symbol
-    const staticSymbols = new Set(staticStocks.map(s => s.symbol.toUpperCase()));
-    const uniqueDynamic = activeDynamic.filter(s => !staticSymbols.has(s.symbol.toUpperCase()));
-    return [...staticStocks, ...uniqueDynamic];
+    const bySymbol = new Map<string, Stock>();
+    staticStocks.forEach((s) => bySymbol.set(s.symbol.toUpperCase(), s));
+    activeDynamic.forEach((s) => bySymbol.set(s.symbol.toUpperCase(), s));
+    return Array.from(bySymbol.values());
   }, [watchlist, dynamicWatchlistStocks]);
   const limit = plan.limits.watchlist;
   const overLimit =
@@ -1031,7 +1020,17 @@ export default function WatchlistPage() {
         ))}
       </section>
 
-      {stocks.length === 0 ? (
+      {watchlist.length > 0 && stocks.length === 0 ? (
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 no-print">
+          {watchlist.slice(0, 6).map((symbol) => (
+            <QuoteLoadingCard
+              key={symbol}
+              title={`${symbol} live quote`}
+              subtitle={lang === "th" ? "กำลังดึงราคาล่าสุด..." : "Fetching latest price..."}
+            />
+          ))}
+        </div>
+      ) : stocks.length === 0 ? (
         <Card className="p-12 text-center border border-line bg-surface/40 backdrop-blur-md no-print">
           <Star className="mx-auto h-12 w-12 text-muted/60" />
           <h3 className="mt-4 font-display text-lg font-bold text-ink">

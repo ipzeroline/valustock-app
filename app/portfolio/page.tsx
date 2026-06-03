@@ -12,6 +12,9 @@ import { LockedCard } from "@/components/Paywall";
 import { AssetLogo } from "@/components/AssetLogo";
 import { useTranslation } from "@/lib/translations";
 import { baht, num, pct, dollar, nav } from "@/lib/format";
+import { Stock } from "@/lib/types";
+import { QuoteLoading, QuoteLoadingCard } from "@/components/QuoteLoading";
+import { hasQuoteProvider, useLiveQuotes } from "@/lib/realtime-quotes";
 import {
   Wallet,
   Calculator,
@@ -126,6 +129,11 @@ export default function PortfolioPage() {
     [lang]
   );
 
+  const getDisplayStock = (symbol: string) => {
+    const key = symbol.toUpperCase();
+    return liveStockMap.get(key) || getStock(key);
+  };
+
   useEffect(() => {
     if (!user?.email) {
       setTransactions([]);
@@ -190,6 +198,21 @@ export default function PortfolioPage() {
     }, 500);
     return () => window.clearTimeout(timer);
   }, [user?.email, authToken, activeTab, backtestSymbol, backtestYears]);
+
+  const liveRefreshSymbols = useMemo(() => {
+    const symbols = new Set<string>([txSymbol, backtestSymbol, alertSymbol]);
+    transactions.forEach((tx) => symbols.add(tx.symbol));
+    alerts.forEach((alert) => {
+      if (alert?.symbol) symbols.add(String(alert.symbol));
+    });
+    return Array.from(symbols).filter((symbol) => {
+      const stock = getStock(symbol);
+      return stock && hasQuoteProvider(stock);
+    });
+  }, [txSymbol, backtestSymbol, alertSymbol, transactions, alerts]);
+  const { liveStockMap } = useLiveQuotes(liveRefreshSymbols);
+
+  const isPortfolioQuotesLoading = liveRefreshSymbols.some((symbol) => !liveStockMap.has(symbol.toUpperCase()));
 
   const portfolioGuides = [
     {
@@ -264,7 +287,7 @@ export default function PortfolioPage() {
   };
 
   const getDefaultCurrency = (symbol: string) => {
-    const s = getStock(symbol);
+    const s = getDisplayStock(symbol);
     return s?.currency || (s?.assetType === "US_STOCK" ? "USD" : "THB");
   };
 
@@ -275,7 +298,8 @@ export default function PortfolioPage() {
     const holdingsMap: Record<string, { shares: number; totalCost: number }> = {};
 
     transactions.forEach((tx) => {
-      const s = getStock(tx.symbol)!;
+      const s = getDisplayStock(tx.symbol);
+      if (!s) return;
       if (!holdingsMap[tx.symbol]) {
         holdingsMap[tx.symbol] = { shares: 0, totalCost: 0 };
       }
@@ -294,7 +318,7 @@ export default function PortfolioPage() {
 
     const holdingsList = Object.keys(holdingsMap)
       .map((sym) => {
-        const s = getStock(sym)!;
+        const s = getDisplayStock(sym)!;
         const state = holdingsMap[sym];
         const currentPrice = s.price;
         const costBasis = state.shares > 0 ? state.totalCost / state.shares : 0;
@@ -329,7 +353,7 @@ export default function PortfolioPage() {
       netProfit,
       netProfitPct,
     };
-  }, [transactions]);
+  }, [transactions, liveStockMap]);
 
   useEffect(() => {
     if (activeTab === "backtest" && !plan.limits.scenarioDcf) setActiveTab("ledger");
@@ -384,7 +408,7 @@ export default function PortfolioPage() {
       return;
     }
     // Reset inputs with default estimates
-    const s = getStock(txSymbol)!;
+    const s = getDisplayStock(txSymbol)!;
     setTxPrice(s.price.toString());
     setTxShares("500");
     setTxFee("0");
@@ -429,7 +453,7 @@ export default function PortfolioPage() {
     // Generate CSV content
     const headers = ["ID", "TICKER", "ACTION", "PRICE", "SHARES", "FEE", "TOTAL", "DATE", "CURRENCY", "ASSET_TYPE", "NOTES"];
     const rows = transactions.map((tx) => {
-      const s = getStock(tx.symbol)!;
+      const s = getDisplayStock(tx.symbol)!;
       const fee = Number(tx.fee || 0);
       const total = tx.shares * tx.price + (tx.action === "BUY" ? fee : -fee);
       const currency = tx.currency || s.currency || (s.market === "NASDAQ" || s.market === "NYSE" ? "USD" : "THB");
@@ -472,7 +496,7 @@ export default function PortfolioPage() {
 
   // 2. DYNAMIC VALUATION BACKTEST ENGINE COMPUTATION
   const backtestResult = useMemo(() => {
-    const s = getStock(backtestSymbol)!;
+    const s = getDisplayStock(backtestSymbol)!;
     const v = computeValuation(s, defaultDCFParams(s));
     
     // Simulate historical reversion math based on stock attributes
@@ -502,7 +526,7 @@ export default function PortfolioPage() {
       pricesList,
       fairValuesList,
     };
-  }, [backtestSymbol, backtestYears]);
+  }, [backtestSymbol, backtestYears, liveStockMap]);
 
   // 3. DYNAMIC ALERTS CONFIGURATION
   const handleAddAlert = async (e: React.FormEvent) => {
@@ -578,7 +602,7 @@ export default function PortfolioPage() {
       setPortfolioError(lang === "th" ? "กรุณาเข้าสู่ระบบก่อนทดสอบ Telegram alert" : "Please log in before testing Telegram alerts.");
       return;
     }
-    const s = getStock(alertSymbol)!;
+    const s = getDisplayStock(alertSymbol)!;
     const v = computeValuation(s, defaultDCFParams(s));
     const isUS = s.assetType === "US_STOCK";
     const prefix = isUS ? "$" : "฿";
@@ -787,6 +811,13 @@ export default function PortfolioPage() {
                   <div className="text-3xl font-display font-black text-ink mt-2">
                     {baht(portfolioSummary.totalValue)}
                   </div>
+                  {isPortfolioQuotesLoading && (
+                    <div className="mt-2">
+                      <QuoteLoading
+                        label={lang === "th" ? "กำลังซิงก์ราคาล่าสุด" : "Syncing live quotes"}
+                      />
+                    </div>
+                  )}
                 </div>
 
                 <div className="grid grid-cols-1 gap-3 border-t border-line/50 pt-3 sm:grid-cols-2">
@@ -831,7 +862,7 @@ export default function PortfolioPage() {
                     onChange={(symbol) => {
                       const normalized = symbol.toUpperCase();
                       setTxSymbol(normalized);
-                      const s = getStock(normalized)!;
+                      const s = getDisplayStock(normalized)!;
                       setTxPrice(s.price.toString());
                       setTxCurrency(getDefaultCurrency(normalized));
                     }}
@@ -966,9 +997,16 @@ export default function PortfolioPage() {
               />
               <div className="space-y-3 p-4 md:hidden">
                 {portfolioSummary.holdingsList.length === 0 ? (
-                  <div className="rounded-xl border border-line bg-bg/40 p-5 text-center text-xs text-muted">
-                    {lang === "th" ? "ยังไม่มีหุ้นถือครองในพอร์ต" : "No active holdings in your ledger portfolio."}
-                  </div>
+                  isPortfolioQuotesLoading ? (
+                    <QuoteLoadingCard
+                      title={lang === "th" ? "กำลังโหลดราคาพอร์ต" : "Loading portfolio quotes"}
+                      subtitle={lang === "th" ? "กำลังดึงราคาล่าสุดของสินทรัพย์ที่ถืออยู่..." : "Fetching latest prices for your holdings..."}
+                    />
+                  ) : (
+                    <div className="rounded-xl border border-line bg-bg/40 p-5 text-center text-xs text-muted">
+                      {lang === "th" ? "ยังไม่มีหุ้นถือครองในพอร์ต" : "No active holdings in your ledger portfolio."}
+                    </div>
+                  )
                 ) : (
                   portfolioSummary.holdingsList.map((h) => {
                     const hIsUp = h.profit >= 0;
@@ -1011,7 +1049,16 @@ export default function PortfolioPage() {
                     {portfolioSummary.holdingsList.length === 0 ? (
                       <tr>
                         <td colSpan={6} className="p-8 text-center text-muted font-mono">
-                          {lang === "th" ? "❌ ยังไม่มีหุ้นถือครองในพอร์ตของท่าน บันทึกธุรกรรมเพิ่มได้" : "❌ No active holdings in your ledger portfolio."}
+                          {isPortfolioQuotesLoading ? (
+                            <div className="mx-auto max-w-sm">
+                              <QuoteLoadingCard
+                                title={lang === "th" ? "กำลังโหลดราคาพอร์ต" : "Loading portfolio quotes"}
+                                subtitle={lang === "th" ? "กำลังดึงราคาล่าสุดของสินทรัพย์ที่ถืออยู่..." : "Fetching latest prices for your holdings..."}
+                              />
+                            </div>
+                          ) : (
+                            lang === "th" ? "❌ ยังไม่มีหุ้นถือครองในพอร์ตของท่าน บันทึกธุรกรรมเพิ่มได้" : "❌ No active holdings in your ledger portfolio."
+                          )}
                         </td>
                       </tr>
                     ) : (
@@ -1072,7 +1119,7 @@ export default function PortfolioPage() {
                   </div>
                 ) : (
                   transactions.map((tx) => {
-                    const s = getStock(tx.symbol)!;
+                    const s = getDisplayStock(tx.symbol)!;
                     const isBuy = tx.action === "BUY";
                     const fee = Number(tx.fee || 0);
                     const total = tx.shares * tx.price + (isBuy ? fee : -fee);
@@ -1134,7 +1181,7 @@ export default function PortfolioPage() {
                       </tr>
                     ) : (
                       transactions.map((tx) => {
-                        const s = getStock(tx.symbol)!;
+                        const s = getDisplayStock(tx.symbol)!;
                         const isBuy = tx.action === "BUY";
                         const fee = Number(tx.fee || 0);
                         const total = tx.shares * tx.price + (isBuy ? fee : -fee);
@@ -1487,7 +1534,7 @@ export default function PortfolioPage() {
                   </div>
                 ) : (
                   alerts.map((al) => {
-                    const s = getStock(al.symbol)!;
+                    const s = getDisplayStock(al.symbol)!;
                     return (
                       <div key={`mobile-alert-${al.id}`} className="rounded-2xl border border-line bg-bg/45 p-4">
                         <div className="flex items-start justify-between gap-3">
@@ -1541,7 +1588,7 @@ export default function PortfolioPage() {
                       </tr>
                     ) : (
                       alerts.map((al) => {
-                        const s = getStock(al.symbol)!;
+                        const s = getDisplayStock(al.symbol)!;
                         return (
                           <tr key={al.id} className="hover:bg-elevate/20 transition">
                             <td className="px-4 py-3 font-bold text-ink">{al.symbol}</td>

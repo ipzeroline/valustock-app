@@ -1,39 +1,201 @@
 import { NextResponse } from "next/server";
 import { STOCKS } from "@/lib/stocks";
+import { Stock } from "@/lib/types";
+
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
+
+const NO_STORE_HEADERS = {
+  "Cache-Control": "no-store, no-cache, must-revalidate",
+};
+
+function jsonNoStore(body: unknown, init?: ResponseInit) {
+  return NextResponse.json(body, {
+    ...init,
+    headers: {
+      ...NO_STORE_HEADERS,
+      ...(init?.headers || {}),
+    },
+  });
+}
+
+function finiteNumber(value: unknown) {
+  const number = Number(value);
+  return Number.isFinite(number) && number > 0 ? number : null;
+}
+
+async function fetchLatestQuote(symbol: string, apiKey: string) {
+  const encodedKey = encodeURIComponent(apiKey);
+  const snapshotRes = await fetch(
+    `https://api.massive.com/v2/snapshot/locale/us/markets/stocks/tickers/${symbol}?apiKey=${encodedKey}`,
+    { cache: "no-store" }
+  );
+
+  if (snapshotRes.ok) {
+    const snapshot = await snapshotRes.json();
+    const ticker = snapshot.ticker || {};
+    const price =
+      finiteNumber(ticker.lastTrade?.p) ||
+      finiteNumber(ticker.min?.c) ||
+      finiteNumber(ticker.day?.c);
+    const prevClose = finiteNumber(ticker.prevDay?.c) || finiteNumber(ticker.day?.o);
+    if (price) return { price, prevClose: prevClose || price };
+  }
+
+  const tradeRes = await fetch(
+    `https://api.massive.com/v2/last/trade/${symbol}?apiKey=${encodedKey}`,
+    { cache: "no-store" }
+  );
+  if (!tradeRes.ok) return null;
+
+  const trade = await tradeRes.json();
+  const price = finiteNumber(trade.results?.p);
+  return price ? { price, prevClose: null } : null;
+}
+
+function isUsExchangeSecurity(stock: Stock | undefined, symbol: string) {
+  if (!stock) return /^[A-Z]{1,5}(\.[A-Z])?$/.test(symbol);
+  if (stock.assetType === "CRYPTO" || stock.assetType === "FUTURES") return false;
+  return (
+    stock.assetType === "US_STOCK" ||
+    stock.assetType === "US_FUND" ||
+    (stock.assetType === "ETF" && stock.currency === "USD") ||
+    stock.market === "NASDAQ" ||
+    stock.market === "NYSE"
+  );
+}
+
+function isThaiExchangeSecurity(stock: Stock | undefined) {
+  if (!stock) return false;
+  return (
+    stock.currency === "THB" &&
+    (stock.assetType === "TH_STOCK" || stock.assetType === "ETF") &&
+    (stock.market === "SET" || stock.market === "mai")
+  );
+}
+
+function thaiTicker(symbol: string) {
+  return symbol.includes(".") ? symbol : `${symbol}.BK`;
+}
+
+async function fetchEodhdQuote(symbol: string, apiKey: string) {
+  const res = await fetch(
+    `https://eodhd.com/api/real-time/${encodeURIComponent(thaiTicker(symbol))}?api_token=${encodeURIComponent(apiKey)}&fmt=json`,
+    { cache: "no-store" }
+  );
+  if (!res.ok) return null;
+
+  const data = await res.json();
+  const price =
+    finiteNumber(data.close) ||
+    finiteNumber(data.last) ||
+    finiteNumber(data.price);
+  const prevClose =
+    finiteNumber(data.previousClose) ||
+    finiteNumber(data.previous_close) ||
+    finiteNumber(data.prev_close);
+  return price ? { price, prevClose: prevClose || price } : null;
+}
+
+function applyLatestQuote<T extends Stock>(stock: T, quote: { price: number; prevClose: number | null }, source: string): T & { quoteSource: string; quoteUpdatedAt: string } {
+  const priceHistory = stock.priceHistory?.length ? [...stock.priceHistory] : [quote.price];
+  priceHistory[priceHistory.length - 1] = quote.price;
+
+  const ohlcHistory = stock.ohlcHistory?.length
+    ? stock.ohlcHistory.map((point, index) => {
+        if (index !== stock.ohlcHistory!.length - 1) return point;
+        return {
+          ...point,
+          close: quote.price,
+          high: Math.max(point.high, quote.price),
+          low: Math.min(point.low, quote.price),
+        };
+      })
+    : stock.ohlcHistory;
+
+  return {
+    ...stock,
+    price: quote.price,
+    prevClose: quote.prevClose || stock.prevClose || quote.price,
+    priceHistory,
+    ohlcHistory,
+    quoteSource: source,
+    quoteUpdatedAt: new Date().toISOString(),
+  };
+}
 
 export async function GET(
   request: Request,
   { params }: { params: Promise<{ symbol: string }> }
 ) {
+  const url = new URL(request.url);
+  const quoteOnly = url.searchParams.get("quote") === "1";
   const { symbol: rawSymbol } = await params;
   const symbol = rawSymbol.toUpperCase().trim();
   if (!symbol) {
-    return NextResponse.json({ error: "Symbol is required" }, { status: 400 });
+    return jsonNoStore({ error: "Symbol is required" }, { status: 400 });
   }
 
-  // 0. Check if the stock is a hand-curated static stock (like KKP, PTT, KBANK)
-  // This bypasses the US API search entirely, preventing Thai stocks from being misclassified as US OTC equities.
   const staticFound = STOCKS.find(s => s.symbol.toUpperCase() === symbol);
-  if (staticFound) {
-    return NextResponse.json(staticFound);
+  const massiveApiKey = process.env.MASSIVE_API_KEY;
+  const eodhdApiKey = process.env.EODHD_API_KEY || process.env.EODHD_API_TOKEN;
+
+  if (quoteOnly && staticFound) {
+    if (isThaiExchangeSecurity(staticFound) && eodhdApiKey) {
+      const quote = await fetchEodhdQuote(symbol, eodhdApiKey).catch(() => null);
+      if (quote) return jsonNoStore(applyLatestQuote(staticFound, quote, "eodhd"));
+    }
+
+    if (isUsExchangeSecurity(staticFound, symbol) && massiveApiKey) {
+      const quote = await fetchLatestQuote(symbol, massiveApiKey).catch(() => null);
+      if (quote) return jsonNoStore(applyLatestQuote(staticFound, quote, "massive-snapshot"));
+    }
+
+    return jsonNoStore({
+      ...staticFound,
+      quoteSource: "static",
+      quoteUpdatedAt: new Date().toISOString(),
+    });
+  }
+
+  if (staticFound && isThaiExchangeSecurity(staticFound) && eodhdApiKey) {
+    const quote = await fetchEodhdQuote(symbol, eodhdApiKey).catch(() => null);
+    if (quote) return jsonNoStore(applyLatestQuote(staticFound, quote, "eodhd"));
+  }
+
+  if (staticFound && !isUsExchangeSecurity(staticFound, symbol)) {
+    return jsonNoStore({
+      ...staticFound,
+      quoteSource: "static",
+      quoteUpdatedAt: new Date().toISOString(),
+    });
   }
 
   try {
-    const apiKey = process.env.MASSIVE_API_KEY;
+    const apiKey = massiveApiKey;
     if (!apiKey) {
-      return NextResponse.json(getSimulatedStock(symbol));
+      const fallback = staticFound || getSimulatedStock(symbol);
+      return jsonNoStore({
+        ...fallback,
+        quoteSource: staticFound ? "static" : "simulated",
+        quoteUpdatedAt: new Date().toISOString(),
+      });
     }
 
     // 1. Fetch Ticker Details from Massive API
     const tickerRes = await fetch(
       `https://api.massive.com/v3/reference/tickers/${symbol}?apiKey=${encodeURIComponent(apiKey)}`,
-      { next: { revalidate: 3600 } } // Cache for 1 hour
+      { next: { revalidate: 86400 } }
     );
 
     if (!tickerRes.ok) {
       // If ticker not found in Massive (e.g. Thai stocks or funds), fall back to generator
-      const simulated = getSimulatedStock(symbol);
-      return NextResponse.json(simulated);
+      const simulated = staticFound || getSimulatedStock(symbol);
+      return jsonNoStore({
+        ...simulated,
+        quoteSource: staticFound ? "static" : "simulated",
+        quoteUpdatedAt: new Date().toISOString(),
+      });
     }
 
     const tickerData = await tickerRes.json();
@@ -47,7 +209,7 @@ export async function GET(
 
     const aggRes = await fetch(
       `https://api.massive.com/v2/aggs/ticker/${symbol}/range/1/day/${fromDate}/${today}?adjusted=true&sort=asc&limit=50000&apiKey=${encodeURIComponent(apiKey)}`,
-      { next: { revalidate: 3600 } }
+      { cache: "no-store" }
     );
     const aggData = aggRes.ok ? await aggRes.json() : { results: [] };
     const rawHistory = aggData.results || [];
@@ -68,8 +230,24 @@ export async function GET(
         }))
       : generateMockOhlc(priceHistory);
 
-    const latestPrice = priceHistory.length > 0 ? priceHistory[priceHistory.length - 1] : 150.0;
-    const prevClose = priceHistory.length > 1 ? priceHistory[priceHistory.length - 2] : latestPrice;
+    const latestQuote = await fetchLatestQuote(symbol, apiKey).catch(() => null);
+    const latestPrice = latestQuote?.price || (priceHistory.length > 0 ? priceHistory[priceHistory.length - 1] : 150.0);
+    if (priceHistory.length > 0) {
+      priceHistory[priceHistory.length - 1] = latestPrice;
+    } else {
+      priceHistory = [latestPrice];
+    }
+    if (ohlcHistory.length > 0) {
+      ohlcHistory[ohlcHistory.length - 1] = {
+        ...ohlcHistory[ohlcHistory.length - 1],
+        close: latestPrice,
+        high: Math.max(ohlcHistory[ohlcHistory.length - 1].high, latestPrice),
+        low: Math.min(ohlcHistory[ohlcHistory.length - 1].low, latestPrice),
+      };
+    }
+    const prevClose =
+      latestQuote?.prevClose ||
+      (priceHistory.length > 1 ? priceHistory[priceHistory.length - 2] : latestPrice);
 
     // 3. Fetch Financial Statements (Income, Balance, Cash Flow)
     const finRes = await fetch(
@@ -245,15 +423,21 @@ export async function GET(
         growthRate: calculatedGrowthRate,
         totalAssets: Math.round(totalAssets),
       },
-      assetType: "US_STOCK",
-      currency: "USD"
+      assetType: staticFound?.assetType || "US_STOCK",
+      currency: "USD",
+      quoteSource: latestQuote ? "massive-snapshot" : "massive-daily",
+      quoteUpdatedAt: new Date().toISOString(),
     };
 
-    return NextResponse.json(stock);
+    return jsonNoStore(stock);
   } catch (error: any) {
     console.error("API Integration error:", error);
-    const simulated = getSimulatedStock(symbol);
-    return NextResponse.json(simulated);
+    const simulated = staticFound || getSimulatedStock(symbol);
+    return jsonNoStore({
+      ...simulated,
+      quoteSource: staticFound ? "static" : "simulated",
+      quoteUpdatedAt: new Date().toISOString(),
+    });
   }
 }
 

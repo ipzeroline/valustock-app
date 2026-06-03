@@ -67,7 +67,7 @@ export function StockCard({ stock }: { stock: Stock }) {
       <div className="flex items-end justify-between">
         <div>
           <div className="num text-lg font-semibold">
-            {stock.assetType === "US_STOCK"
+            {stock.assetType === "US_STOCK" || stock.currency === "USD"
               ? dollar(stock.price)
               : stock.assetType === "FUND"
               ? nav(stock.price)

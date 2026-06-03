@@ -21,6 +21,8 @@ import { CandlestickChart, PriceAreaChart, HistoryBars, ValueVsPrice } from "@/c
 import { DCFCalculator } from "@/components/DCFCalculator";
 import { LockedCard } from "@/components/Paywall";
 import { useTranslation, SECTOR_TRANS } from "@/lib/translations";
+import { QuoteLoadingCard } from "@/components/QuoteLoading";
+import { useLiveQuotes } from "@/lib/realtime-quotes";
 import {
   Star,
   Search,
@@ -91,6 +93,7 @@ export default function StockDetail() {
   const { isWatched, toggleWatch } = useStore();
   const { t, lang } = useTranslation();
   const router = useRouter();
+  const { liveStockMap } = useLiveQuotes(symbol ? [symbol] : [], Boolean(symbol));
 
   const searchMatches = useMemo(() => {
     const query = searchQuery.trim().toLowerCase();
@@ -115,34 +118,61 @@ export default function StockDetail() {
   useEffect(() => {
     if (!symbol) return;
     
-    // Quick synchronous fallback from local database
+    // Quick synchronous fallback from local database. Do not show seeded US
+    // prices while realtime quotes are loading, because they can be stale.
     const local = getStock(symbol);
-    if (local) {
+    const localIsStaticUs = local?.assetType === "US_STOCK" || local?.currency === "USD";
+    if (local && !localIsStaticUs) {
       setStock(local);
+    } else {
+      setStock(null);
     }
     
-    setLoading(true);
-    fetch(`/api/stock/${symbol}`)
-      .then((res) => res.json())
-      .then((data) => {
-        if (data && !data.error) {
-          setStock(data);
-        }
-      })
-      .catch((err) => console.error("Error loading live stock data:", err))
-      .finally(() => setLoading(false));
+    let cancelled = false;
+    const loadLiveStock = () => {
+      setLoading(true);
+      fetch(`/api/stock/${symbol}`, { cache: "no-store" })
+        .then((res) => res.json())
+        .then((data) => {
+          if (!cancelled && data && !data.error) {
+            setStock(data);
+          }
+        })
+        .catch((err) => console.error("Error loading live stock data:", err))
+        .finally(() => {
+          if (!cancelled) setLoading(false);
+        });
+    };
+
+    loadLiveStock();
+    return () => {
+      cancelled = true;
+    };
   }, [symbol]);
+
+  useEffect(() => {
+    if (!symbol) return;
+    const liveStock = liveStockMap.get(symbol.toUpperCase());
+    if (!liveStock) return;
+
+    setStock((prev: any) => ({
+      ...(prev || liveStock),
+      price: liveStock.price,
+      prevClose: liveStock.prevClose,
+      priceHistory: liveStock.priceHistory || prev?.priceHistory,
+      ohlcHistory: liveStock.ohlcHistory || prev?.ohlcHistory,
+      quoteSource: liveStock.quoteSource,
+      quoteUpdatedAt: liveStock.quoteUpdatedAt,
+    }));
+  }, [symbol, liveStockMap]);
 
   if (loading && !stock) {
     return (
-      <div className="mx-auto max-w-2xl py-32 text-center animate-pulse">
-        <Sparkles className="mx-auto h-10 w-10 text-brand animate-spin" />
-        <h2 className="mt-4 font-display text-lg font-bold text-ink">
-          {lang === "th" ? "กำลังดึงข้อมูลสดจากระบบประมวลผลประวัติการเงิน..." : "Fetching live metrics from ValuStock Financial Engine..."}
-        </h2>
-        <p className="text-xs text-muted mt-1">
-          {lang === "th" ? "ประมวลผลข้อมูลย้อนหลัง 5 ปีและงบการเงินล่าสุด" : "Processing 5-year history and latest filings"}
-        </p>
+      <div className="mx-auto max-w-md py-32 animate-fade-up">
+        <QuoteLoadingCard
+          title={lang === "th" ? "กำลังโหลดราคาล่าสุด" : "Loading live quote"}
+          subtitle={lang === "th" ? "กำลังดึงราคาและข้อมูลตลาดล่าสุด..." : "Fetching latest price and market data..."}
+        />
       </div>
     );
   }

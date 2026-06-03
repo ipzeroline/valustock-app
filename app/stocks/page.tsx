@@ -14,6 +14,8 @@ import { Modal } from "@/components/ui/Modal";
 import { LockedCard } from "@/components/Paywall";
 import { useTranslation, SECTOR_TRANS } from "@/lib/translations";
 import { baht, num, pct, dollar, nav } from "@/lib/format";
+import { QuoteLoadingCard } from "@/components/QuoteLoading";
+import { hasQuoteProvider, useLiveQuotes } from "@/lib/realtime-quotes";
 import {
   Search,
   Filter,
@@ -63,7 +65,8 @@ export default function StocksPage() {
   const [isCustomSandbox, setIsCustomSandbox] = useState<boolean>(false);
 
   // Dynamic Lookup State
-  const [dynamicStocks, setDynamicStocks] = useState<Stock[]>([]);
+  const refreshSymbols = useMemo(() => STOCKS.filter(hasQuoteProvider).map((stock) => stock.symbol), []);
+  const { liveStocks: dynamicStocks, setLiveStocks: setDynamicStocks } = useLiveQuotes(refreshSymbols);
   const [nasdaqStocks, setNasdaqStocks] = useState<Stock[]>([]);
   const [isSearchingApi, setIsSearchingApi] = useState(false);
   const [apiSearchError, setApiSearchError] = useState<string | null>(null);
@@ -85,12 +88,24 @@ export default function StocksPage() {
   const maxStocks = plan.limits.maxStocks;
   const isAssetVisible = (assetType: AssetType | undefined) => assetAllowed(plan, assetType);
 
-  // Merge static and dynamic stocks, ensuring absolutely zero duplicate keys by symbol
+  // Merge static, index, and dynamic stocks with stable symbol keys. Dynamic
+  // results may refresh US seed rows, while the index only fills missing rows.
   const allStocks = useMemo(() => {
-    const staticSymbols = new Set(STOCKS.map((s) => s.symbol.toUpperCase()));
-    const combinedDynamic = [...dynamicStocks, ...nasdaqStocks];
-    const uniqueDynamic = combinedDynamic.filter((s) => !staticSymbols.has(s.symbol.toUpperCase()));
-    return [...STOCKS, ...uniqueDynamic];
+    const bySymbol = new Map<string, Stock>();
+    const quoteProviderSymbols = new Set(STOCKS.filter(hasQuoteProvider).map((stock) => stock.symbol.toUpperCase()));
+    const dynamicSymbols = new Set(dynamicStocks.map((stock) => stock.symbol.toUpperCase()));
+    STOCKS.forEach((stock) => {
+      const key = stock.symbol.toUpperCase();
+      if (quoteProviderSymbols.has(key) && !dynamicSymbols.has(key)) return;
+      bySymbol.set(key, stock);
+    });
+    nasdaqStocks.forEach((stock) => {
+      const key = stock.symbol.toUpperCase();
+      if (quoteProviderSymbols.has(key) && !dynamicSymbols.has(key)) return;
+      if (!bySymbol.has(key)) bySymbol.set(key, stock);
+    });
+    dynamicStocks.forEach((stock) => bySymbol.set(stock.symbol.toUpperCase(), stock));
+    return Array.from(bySymbol.values());
   }, [dynamicStocks, nasdaqStocks]);
 
   const tickerStocks = useMemo(() => {
@@ -151,7 +166,7 @@ export default function StocksPage() {
     setIsSearchingApi(true);
     setApiSearchError(null);
     try {
-      const res = await fetch(`/api/stock/${sym}`);
+      const res = await fetch(`/api/stock/${sym}`, { cache: "no-store" });
       if (!res.ok) {
         throw new Error(lang === "th" ? `ไม่พบข้อมูลของสัญลักษณ์ "${sym}" หรืออยู่นอกขอบเขตบริการ` : `Could not fetch ticker details for "${sym}".`);
       }
@@ -179,13 +194,19 @@ export default function StocksPage() {
     // Match realistic ticker or fund symbol patterns (2-15 characters, letters, numbers, hyphens)
     if (query.length < 2 || query.length > 15 || !/^[A-Z0-9-]+$/.test(query)) return;
 
-    // Check if query is already preloaded or in dynamicStocks
+    // Static US rows are seed data, so let an exact ticker query refresh them.
+    const exactStatic = STOCKS.find((s) => s.symbol.toUpperCase() === query);
+    const alreadyDynamic = dynamicStocks.some((s) => s.symbol.toUpperCase() === query);
     const alreadyExists = allStocks.some(s => s.symbol.toUpperCase() === query);
-    if (alreadyExists) return;
+    const shouldRefreshStaticUs =
+      !!exactStatic &&
+      !alreadyDynamic &&
+      (exactStatic.assetType === "US_STOCK" || exactStatic.currency === "USD");
+    if (alreadyExists && !shouldRefreshStaticUs) return;
 
     const timer = setTimeout(async () => {
       try {
-        const res = await fetch(`/api/stock/${query}`);
+        const res = await fetch(`/api/stock/${query}`, { cache: "no-store" });
         if (res.ok) {
           const data = await res.json();
           if (data && data.symbol && data.symbol === query) {
@@ -202,7 +223,7 @@ export default function StocksPage() {
     }, 500); // 500ms debounce buffer to prevent overwhelming the servers
 
     return () => clearTimeout(timer);
-  }, [q, allStocks]);
+  }, [q, allStocks, dynamicStocks]);
 
   // Simulated valuation computation
   const simulatedValuation = useMemo(() => {
@@ -354,6 +375,12 @@ export default function StocksPage() {
 
     // Sort Rows
     list.sort((a, b) => {
+      const exactQuery = q.trim().toUpperCase();
+      if (exactQuery) {
+        const aExact = a.s.symbol.toUpperCase() === exactQuery;
+        const bExact = b.s.symbol.toUpperCase() === exactQuery;
+        if (aExact !== bExact) return aExact ? -1 : 1;
+      }
       if (sort === "mos") return b.v.marginOfSafety - a.v.marginOfSafety;
       if (sort === "pe") {
         const peA = isFinite(a.v.ratios.pe) ? a.v.ratios.pe : 9999;
@@ -373,6 +400,8 @@ export default function StocksPage() {
   const lockedCount = processedRows.length - visibleRows.length;
   const hiddenByAssetPlan = allStocks.filter((s) => !isAssetVisible(s.assetType)).length;
   const nextAssetPlan = plan.id === "free" ? "pro" : plan.id === "pro" ? "premium" : "premium";
+  const quoteProviderCount = STOCKS.filter(hasQuoteProvider).length;
+  const isInitialQuoteLoading = dynamicStocks.length === 0 && quoteProviderCount > 0 && !q.trim();
 
   const [showExportModal, setShowExportModal] = useState(false);
 
@@ -1054,7 +1083,12 @@ export default function StocksPage() {
 
             {/* MOBILE SCREENER CARDS */}
             <div className="space-y-3 md:hidden">
-              {visibleRows.length === 0 ? (
+              {visibleRows.length === 0 && isInitialQuoteLoading ? (
+                <QuoteLoadingCard
+                  title={lang === "th" ? "กำลังโหลดราคาล่าสุด" : "Loading live market prices"}
+                  subtitle={lang === "th" ? "กำลังซิงก์ราคาเรียลไทม์จาก API..." : "Syncing realtime quotes from market APIs..."}
+                />
+              ) : visibleRows.length === 0 ? (
                 <Card className="border border-line p-5 text-center">
                   <span className="text-xl">🔍</span>
                   <h3 className="mt-3 text-sm font-bold text-ink">
@@ -1262,6 +1296,14 @@ export default function StocksPage() {
                     {visibleRows.length === 0 ? (
                       <tr>
                         <td colSpan={10} className="p-12 text-center">
+                          {isInitialQuoteLoading ? (
+                            <div className="mx-auto max-w-md">
+                              <QuoteLoadingCard
+                                title={lang === "th" ? "กำลังโหลดราคาล่าสุด" : "Loading live market prices"}
+                                subtitle={lang === "th" ? "กำลังซิงก์ราคาเรียลไทม์จาก API..." : "Syncing realtime quotes from market APIs..."}
+                              />
+                            </div>
+                          ) : (
                           <div className="flex flex-col items-center justify-center space-y-4 max-w-md mx-auto">
                             <span className="text-xl">🔍</span>
                             <h3 className="text-sm font-bold text-ink">
@@ -1304,6 +1346,7 @@ export default function StocksPage() {
                               </p>
                             )}
                           </div>
+                          )}
                         </td>
                       </tr>
                     ) : (

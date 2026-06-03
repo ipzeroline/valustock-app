@@ -12,6 +12,8 @@ import { num, pct, dollar, nav, baht } from "@/lib/format";
 import { useTranslation } from "@/lib/translations";
 import { Sparkline } from "@/components/Charts";
 import { AssetLogo } from "@/components/AssetLogo";
+import { QuoteLoadingCard } from "@/components/QuoteLoading";
+import { hasQuoteProvider, useLiveQuotes } from "@/lib/realtime-quotes";
 import {
   TrendingUp,
   Star,
@@ -25,6 +27,7 @@ import {
   ChevronRight,
   ArrowUpRight,
 } from "@/lib/icons";
+import { Stock } from "@/lib/types";
 
 type StrategyType = "dividend" | "growth" | "value";
 type GlossaryTerm = "mos" | "dcf" | "roe" | "pe" | "de";
@@ -42,6 +45,27 @@ export default function Dashboard() {
   const [activeStrategy, setActiveStrategy] = useState<StrategyType>("dividend");
   // Beginner glossary tab state
   const [activeGlossary, setActiveGlossary] = useState<GlossaryTerm>("mos");
+  const refreshSymbols = useMemo(() => STOCKS.filter(hasQuoteProvider).map((stock) => stock.symbol), []);
+  const { liveStocks, liveStockMap } = useLiveQuotes(refreshSymbols);
+
+  const getDisplayStock = (symbol: string) => {
+    const key = symbol.toUpperCase();
+    const local = getStock(key);
+    if (local && hasQuoteProvider(local) && !liveStockMap.has(key)) return undefined;
+    return liveStockMap.get(key) || local;
+  };
+
+  const allStocks = useMemo(() => {
+    const bySymbol = new Map<string, Stock>();
+    const liveSymbols = new Set(liveStocks.map((stock) => stock.symbol.toUpperCase()));
+    STOCKS.forEach((stock) => {
+      const key = stock.symbol.toUpperCase();
+      if (hasQuoteProvider(stock) && !liveSymbols.has(key)) return;
+      bySymbol.set(key, stock);
+    });
+    liveStocks.forEach((stock) => bySymbol.set(stock.symbol.toUpperCase(), stock));
+    return Array.from(bySymbol.values());
+  }, [liveStocks]);
 
   const structuredData = {
     "@context": "https://schema.org",
@@ -67,14 +91,14 @@ export default function Dashboard() {
   };
 
   const ranked = useMemo(() => {
-    return STOCKS.map((s) => ({
+    return allStocks.map((s) => ({
       s,
       v: computeValuation(s, defaultDCFParams(s)),
     })).sort((a, b) => b.v.marginOfSafety - a.v.marginOfSafety);
-  }, []);
+  }, [allStocks]);
 
   const undervalued = ranked.filter((r) => r.v.verdict === "undervalued").length;
-  const watched = watchlist.map(getStock).filter(Boolean).slice(0, 3);
+  const watched = watchlist.map(getDisplayStock).filter(Boolean).slice(0, 3) as Stock[];
 
   // Group top picks by asset class for Thai investor visibility
   const topThai = ranked.filter((r) => r.s.assetType === "TH_STOCK").slice(0, 2);
@@ -289,7 +313,7 @@ export default function Dashboard() {
           icon={<TrendingUp className="h-5 w-5" />}
           label={t("dashboard.underValuedCount")}
           value={lang === "th" ? `${undervalued} ตัว` : `${undervalued} Assets`}
-          sub={lang === "th" ? `จากหุ้นทั้งหมด ${STOCKS.length} ตัว` : `Out of ${STOCKS.length} total`}
+          sub={lang === "th" ? `จากหุ้นทั้งหมด ${allStocks.length} ตัว` : `Out of ${allStocks.length} total`}
         />
         <SummaryStat
           icon={<Gauge className="h-5 w-5" />}
@@ -384,8 +408,16 @@ export default function Dashboard() {
               </span>
               <div className="grid gap-2 sm:grid-cols-3">
                 {strategyDetails[activeStrategy].stocks.map((symbol) => {
-                  const s = getStock(symbol);
-                  if (!s) return null;
+                  const s = getDisplayStock(symbol);
+                  if (!s) {
+                    return (
+                      <QuoteLoadingCard
+                        key={symbol}
+                        title={`${symbol} live quote`}
+                        subtitle={lang === "th" ? "กำลังดึงราคาล่าสุด..." : "Fetching latest price..."}
+                      />
+                    );
+                  }
                   const v = computeValuation(s, defaultDCFParams(s));
                   const watchedState = isWatched(s.symbol);
                   const isUp = v.marginOfSafety >= 0;
@@ -694,6 +726,12 @@ export default function Dashboard() {
               <Badge tone="up">High MOS</Badge>
             </div>
             <div className="grid gap-3">
+              {topThai.length === 0 && (
+                <QuoteLoadingCard
+                  title={lang === "th" ? "กำลังโหลดราคาหุ้นไทย" : "Loading Thai quotes"}
+                  subtitle={lang === "th" ? "รอราคาล่าสุดจาก API" : "Waiting for latest API prices"}
+                />
+              )}
               {topThai.map((r) => (
                 <Link href={`/stocks/${r.s.symbol}`} key={r.s.symbol} className="surface border border-line/75 rounded-xl p-3.5 flex items-center justify-between hover:border-brand/40 hover:shadow-glow transition group">
                   <div className="flex items-center gap-2">
@@ -721,6 +759,12 @@ export default function Dashboard() {
               <Badge tone="gold">W-8BEN Reduced</Badge>
             </div>
             <div className="grid gap-3">
+              {topUs.length === 0 && (
+                <QuoteLoadingCard
+                  title={lang === "th" ? "กำลังโหลดราคาหุ้นสหรัฐฯ" : "Loading US quotes"}
+                  subtitle={lang === "th" ? "รอราคาล่าสุดจาก API" : "Waiting for latest API prices"}
+                />
+              )}
               {topUs.map((r) => (
                 <Link href={`/stocks/${r.s.symbol}`} key={r.s.symbol} className="surface border border-line/75 rounded-xl p-3.5 flex items-center justify-between hover:border-brand/40 hover:shadow-glow transition group">
                   <div className="flex items-center gap-2">
@@ -748,6 +792,12 @@ export default function Dashboard() {
               <Badge tone="brand">Passive / Active</Badge>
             </div>
             <div className="grid gap-3">
+              {topFunds.length === 0 && (
+                <QuoteLoadingCard
+                  title={lang === "th" ? "กำลังโหลด NAV กองทุน" : "Loading fund prices"}
+                  subtitle={lang === "th" ? "รอข้อมูลราคาล่าสุด" : "Waiting for latest quote data"}
+                />
+              )}
               {topFunds.map((r) => (
                 <Link href={`/stocks/${r.s.symbol}`} key={r.s.symbol} className="surface border border-line/75 rounded-xl p-3.5 flex items-center justify-between hover:border-brand/40 hover:shadow-glow transition group">
                   <div className="flex items-center gap-2">
@@ -775,6 +825,12 @@ export default function Dashboard() {
               <Badge tone="gold">Low Expense</Badge>
             </div>
             <div className="grid gap-3">
+              {topUsFunds.length === 0 && (
+                <QuoteLoadingCard
+                  title={lang === "th" ? "กำลังโหลดราคากองทุนสหรัฐฯ" : "Loading US fund quotes"}
+                  subtitle={lang === "th" ? "รอราคาล่าสุดจาก API" : "Waiting for latest API prices"}
+                />
+              )}
               {topUsFunds.map((r) => (
                 <Link href={`/stocks/${r.s.symbol}`} key={r.s.symbol} className="surface border border-line/75 rounded-xl p-3.5 flex items-center justify-between hover:border-brand/40 hover:shadow-glow transition group">
                   <div className="flex items-center gap-2">
@@ -859,7 +915,17 @@ export default function Dashboard() {
             {lang === "th" ? "จัดการรายการโปรด" : "Manage Watchlist"} →
           </Link>
         </div>
-        {watched.length === 0 ? (
+        {watchlist.length > 0 && watched.length === 0 ? (
+          <div className="grid gap-4 sm:grid-cols-3">
+            {watchlist.slice(0, 3).map((symbol) => (
+              <QuoteLoadingCard
+                key={symbol}
+                title={`${symbol} live quote`}
+                subtitle={lang === "th" ? "กำลังดึงราคาล่าสุด..." : "Fetching latest price..."}
+              />
+            ))}
+          </div>
+        ) : watched.length === 0 ? (
           <Card className="p-8 text-center border border-dashed border-line">
             <Star className="mx-auto h-8 w-8 text-muted" />
             <h3 className="mt-3 font-display text-base font-black text-ink">
