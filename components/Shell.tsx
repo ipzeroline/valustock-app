@@ -383,8 +383,8 @@ function AppTopbar() {
 export function Shell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname() || "/";
 
-  // Completely isolate and bypass the client member shell for the Admin Console
-  if (pathname.startsWith("/AdminConsole")) {
+  // Completely isolate surfaces that should not inherit the member web shell.
+  if (pathname.startsWith("/AdminConsole") || pathname.startsWith("/telegram")) {
     return <>{children}</>;
   }
 
