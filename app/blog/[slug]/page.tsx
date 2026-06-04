@@ -1,19 +1,84 @@
 import type { Metadata } from "next";
-import Link from "next/link";
-import { notFound } from "next/navigation";
-import { ArrowRight, BarChart3, FileText, CheckCircle, ArrowUpRight, AlertTriangle, Mail, Crown } from "@/lib/icons";
+import { notFound, redirect } from "next/navigation";
 import { blogArticles, getBlogArticle } from "@/lib/blogArticles";
+import { BlogArticleClient } from "./BlogArticleClient";
+import { BlogIndexClient } from "../BlogIndexClient";
+
+const PAGE_SIZE = 12;
 
 type Props = {
   params: Promise<{ slug: string }>;
 };
 
+function totalPages() {
+  return Math.max(1, Math.ceil(blogArticles.length / PAGE_SIZE));
+}
+
+function parsePageSlug(value: string) {
+  if (!/^\d+$/.test(value)) return null;
+  const page = Number(value);
+  return Number.isInteger(page) && page > 0 ? page : null;
+}
+
 export function generateStaticParams() {
-  return blogArticles.map((article) => ({ slug: article.slug }));
+  const articleParams = blogArticles.map((article) => ({ slug: article.slug }));
+  const pageParams = Array.from({ length: Math.max(totalPages() - 1, 0) }).map((_, index) => ({
+    slug: String(index + 2),
+  }));
+  return [...articleParams, ...pageParams];
 }
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { slug } = await params;
+  const page = parsePageSlug(slug);
+  if (page) {
+    if (page === 1 || page > totalPages()) {
+      return {
+        title: "ไม่พบบทความ | ValuStock",
+      };
+    }
+
+    const url = `https://valustock.com/blog/${page}`;
+    return {
+      title: `บทวิเคราะห์หุ้นและ ETF หน้า ${page} | ValuStock Research Library`,
+      description:
+        "อ่านบทวิเคราะห์หุ้นไทย หุ้นสหรัฐ ETF DCF Fair Value Margin of Safety หุ้นปันผล และหุ้น Undervalue พร้อมคู่มือสำหรับนักลงทุนไทย",
+      alternates: {
+        canonical: url,
+        types: {
+          "text/html": [
+            { url: page === 2 ? "https://valustock.com/blog" : `https://valustock.com/blog/${page - 1}`, title: "Previous" },
+            ...(page < totalPages() ? [{ url: `https://valustock.com/blog/${page + 1}`, title: "Next" }] : []),
+          ],
+        },
+      },
+      openGraph: {
+        type: "website",
+        locale: "th_TH",
+        url,
+        title: `บทวิเคราะห์หุ้นและ ETF หน้า ${page} | ValuStock`,
+        description:
+          "Research library สำหรับหุ้นไทย หุ้นสหรัฐ ETF DCF Fair Value และ Margin of Safety",
+        siteName: "ValuStock",
+        images: [
+          {
+            url: "https://valustock.com/opengraph-image",
+            width: 1200,
+            height: 630,
+            alt: "ValuStock research library",
+          },
+        ],
+      },
+      twitter: {
+        card: "summary_large_image",
+        title: `บทวิเคราะห์หุ้นและ ETF หน้า ${page} | ValuStock`,
+        description:
+          "Research library สำหรับหุ้นไทย หุ้นสหรัฐ ETF DCF Fair Value และ Margin of Safety",
+        images: ["https://valustock.com/opengraph-image"],
+      },
+    };
+  }
+
   const article = getBlogArticle(slug);
 
   if (!article) {
@@ -23,6 +88,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   }
 
   const url = `https://valustock.com/blog/${article.slug}`;
+  const imageUrl = `https://valustock.com/article-image/${encodeURIComponent(article.slug)}?category=${encodeURIComponent(article.category)}&symbol=${encodeURIComponent(article.symbol)}&v=5`;
 
   return {
     title: `${article.titleTh} | ValuStock`,
@@ -46,23 +112,67 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
       modifiedTime: article.modified,
       authors: ["ValuStock Research"],
       tags: article.keywords,
+      images: [
+        {
+          url: imageUrl,
+          width: 900,
+          height: 506,
+          alt: `${article.titleTh} research cover`,
+        },
+      ],
     },
     twitter: {
       card: "summary_large_image",
       title: article.titleTh,
       description: article.descriptionTh,
+      images: [imageUrl],
     },
   };
 }
 
 export default async function BlogArticlePage({ params }: Props) {
   const { slug } = await params;
+  const page = parsePageSlug(slug);
+  if (page) {
+    if (page === 1) redirect("/blog");
+    if (page > totalPages()) notFound();
+
+    const url = `https://valustock.com/blog/${page}`;
+    const jsonLd = {
+      "@context": "https://schema.org",
+      "@type": "CollectionPage",
+      name: `ValuStock Research Library Page ${page}`,
+      url,
+      isPartOf: {
+        "@type": "CollectionPage",
+        name: "ValuStock Research Library",
+        url: "https://valustock.com/blog",
+      },
+    };
+
+    return (
+      <main className="mx-auto max-w-6xl px-4 py-8 sm:px-6">
+        <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
+        <BlogIndexClient articles={blogArticles} currentPage={page} />
+      </main>
+    );
+  }
+
   const article = getBlogArticle(slug);
 
   if (!article) notFound();
 
   const url = `https://valustock.com/blog/${article.slug}`;
+  const imageUrl = `https://valustock.com/article-image/${encodeURIComponent(article.slug)}?category=${encodeURIComponent(article.category)}&symbol=${encodeURIComponent(article.symbol)}&v=5`;
   const related = blogArticles.filter((item) => item.slug !== article.slug).slice(0, 4);
+  const articleText = [
+    article.titleTh,
+    article.descriptionTh,
+    article.verdictTh,
+    ...article.sectionsTh.flatMap((section) => [section.heading, ...section.body]),
+    ...article.faq.flatMap((item) => [item.q, item.a]),
+  ].join(" ");
+  const wordCount = articleText.split(/\s+/).filter(Boolean).length;
   const jsonLd = {
     "@context": "https://schema.org",
     "@graph": [
@@ -73,6 +183,15 @@ export default async function BlogArticlePage({ params }: Props) {
         alternativeHeadline: article.titleEn,
         description: article.descriptionTh,
         inLanguage: ["th-TH", "en-US"],
+        image: {
+          "@type": "ImageObject",
+          url: imageUrl,
+          width: 900,
+          height: 506,
+        },
+        thumbnailUrl: imageUrl,
+        articleSection: article.category,
+        wordCount,
         datePublished: article.published,
         dateModified: article.modified,
         author: { "@type": "Organization", name: "ValuStock Research" },
@@ -82,9 +201,29 @@ export default async function BlogArticlePage({ params }: Props) {
           logo: { "@type": "ImageObject", url: "https://valustock.com/logo.png" },
         },
         mainEntityOfPage: url,
-        about: article.symbol,
+        about: [
+          { "@type": "Thing", name: article.symbol },
+          { "@type": "Thing", name: article.category },
+          ...article.keywords.slice(0, 6).map((keyword) => ({ "@type": "Thing", name: keyword })),
+        ],
         keywords: article.keywords.join(", "),
         citation: article.sources.map((source) => source.url),
+        isAccessibleForFree: true,
+      },
+      {
+        "@type": "WebPage",
+        "@id": `${url}#webpage`,
+        url,
+        name: article.titleTh,
+        description: article.descriptionTh,
+        primaryImageOfPage: {
+          "@type": "ImageObject",
+          url: imageUrl,
+          width: 900,
+          height: 506,
+        },
+        breadcrumb: { "@id": `${url}#breadcrumb` },
+        mainEntity: { "@id": `${url}#article` },
       },
       {
         "@type": "FAQPage",
@@ -110,190 +249,7 @@ export default async function BlogArticlePage({ params }: Props) {
   return (
     <main className="mx-auto max-w-5xl px-4 py-6 sm:px-6">
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
-
-      <article className="space-y-8">
-        <header className="rounded-2xl border border-line bg-surface/55 p-6 sm:p-8">
-          <nav className="mb-5 flex flex-wrap items-center gap-2 text-xs font-bold text-muted">
-            <Link href="/blog" className="inline-flex items-center gap-1 hover:text-brand">
-              <ArrowRight className="h-3.5 w-3.5 rotate-180" />
-              Blog
-            </Link>
-            <span>/</span>
-            <span className="text-brand">{article.symbol}</span>
-          </nav>
-          <div className="flex flex-wrap gap-2">
-            <span className="inline-flex items-center gap-1 rounded-full border border-brand/30 bg-brand/10 px-3 py-1 text-[11px] font-black text-brand">
-              <BarChart3 className="h-3.5 w-3.5" />
-              {article.category}
-            </span>
-            <span className="rounded-full border border-line bg-bg px-3 py-1 text-[11px] font-black text-muted">
-              Updated {article.modified}
-            </span>
-            <span className="rounded-full border border-line bg-bg px-3 py-1 text-[11px] font-black text-muted">
-              {article.readTime}
-            </span>
-          </div>
-          <h1 className="mt-5 font-display text-3xl font-black leading-tight text-ink sm:text-5xl">
-            {article.titleTh}
-          </h1>
-          <p className="mt-4 text-base font-semibold leading-relaxed text-muted">
-            {article.descriptionTh}
-          </p>
-          <p className="mt-3 text-sm font-semibold leading-relaxed text-muted">
-            {article.titleEn}
-          </p>
-        </header>
-
-        <section className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-          {article.metrics.map((metric) => (
-            <div key={metric.label} className="rounded-2xl border border-line bg-surface p-4">
-              <div className="text-[11px] font-black uppercase text-muted">{metric.label}</div>
-              <div className="mt-2 font-display text-2xl font-black text-ink">{metric.value}</div>
-              <p className="mt-1 text-xs font-semibold leading-relaxed text-muted">{metric.note}</p>
-            </div>
-          ))}
-        </section>
-
-        <section className="rounded-2xl border border-brand/25 bg-brand/10 p-5 sm:p-6">
-          <div className="flex items-center gap-2 text-sm font-black text-brand">
-            <CheckCircle className="h-5 w-5" />
-            Professional verdict
-          </div>
-          <p className="mt-3 text-sm font-semibold leading-relaxed text-ink sm:text-base">{article.verdictTh}</p>
-          <p className="mt-3 text-sm font-semibold leading-relaxed text-muted">{article.verdictEn}</p>
-        </section>
-
-        <section className="rounded-2xl border border-line bg-surface p-5 sm:p-6">
-          <div className="grid gap-4 lg:grid-cols-[1.2fr_0.8fr] lg:items-center">
-            <div>
-              <div className="flex items-center gap-2 text-xs font-black uppercase tracking-wide text-brand">
-                <Mail className="h-4 w-4" />
-                Reader Conversion Funnel
-              </div>
-              <h2 className="mt-2 font-display text-2xl font-black text-ink">
-                อ่านบทวิเคราะห์ {article.symbol} แล้วต่อด้วยเครื่องมือประเมินมูลค่าฟรี
-              </h2>
-              <p className="mt-3 text-sm font-semibold leading-relaxed text-muted">
-                สมัครฟรีเพื่อสร้าง watchlist, ทดลองเปรียบเทียบหุ้น และรับบทวิเคราะห์ต่อเนื่องทางอีเมล
-                ก่อนอัปเกรดเป็น Premium เมื่อคุณต้องการ DCF, portfolio alerts และข้อมูลเชิงลึกมากขึ้น
-              </p>
-              <p className="mt-2 text-sm font-semibold leading-relaxed text-muted" lang="en">
-                Start free with watchlists and comparison tools, then upgrade to Premium when deeper DCF workflows,
-                alerts and research coverage become useful.
-              </p>
-            </div>
-            <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-1">
-              <Link
-                href="/login"
-                className="inline-flex items-center justify-center gap-2 rounded-xl bg-brand px-4 py-3 text-sm font-black text-bg shadow-soft transition hover:opacity-90"
-              >
-                สมัครสมาชิกฟรี
-                <ArrowRight className="h-4 w-4" />
-              </Link>
-              <Link
-                href="/pricing"
-                className="inline-flex items-center justify-center gap-2 rounded-xl border border-line bg-bg px-4 py-3 text-sm font-black text-ink transition hover:border-brand/40 hover:text-brand"
-              >
-                <Crown className="h-4 w-4" />
-                ดู Premium
-              </Link>
-            </div>
-          </div>
-        </section>
-
-        <section className="space-y-6">
-          {article.sectionsTh.map((section) => (
-            <div key={section.heading} className="rounded-2xl border border-line bg-surface p-5 sm:p-6">
-              <h2 className="font-display text-2xl font-black text-ink">{section.heading}</h2>
-              <div className="mt-4 space-y-3">
-                {section.body.map((paragraph) => (
-                  <p key={paragraph} className="text-sm font-medium leading-7 text-muted sm:text-base">
-                    {paragraph}
-                  </p>
-                ))}
-              </div>
-            </div>
-          ))}
-        </section>
-
-        <section className="rounded-2xl border border-line bg-surface p-5 sm:p-6" lang="en">
-          <div className="flex items-center gap-2 text-sm font-black text-brand">
-            <FileText className="h-5 w-5" />
-            English version
-          </div>
-          <h2 className="mt-3 font-display text-2xl font-black text-ink">{article.titleEn}</h2>
-          <p className="mt-3 text-sm font-semibold leading-relaxed text-muted">{article.descriptionEn}</p>
-          <div className="mt-5 space-y-5">
-            {article.sectionsEn.map((section) => (
-              <section key={section.heading}>
-                <h3 className="font-display text-lg font-black text-ink">{section.heading}</h3>
-                <div className="mt-2 space-y-2">
-                  {section.body.map((paragraph) => (
-                    <p key={paragraph} className="text-sm font-medium leading-7 text-muted">
-                      {paragraph}
-                    </p>
-                  ))}
-                </div>
-              </section>
-            ))}
-          </div>
-        </section>
-
-        <section id="faq" className="rounded-2xl border border-line bg-surface p-5 sm:p-6">
-          <h2 className="font-display text-2xl font-black text-ink">คำถามที่พบบ่อยเกี่ยวกับ {article.symbol}</h2>
-          <div className="mt-4 divide-y divide-line">
-            {article.faq.map((item) => (
-              <div key={item.q} className="py-4 first:pt-0 last:pb-0">
-                <h3 className="font-display text-base font-black text-ink">{item.q}</h3>
-                <p className="mt-2 text-sm font-medium leading-7 text-muted">{item.a}</p>
-              </div>
-            ))}
-          </div>
-        </section>
-
-        <section className="rounded-2xl border border-amber-400/30 bg-amber-400/10 p-5 sm:p-6">
-          <div className="flex items-start gap-3">
-            <AlertTriangle className="mt-0.5 h-5 w-5 shrink-0 text-amber-600" />
-            <div>
-              <h2 className="font-display text-lg font-black text-ink">หมายเหตุด้านการลงทุน</h2>
-              <p className="mt-2 text-sm font-semibold leading-7 text-muted">
-                บทความนี้จัดทำเพื่อการศึกษาและการวิเคราะห์ข้อมูลเท่านั้น ไม่ใช่คำแนะนำซื้อ ขาย หรือถือหลักทรัพย์
-                นักลงทุนควรตรวจสอบข้อมูลล่าสุดจากบริษัท ตลาดหลักทรัพย์ และที่ปรึกษาการลงทุนที่ได้รับอนุญาตก่อนตัดสินใจ
-              </p>
-            </div>
-          </div>
-        </section>
-
-        <section className="rounded-2xl border border-line bg-surface p-5 sm:p-6">
-          <h2 className="font-display text-xl font-black text-ink">แหล่งข้อมูลอ้างอิง</h2>
-          <div className="mt-3 flex flex-wrap gap-2">
-            {article.sources.map((source) => (
-              <a
-                key={source.url}
-                href={source.url}
-                target="_blank"
-                rel="noreferrer"
-                className="inline-flex items-center gap-1 rounded-full border border-line bg-bg px-3 py-1.5 text-xs font-bold text-muted hover:border-brand/40 hover:text-brand"
-              >
-                {source.label}
-                <ArrowUpRight className="h-3.5 w-3.5" />
-              </a>
-            ))}
-          </div>
-        </section>
-      </article>
-
-      <aside className="mt-8 rounded-2xl border border-line bg-surface p-5 sm:p-6">
-        <h2 className="font-display text-xl font-black text-ink">อ่านต่อ</h2>
-        <div className="mt-4 grid gap-3 sm:grid-cols-2">
-          {related.map((item) => (
-            <Link key={item.slug} href={`/blog/${item.slug}`} className="rounded-xl border border-line bg-bg p-4 hover:border-brand/40">
-              <div className="text-[11px] font-black text-brand">{item.symbol}</div>
-              <div className="mt-1 text-sm font-black leading-snug text-ink">{item.titleTh}</div>
-            </Link>
-          ))}
-        </div>
-      </aside>
+      <BlogArticleClient article={article} related={related} />
     </main>
   );
 }

@@ -270,6 +270,15 @@ export default function TechnicalChartPage() {
   const step = visible.length > 1 ? (width - pad.left - pad.right) / (visible.length - 1) : width - pad.left - pad.right;
   const candleWidth = Math.max(3, Math.min(11, step * 0.58));
   const active = visible[hoverIndex ?? visible.length - 1];
+  const chartSource = stock.chartSource || (stock.ohlcHistory?.length ? "api-history" : "synthetic");
+  const chartSourceLabel = chartSource === "synthetic" || chartSource.includes("simulated")
+    ? (lang === "th" ? "ข้อมูลพื้นฐาน" : "Basic history")
+    : (lang === "th" ? "ข้อมูลตลาดย้อนหลัง" : "Historical market data");
+  const chartUpdatedAt = stock.chartUpdatedAt ? new Date(stock.chartUpdatedAt) : null;
+  const chartUpdatedLabel =
+    chartUpdatedAt && !Number.isNaN(chartUpdatedAt.getTime())
+      ? chartUpdatedAt.toLocaleString(lang === "th" ? "th-TH" : "en-US", { dateStyle: "medium", timeStyle: "short" })
+      : "-";
 
   const x = (index: number) => pad.left + index * step;
   const priceY = (value: number) => priceTop + ((maxPrice - value) / priceRange) * priceHeight;
@@ -353,6 +362,9 @@ export default function TechnicalChartPage() {
               <h1 className="font-display text-2xl font-black text-ink">{stock.symbol} Technical Chart</h1>
               <Badge tone="muted">{stock.market}</Badge>
               <Badge tone="gold">Pro</Badge>
+              <Badge tone={stock.quoteIsDelayed ? "muted" : "up"}>
+                {stock.quoteIsDelayed ? `${stock.quoteDelayMinutes || 15}m delayed` : "Realtime"}
+              </Badge>
             </div>
             <p className="truncate text-sm font-medium text-muted">{lang === "th" ? stock.name : stock.enName}</p>
           </div>
@@ -445,11 +457,19 @@ export default function TechnicalChartPage() {
           <div className="rounded-xl border border-line bg-bg p-3 text-xs font-semibold leading-relaxed text-muted">
             <div className="mb-1 flex items-center gap-2 font-bold text-ink">
               <Info className="h-3.5 w-3.5 text-brand" />
-              {lang === "th" ? "ข้อมูลจาก API" : "API Data"}
+              {lang === "th" ? "ข้อมูลตลาด" : "Market Data"}
             </div>
-            {lang === "th"
-              ? "ใช้ OHLC และ Volume จาก API เมื่อมีข้อมูลจริง หากไม่มีจะสร้างแท่งเทียนจากประวัติราคาเพื่อให้วิเคราะห์ได้ต่อเนื่อง"
-              : "Uses API OHLC and volume when available. If unavailable, candles are derived from available price history."}
+            <div>
+              {lang === "th" ? "ชุดข้อมูลกราฟ" : "Chart dataset"}: <span className="text-ink">{chartSourceLabel}</span>
+            </div>
+            <div>
+              {lang === "th" ? "อัปเดต" : "Updated"}: <span className="text-ink">{chartUpdatedLabel}</span>
+            </div>
+            <div className="mt-2">
+              {lang === "th"
+                ? "ใช้ OHLC และ Volume จากแหล่งข้อมูลตลาดก่อนเสมอ หากไม่มีข้อมูลจึงใช้ข้อมูลเดิม"
+                : "Uses market OHLC and volume first. Static history is used only when market data is unavailable."}
+            </div>
           </div>
         </aside>
 

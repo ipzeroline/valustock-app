@@ -129,7 +129,7 @@ export default function AdminArticles() {
           เขียนบทความใหม่ แก้ไข หรือลบบทความนำเสนอหน้าแรก (รองรับรูปแบบสองภาษา TH/EN แยกชัดเจน)
         </p>
       </div>
-      {/* 🤖 Automated AI & Massive News Pull Console */}
+      {/* Automated market news pull console */}
       <Card className="border border-brand/20 bg-brand/5 p-5">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div className="space-y-1">

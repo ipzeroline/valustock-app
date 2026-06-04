@@ -86,16 +86,16 @@ export default function AdminOverview() {
         <p className="text-xs text-muted mt-1.5">
           {lang === "th"
             ? "ภาพรวมการเชื่อมโยงระบบฐานข้อมูล สมาชิก ธุรกรรมชำระเงิน บทความเผยแพร่ และบุคลากรปฏิบัติการ"
-            : "Live operational hub for database integrations, members, transaction flows, editorial content, and staff."}
+            : "Live operational hub for data services, members, transaction flows, editorial content, and staff."}
         </p>
       </div>
 
       {/* 2. Diagnostic grid */}
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
         <MonitorCard
-          title={lang === "th" ? "สถานะ MariaDB" : "MariaDB Status"}
+          title={lang === "th" ? "สถานะข้อมูลระบบ" : "Data Service Status"}
           value={dbConnected ? "Active" : "Sandbox Mode"}
-          desc={dbConnected ? `Host: ${dbInfo?.host}` : "Database offline - Sandbox Active"}
+          desc={dbConnected ? "Production data service is connected" : "Data service offline - Sandbox Active"}
           connected={dbConnected}
         />
         <MonitorCard
@@ -149,20 +149,20 @@ export default function AdminOverview() {
         <div className="aurora absolute inset-0 -z-10 opacity-30" />
         <h3 className="font-display font-bold text-sm text-ink flex items-center gap-2">
           <Sparkles className="h-4.5 w-4.5 text-gold shrink-0 animate-pulse" />
-          {lang === "th" ? "ระบบจัดการฐานข้อมูล SQL" : "SQL Database Diagnostics"}
+          {lang === "th" ? "ระบบจัดการข้อมูล Production" : "Production Data Diagnostics"}
         </h3>
         <p className="text-xs text-muted leading-relaxed mt-2.5 max-w-4xl">
           {dbConnected
-            ? `การเชื่อมต่อฐานข้อมูลทำงานร่วมกับ MariaDB ได้สมบูรณ์ ข้อมูลธุรกรรม สมาชิก watchlists บทความ และสิทธิ์เจ้าหน้าที่จัดเก็บบนฐานข้อมูล production (DB: ${dbInfo?.database || "configured"}, User: ${dbInfo?.user || "configured"})`
-            : `ฐานข้อมูลยังเชื่อมต่อไม่ได้ (${dbInfo?.code || "UNKNOWN"}): ${dbInfo?.error || "ตรวจสอบ DB_HOST, DB_NAME, DB_USER, DB_PASSWORD และสิทธิ์ผู้ใช้บน server"}`}
+            ? "ระบบข้อมูล production พร้อมใช้งานสำหรับธุรกรรม สมาชิก watchlists บทความ และสิทธิ์เจ้าหน้าที่"
+            : `ระบบข้อมูลยังเชื่อมต่อไม่ได้ (${dbInfo?.code || "UNKNOWN"}): ${dbInfo?.error || "ตรวจสอบ environment และสิทธิ์การเข้าถึงบน server"}`}
         </p>
 
         {!dbConnected && (
           <div className="mt-4 pt-4 border-t border-line/50 space-y-2">
             <span className="text-xs font-bold text-ink block">🔗 แนวทางตรวจสอบฐานข้อมูล:</span>
             <div className="rounded-xl border border-line bg-bg p-3.5 text-xs font-mono text-ink leading-relaxed select-all">
-              1. ตรวจสอบค่า DB_HOST, DB_PORT, DB_NAME, DB_USER, DB_PASSWORD บน production<br />
-              2. ตรวจสอบสิทธิ์ user ให้เข้าถึง database ที่กำหนดใน DB_NAME<br />
+              1. ตรวจสอบค่า environment ของระบบข้อมูลบน production<br />
+              2. ตรวจสอบสิทธิ์บัญชีบริการให้เข้าถึง data store ที่กำหนด<br />
               3. รัน migration/init เฉพาะผ่าน server shell หรือ deployment job ที่ปลอดภัย
             </div>
             <p className="text-[11px] font-semibold leading-relaxed text-muted">

@@ -9,6 +9,7 @@ import {
   BarChart3,
   Bell,
   CheckCircle,
+  Clock,
   Layers,
   RefreshCw,
   Shield,
@@ -34,38 +35,32 @@ declare global {
 }
 
 type MiniSummary = {
+  generatedAt: string;
   member: {
     email: string;
     plan: string;
-    telegramUser?: { first_name?: string; username?: string };
+    telegramUser?: { first_name?: string; username?: string; language_code?: string };
   };
   capabilities: { portfolio: boolean; compare: boolean; alerts: boolean };
   portfolio: {
     totalValue: number;
+    totalCost: number;
     pnl: number;
     pnlPct: number;
-    positions: Array<{
-      symbol: string;
-      name: string;
-      shares: number;
-      avgCost: number;
-      price: number;
-      value: number;
-      pnl: number;
-      pnlPct: number;
-    }>;
+    positionCount: number;
+    concentrationPct: number;
+    bestPosition: MiniPosition | null;
+    worstPosition: MiniPosition | null;
+    positions: MiniPosition[];
   };
-  watchlist: Array<{
-    symbol: string;
-    name: string;
-    price: number;
-    changePct: number;
-    fairValue: number;
-    mos: number;
-    dividendYield: number;
-    roe: number | null;
-    verdict: string;
-  }>;
+  watchlist: MiniWatchlistStock[];
+  watchlistStats: {
+    count: number;
+    avgMos: number;
+    undervaluedCount: number;
+    topMos: MiniWatchlistStock | null;
+    topYield: MiniWatchlistStock | null;
+  };
   compareSets: Array<{
     id: string;
     name: string;
@@ -76,7 +71,105 @@ type MiniSummary = {
   }>;
 };
 
-type Tab = "portfolio" | "compare" | "watchlist";
+type MiniPosition = {
+  symbol: string;
+  name: string;
+  shares: number;
+  avgCost: number;
+  price: number;
+  value: number;
+  pnl: number;
+  pnlPct: number;
+};
+
+type MiniWatchlistStock = {
+  symbol: string;
+  name: string;
+  price: number;
+  changePct: number;
+  fairValue: number;
+  mos: number;
+  dividendYield: number;
+  roe: number | null;
+  verdict: string;
+};
+
+type Tab = "overview" | "portfolio" | "compare" | "watchlist";
+
+const copy = {
+  th: {
+    title: "ศูนย์สรุปพอร์ต",
+    subtitleFallback: "เปิดผ่าน Telegram เพื่อดูพอร์ต Watchlist และ Compare แบบย่อ",
+    openInTelegram: "ต้องเปิดผ่าน Telegram",
+    openHint: "หน้านี้ต้องเปิดจาก Mini App ของบอท ระบบจะใช้ connection key ที่เชื่อมจากหน้า Account เพื่อดึงข้อมูลโดยไม่ต้อง login เว็บซ้ำ",
+    backHome: "กลับเว็บหลัก",
+    loading: "กำลังโหลดข้อมูล...",
+    overview: "ภาพรวม",
+    portfolio: "พอร์ต",
+    compare: "เปรียบเทียบ",
+    watchlist: "ติดตาม",
+    totalValue: "มูลค่าพอร์ต",
+    totalCost: "ต้นทุน",
+    pnl: "กำไร/ขาดทุน",
+    concentration: "น้ำหนักตัวใหญ่สุด",
+    positions: "จำนวนสินทรัพย์",
+    watchlistCount: "Watchlist",
+    compareCount: "Compare",
+    sendPortfolio: "ส่งสรุปพอร์ตเข้าแชท",
+    sendWatchlist: "ส่งสรุป Watchlist เข้าแชท",
+    sending: "กำลังส่ง...",
+    sent: "ส่งเข้า Telegram แล้ว",
+    topHolding: "สินทรัพย์หลักในพอร์ต",
+    best: "ตัวทำกำไรดีที่สุด",
+    worst: "ตัวที่ต้องติดตาม",
+    noPortfolio: "ยังไม่มีรายการพอร์ตในระบบ",
+    noCompare: "ยังไม่มี Compare Set ที่บันทึกไว้",
+    noWatchlist: "ยังไม่มีหุ้นใน Watchlist",
+    todayFocus: "จุดที่ควรดูวันนี้",
+    avgMos: "MOS เฉลี่ย",
+    valueIdeas: "ต่ำกว่ามูลค่า",
+    mosLeader: "MOS เด่น",
+    yieldLeader: "Yield เด่น",
+    updated: "อัปเดต",
+    locked: "ฟีเจอร์นี้ต้องใช้แพ็กเกจที่รองรับ",
+  },
+  en: {
+    title: "Portfolio Command Center",
+    subtitleFallback: "Open in Telegram to view portfolio, watchlist, and compare summaries.",
+    openInTelegram: "Open inside Telegram",
+    openHint: "This page must be opened from the bot Mini App. It uses your account connection key to load data without signing in again.",
+    backHome: "Back to site",
+    loading: "Loading data...",
+    overview: "Overview",
+    portfolio: "Portfolio",
+    compare: "Compare",
+    watchlist: "Watchlist",
+    totalValue: "Portfolio Value",
+    totalCost: "Cost Basis",
+    pnl: "P/L",
+    concentration: "Top Weight",
+    positions: "Positions",
+    watchlistCount: "Watchlist",
+    compareCount: "Compare",
+    sendPortfolio: "Send portfolio summary",
+    sendWatchlist: "Send watchlist summary",
+    sending: "Sending...",
+    sent: "Sent to Telegram",
+    topHolding: "Core holding",
+    best: "Best performer",
+    worst: "Needs attention",
+    noPortfolio: "No portfolio transactions yet",
+    noCompare: "No saved compare sets yet",
+    noWatchlist: "No watchlist symbols yet",
+    todayFocus: "Today focus",
+    avgMos: "Avg MOS",
+    valueIdeas: "Value ideas",
+    mosLeader: "MOS leader",
+    yieldLeader: "Yield leader",
+    updated: "Updated",
+    locked: "This feature requires an eligible plan",
+  },
+} as const;
 
 function MiniStat({
   label,
@@ -97,10 +190,21 @@ function MiniStat({
   );
 }
 
+function compactMoney(value: number) {
+  const abs = Math.abs(value);
+  if (abs >= 1_000_000) return `${num(value / 1_000_000, 2)}M`;
+  if (abs >= 1_000) return `${num(value / 1_000, 1)}K`;
+  return num(value, 0);
+}
+
+function signedPct(value: number) {
+  return `${value >= 0 ? "+" : ""}${num(value, 1)}%`;
+}
+
 export default function TelegramMiniAppPage() {
   const [initData, setInitData] = useState("");
   const [summary, setSummary] = useState<MiniSummary | null>(null);
-  const [activeTab, setActiveTab] = useState<Tab>("portfolio");
+  const [activeTab, setActiveTab] = useState<Tab>("overview");
   const [loading, setLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState("");
   const [message, setMessage] = useState("");
@@ -164,7 +268,7 @@ export default function TelegramMiniAppPage() {
       });
       const data = await res.json();
       if (!res.ok || !data.success) throw new Error(data.error || "Telegram action failed");
-      setMessage("ส่งเข้า Telegram แล้ว");
+      setMessage((summary?.member.telegramUser?.language_code || "").startsWith("th") ? "ส่งเข้า Telegram แล้ว" : "Sent to Telegram");
     } catch (err) {
       setMessage(err instanceof Error ? err.message : "Telegram action failed");
     } finally {
@@ -172,26 +276,63 @@ export default function TelegramMiniAppPage() {
     }
   };
 
+  const lang = (summary?.member.telegramUser?.language_code || "").startsWith("th") ? "th" : "en";
+  const c = copy[lang];
   const topPosition = useMemo(() => summary?.portfolio.positions[0] || null, [summary]);
+  const focusItems = useMemo(() => {
+    if (!summary) return [];
+    return [
+      summary.portfolio.bestPosition
+        ? {
+            label: c.best,
+            title: summary.portfolio.bestPosition.symbol,
+            detail: signedPct(summary.portfolio.bestPosition.pnlPct),
+            tone: "up" as const,
+          }
+        : null,
+      summary.portfolio.worstPosition
+        ? {
+            label: c.worst,
+            title: summary.portfolio.worstPosition.symbol,
+            detail: signedPct(summary.portfolio.worstPosition.pnlPct),
+            tone: summary.portfolio.worstPosition.pnlPct >= 0 ? ("up" as const) : ("down" as const),
+          }
+        : null,
+      summary.watchlistStats.topMos
+        ? {
+            label: c.mosLeader,
+            title: summary.watchlistStats.topMos.symbol,
+            detail: `MOS ${signedPct(summary.watchlistStats.topMos.mos)}`,
+            tone: "gold" as const,
+          }
+        : null,
+    ].filter(Boolean) as Array<{ label: string; title: string; detail: string; tone: "up" | "down" | "gold" }>;
+  }, [summary, c.best, c.worst, c.mosLeader]);
 
   return (
     <main className="min-h-screen bg-bg px-4 py-4 text-ink">
       <div className="mx-auto max-w-md space-y-4">
-        <header className="rounded-2xl border border-line bg-surface p-4">
+        <header className="rounded-2xl border border-line bg-surface p-4 shadow-card">
           <div className="flex items-start justify-between gap-3">
-            <div>
+            <div className="min-w-0">
               <div className="flex items-center gap-2 text-[11px] font-black uppercase tracking-wide text-brand">
                 <Shield className="h-4 w-4" />
-                ValuStock Telegram
+                ValuStock Mini
               </div>
               <h1 className="mt-2 font-display text-2xl font-black leading-tight">
-                Mini Portfolio & Compare
+                {c.title}
               </h1>
               <p className="mt-1 text-xs font-semibold leading-relaxed text-muted">
                 {summary
                   ? `${summary.member.email} · ${summary.member.plan.toUpperCase()}`
-                  : "ใช้ Telegram connection key จากหน้า Account ไม่ต้อง login เว็บซ้ำ"}
+                  : c.subtitleFallback}
               </p>
+              {summary?.generatedAt && (
+                <div className="mt-2 inline-flex items-center gap-1 rounded-lg border border-line bg-bg px-2 py-1 text-[10px] font-bold text-muted">
+                  <Clock className="h-3 w-3" />
+                  {c.updated} {new Date(summary.generatedAt).toLocaleTimeString(lang === "th" ? "th-TH" : "en-US", { hour: "2-digit", minute: "2-digit" })}
+                </div>
+              )}
             </div>
             <button
               type="button"
@@ -209,13 +350,13 @@ export default function TelegramMiniAppPage() {
           <section className="rounded-2xl border border-gold/35 bg-gold/10 p-4 text-sm font-semibold leading-relaxed text-muted">
             <div className="flex items-center gap-2 font-display text-base font-black text-ink">
               <Bell className="h-5 w-5 text-gold" />
-              ต้องเปิดผ่าน Telegram
+              {c.openInTelegram}
             </div>
             <p className="mt-2">
-              หน้านี้ต้องเปิดจาก Mini App ของ @valustockbot ระบบจะใช้ Telegram connection key ที่เชื่อมจากหน้า Account เพื่อดึง Portfolio, Compare Sets และ Watchlist โดยไม่ต้อง login เว็บซ้ำ
+              {c.openHint}
             </p>
             <Link href="/" className="mt-3 inline-flex items-center gap-1 text-brand">
-              กลับเว็บหลัก <ArrowRight className="h-4 w-4" />
+              {c.backHome} <ArrowRight className="h-4 w-4" />
             </Link>
           </section>
         ) : null}
@@ -228,15 +369,27 @@ export default function TelegramMiniAppPage() {
 
         {loading ? (
           <section className="rounded-2xl border border-line bg-surface p-8 text-center text-sm font-bold text-muted">
-            กำลังโหลดข้อมูลจาก Telegram...
+            {c.loading}
           </section>
         ) : summary ? (
           <>
-            <nav className="grid grid-cols-3 gap-1 rounded-2xl border border-line bg-surface p-1">
+            <section className="grid grid-cols-2 gap-3">
+              <MiniStat label={c.totalValue} value={compactMoney(summary.portfolio.totalValue)} tone="gold" />
+              <MiniStat
+                label={c.pnl}
+                value={`${summary.portfolio.pnl >= 0 ? "+" : ""}${compactMoney(summary.portfolio.pnl)} · ${signedPct(summary.portfolio.pnlPct)}`}
+                tone={summary.portfolio.pnl >= 0 ? "up" : "down"}
+              />
+              <MiniStat label={c.watchlistCount} value={`${summary.watchlistStats.count} · MOS ${signedPct(summary.watchlistStats.avgMos)}`} />
+              <MiniStat label={c.compareCount} value={`${summary.compareSets.length}`} />
+            </section>
+
+            <nav className="grid grid-cols-4 gap-1 rounded-2xl border border-line bg-surface p-1">
               {[
-                { id: "portfolio" as Tab, label: "Portfolio", icon: Wallet },
-                { id: "compare" as Tab, label: "Compare", icon: Layers },
-                { id: "watchlist" as Tab, label: "Watchlist", icon: Star },
+                { id: "overview" as Tab, label: c.overview, icon: BarChart3 },
+                { id: "portfolio" as Tab, label: c.portfolio, icon: Wallet },
+                { id: "watchlist" as Tab, label: c.watchlist, icon: Star },
+                { id: "compare" as Tab, label: c.compare, icon: Layers },
               ].map((item) => {
                 const Icon = item.icon;
                 const active = activeTab === item.id;
@@ -256,6 +409,66 @@ export default function TelegramMiniAppPage() {
               })}
             </nav>
 
+            {activeTab === "overview" ? (
+              <section className="space-y-3">
+                <div className="rounded-2xl border border-line bg-surface p-4">
+                  <div className="flex items-center gap-2 text-xs font-black text-muted">
+                    <Shield className="h-4 w-4 text-brand" />
+                    {c.todayFocus}
+                  </div>
+                  {focusItems.length ? (
+                    <div className="mt-3 grid gap-2">
+                      {focusItems.map((item) => (
+                        <div key={`${item.label}-${item.title}`} className="flex items-center justify-between gap-3 rounded-xl border border-line bg-bg/60 px-3 py-2.5">
+                          <div className="min-w-0">
+                            <div className="text-[10px] font-black uppercase tracking-wide text-muted">{item.label}</div>
+                            <div className="font-display text-base font-black text-ink">{item.title}</div>
+                          </div>
+                          <div className={`shrink-0 text-right font-display text-base font-black ${
+                            item.tone === "up" ? "text-up" : item.tone === "down" ? "text-down" : "text-gold"
+                          }`}>
+                            {item.detail}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <EmptyState text={c.noPortfolio} />
+                  )}
+                </div>
+
+                <div className="grid grid-cols-2 gap-3">
+                  <MiniStat label={c.totalCost} value={compactMoney(summary.portfolio.totalCost)} />
+                  <MiniStat label={c.concentration} value={signedPct(summary.portfolio.concentrationPct)} tone={summary.portfolio.concentrationPct > 45 ? "gold" : "muted"} />
+                  <MiniStat label={c.positions} value={String(summary.portfolio.positionCount)} />
+                  <MiniStat label={c.valueIdeas} value={String(summary.watchlistStats.undervaluedCount)} tone="up" />
+                </div>
+
+                <div className="grid grid-cols-2 gap-3">
+                  <Button
+                    size="sm"
+                    variant="gold"
+                    className="w-full"
+                    onClick={() => sendAction("portfolio_summary")}
+                    disabled={Boolean(actionLoading) || !summary.capabilities.portfolio || !summary.capabilities.alerts}
+                  >
+                    <Bell className="h-4 w-4" />
+                    {actionLoading === "portfolio_summary" ? c.sending : c.portfolio}
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="w-full"
+                    onClick={() => sendAction("watchlist_summary")}
+                    disabled={Boolean(actionLoading) || !summary.capabilities.alerts}
+                  >
+                    <Bell className="h-4 w-4" />
+                    {actionLoading === "watchlist_summary" ? c.sending : c.watchlist}
+                  </Button>
+                </div>
+              </section>
+            ) : null}
+
             {activeTab === "portfolio" ? (
               <section className="space-y-3">
                 <Button
@@ -266,13 +479,13 @@ export default function TelegramMiniAppPage() {
                   disabled={Boolean(actionLoading) || !summary.capabilities.portfolio || !summary.capabilities.alerts}
                 >
                   <Bell className="h-4 w-4" />
-                  {actionLoading === "portfolio_summary" ? "กำลังส่ง..." : "ส่ง Portfolio Summary เข้า Telegram"}
+                  {actionLoading === "portfolio_summary" ? c.sending : c.sendPortfolio}
                 </Button>
                 <div className="grid grid-cols-2 gap-3">
-                  <MiniStat label="มูลค่าพอร์ต" value={num(summary.portfolio.totalValue, 0)} tone="gold" />
+                  <MiniStat label={c.totalValue} value={compactMoney(summary.portfolio.totalValue)} tone="gold" />
                   <MiniStat
-                    label="กำไร/ขาดทุน"
-                    value={`${summary.portfolio.pnl >= 0 ? "+" : ""}${num(summary.portfolio.pnl, 0)} (${num(summary.portfolio.pnlPct, 1)}%)`}
+                    label={c.pnl}
+                    value={`${summary.portfolio.pnl >= 0 ? "+" : ""}${compactMoney(summary.portfolio.pnl)} · ${signedPct(summary.portfolio.pnlPct)}`}
                     tone={summary.portfolio.pnl >= 0 ? "up" : "down"}
                   />
                 </div>
@@ -280,7 +493,7 @@ export default function TelegramMiniAppPage() {
                   <div className="rounded-2xl border border-line bg-surface p-4">
                     <div className="flex items-center gap-2 text-xs font-black text-muted">
                       <BarChart3 className="h-4 w-4 text-brand" />
-                      หุ้นมูลค่าสูงสุดในพอร์ต
+                      {c.topHolding}
                     </div>
                     <div className="mt-2 flex items-end justify-between gap-3">
                       <div>
@@ -288,21 +501,21 @@ export default function TelegramMiniAppPage() {
                         <div className="text-xs font-semibold text-muted">{topPosition.name}</div>
                       </div>
                       <div className={topPosition.pnl >= 0 ? "text-right text-up" : "text-right text-down"}>
-                        <div className="font-display text-lg font-black">{num(topPosition.value, 0)}</div>
-                        <div className="text-xs font-bold">{topPosition.pnl >= 0 ? "+" : ""}{num(topPosition.pnlPct, 1)}%</div>
+                        <div className="font-display text-lg font-black">{compactMoney(topPosition.value)}</div>
+                        <div className="text-xs font-bold">{signedPct(topPosition.pnlPct)}</div>
                       </div>
                     </div>
                   </div>
                 ) : (
-                  <EmptyState text="ยังไม่มีรายการพอร์ตในระบบ" />
+                  <EmptyState text={c.noPortfolio} />
                 )}
                 <div className="space-y-2">
                   {summary.portfolio.positions.slice(0, 6).map((pos) => (
                     <AssetRow
                       key={pos.symbol}
                       title={pos.symbol}
-                      subtitle={`${num(pos.shares, 2)} หุ้น · avg ${num(pos.avgCost, 2)}`}
-                      value={num(pos.value, 0)}
+                      subtitle={`${num(pos.shares, 2)} sh · avg ${num(pos.avgCost, 2)} · px ${num(pos.price, 2)}`}
+                      value={compactMoney(pos.value)}
                       change={pos.pnlPct}
                     />
                   ))}
@@ -313,7 +526,7 @@ export default function TelegramMiniAppPage() {
             {activeTab === "compare" ? (
               <section className="space-y-3">
                 {summary.compareSets.length === 0 ? (
-                  <EmptyState text="ยังไม่มี Compare Set ที่บันทึกไว้" />
+                  <EmptyState text={c.noCompare} />
                 ) : (
                   summary.compareSets.map((set) => (
                     <div key={set.id} className="rounded-2xl border border-line bg-surface p-4">
@@ -331,17 +544,17 @@ export default function TelegramMiniAppPage() {
                           disabled={Boolean(actionLoading)}
                         >
                           <Bell className="h-4 w-4" />
-                          {actionLoading === set.id ? "ส่ง..." : "ส่ง"}
+                          {actionLoading === set.id ? c.sending : c.compare}
                         </Button>
                       </div>
                       <div className="mt-3 grid grid-cols-2 gap-2">
                         <MiniStat
-                          label="MOS Leader"
-                          value={set.mosLeader ? `${set.mosLeader.symbol} ${num(set.mosLeader.mos, 0)}%` : "-"}
+                          label={c.mosLeader}
+                          value={set.mosLeader ? `${set.mosLeader.symbol} ${signedPct(set.mosLeader.mos)}` : "-"}
                           tone="up"
                         />
                         <MiniStat
-                          label="Yield Leader"
+                          label={c.yieldLeader}
                           value={set.yieldLeader ? `${set.yieldLeader.symbol} ${num(set.yieldLeader.dividendYield, 1)}%` : "-"}
                           tone="gold"
                         />
@@ -362,16 +575,16 @@ export default function TelegramMiniAppPage() {
                   disabled={Boolean(actionLoading)}
                 >
                   <Bell className="h-4 w-4" />
-                  {actionLoading === "watchlist_summary" ? "กำลังส่ง..." : "ส่ง Watchlist Summary เข้า Telegram"}
+                  {actionLoading === "watchlist_summary" ? c.sending : c.sendWatchlist}
                 </Button>
                 {summary.watchlist.length === 0 ? (
-                  <EmptyState text="ยังไม่มีหุ้นใน Watchlist" />
+                  <EmptyState text={c.noWatchlist} />
                 ) : (
                   summary.watchlist.map((stock) => (
                     <AssetRow
                       key={stock.symbol}
                       title={stock.symbol}
-                      subtitle={`${stock.name} · MOS ${stock.mos >= 0 ? "+" : ""}${num(stock.mos, 0)}% · Yield ${num(stock.dividendYield, 1)}%`}
+                      subtitle={`${stock.name} · MOS ${signedPct(stock.mos)} · Yield ${num(stock.dividendYield, 1)}% · ${stock.verdict}`}
                       value={num(stock.price, 2)}
                       change={stock.changePct}
                     />

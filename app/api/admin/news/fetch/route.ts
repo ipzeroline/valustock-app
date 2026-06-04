@@ -267,11 +267,11 @@ export async function POST(req: Request) {
     const apiKey = process.env.MASSIVE_API_KEY;
 
     if (!apiKey) {
-      return NextResponse.json({ error: "MASSIVE_API_KEY is not configured" }, { status: 500 });
+      return NextResponse.json({ error: "Market news feed is not configured" }, { status: 500 });
     }
 
   try {
-    // Fetch news from Massive News API
+    // Fetch news from the configured market news feed.
     const response = await fetch(
       `https://api.massive.com/v2/reference/news?limit=8&apiKey=${encodeURIComponent(apiKey)}`
     );

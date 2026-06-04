@@ -297,7 +297,7 @@ export default function AdminConsoleLayout({
           <div className="flex items-center gap-3">
             <span className={`h-2 w-2 rounded-full ${dbConnected ? "bg-brand animate-ping" : "bg-gold animate-pulse"}`} />
             <Badge tone={dbConnected ? "up" : "gold"} className="text-[10px] font-bold px-2.5 py-1">
-              {dbConnected ? "MariaDB Active" : "Sandbox Active"}
+              {dbConnected ? "Data Active" : "Sandbox Active"}
             </Badge>
 
             <button

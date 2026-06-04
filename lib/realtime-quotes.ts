@@ -1,14 +1,16 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { getStock } from "@/lib/stocks";
+import { STOCKS } from "@/lib/stocks";
 import { Stock } from "@/lib/types";
 
-export const REALTIME_REFRESH_MS = 15000;
+export const REALTIME_REFRESH_MS = 60000;
 
 type LiveStock = Stock & {
   quoteSource?: string;
   quoteUpdatedAt?: string;
+  quoteDelayMinutes?: number;
+  quoteIsDelayed?: boolean;
 };
 
 type StreamQuote = {
@@ -16,12 +18,19 @@ type StreamQuote = {
   price?: number;
   quoteSource?: string;
   quoteUpdatedAt?: string;
+  quoteDelayMinutes?: number;
+  quoteIsDelayed?: boolean;
+};
+
+type BatchQuotesResponse = {
+  quotes?: LiveStock[];
 };
 
 export function hasQuoteProvider(stock: Pick<Stock, "assetType" | "market" | "currency">) {
-  if (stock.assetType === "CRYPTO" || stock.assetType === "FUTURES") return false;
+  if (stock.assetType === "CRYPTO") return true;
+  if (stock.assetType === "FUTURES") return true;
   if (stock.assetType === "TH_STOCK") return true;
-  if (stock.assetType === "US_STOCK" || stock.assetType === "US_FUND") return true;
+  if (stock.assetType === "US_STOCK" || stock.assetType === "US_FUND" || stock.assetType === "FUND") return true;
   if (stock.assetType === "ETF") return true;
   if (stock.market === "NASDAQ" || stock.market === "NYSE") return true;
   return false;
@@ -32,7 +41,6 @@ export function hasMassiveStream(stock: Pick<Stock, "assetType" | "market" | "cu
   if (stock.assetType === "CRYPTO" || stock.assetType === "FUTURES") return false;
   return (
     stock.assetType === "US_STOCK" ||
-    stock.assetType === "US_FUND" ||
     (stock.assetType === "ETF" && stock.currency === "USD") ||
     stock.market === "NASDAQ" ||
     stock.market === "NYSE"
@@ -41,6 +49,10 @@ export function hasMassiveStream(stock: Pick<Stock, "assetType" | "market" | "cu
 
 function uniqueSymbols(symbols: string[]) {
   return Array.from(new Set(symbols.map((symbol) => symbol.trim().toUpperCase()).filter(Boolean)));
+}
+
+function getSeedStock(symbol: string) {
+  return STOCKS.find((stock) => stock.symbol.toUpperCase() === symbol.toUpperCase());
 }
 
 function mergeStocks(prev: LiveStock[], next: LiveStock[]) {
@@ -72,7 +84,17 @@ function applyStreamQuote(stock: LiveStock, quote: Required<Pick<StreamQuote, "s
     ohlcHistory,
     quoteSource: quote.quoteSource || "massive-websocket",
     quoteUpdatedAt: quote.quoteUpdatedAt || new Date().toISOString(),
+    quoteDelayMinutes: quote.quoteDelayMinutes ?? (quote.quoteSource?.includes("delayed") ? 15 : 0),
+    quoteIsDelayed: quote.quoteIsDelayed ?? Boolean(quote.quoteSource?.includes("delayed")),
   };
+}
+
+function symbolBatches(symbols: string[], size = 100) {
+  const batches: string[][] = [];
+  for (let index = 0; index < symbols.length; index += size) {
+    batches.push(symbols.slice(index, index + size));
+  }
+  return batches;
 }
 
 export function useLiveQuotes(symbols: string[], enabled = true) {
@@ -88,15 +110,26 @@ export function useLiveQuotes(symbols: string[], enabled = true) {
 
     let cancelled = false;
     const refreshQuotes = () => {
+      const knownSymbols = normalizedSymbols.filter((symbol) => getSeedStock(symbol));
+      const externalSymbols = normalizedSymbols.filter((symbol) => !getSeedStock(symbol));
+
       Promise.all(
-        normalizedSymbols.map((sym) =>
-          fetch(`/api/stock/${encodeURIComponent(sym)}${getStock(sym) ? "?quote=1" : ""}`, { cache: "no-store" })
-            .then((res) => (res.ok ? res.json() : null))
-            .catch(() => null)
-        )
+        [
+          ...symbolBatches(knownSymbols).map((batch) =>
+            fetch(`/api/quotes?symbols=${encodeURIComponent(batch.join(","))}`)
+              .then((res) => (res.ok ? res.json() : null))
+              .catch(() => null) as Promise<BatchQuotesResponse | null>
+          ),
+          ...externalSymbols.map((symbol) =>
+            fetch(`/api/stock/${encodeURIComponent(symbol)}?quote=1`)
+              .then((res) => (res.ok ? res.json() : null))
+              .then((stock) => (stock && !stock.error && stock.symbol ? ({ quotes: [stock] } as BatchQuotesResponse) : null))
+              .catch(() => null)
+          ),
+        ]
       ).then((results) => {
         if (cancelled) return;
-        const valid = results.filter((stock) => stock && !stock.error && stock.symbol) as LiveStock[];
+        const valid = results.flatMap((result) => result?.quotes || []).filter((stock) => stock && stock.symbol) as LiveStock[];
         if (valid.length === 0) return;
         setLiveStocks((prev) => mergeStocks(prev, valid));
       });
@@ -113,7 +146,7 @@ export function useLiveQuotes(symbols: string[], enabled = true) {
   useEffect(() => {
     if (!enabled || normalizedSymbols.length === 0 || typeof EventSource === "undefined") return;
 
-    const streamSymbols = normalizedSymbols.filter((symbol) => hasMassiveStream(getStock(symbol), symbol));
+    const streamSymbols = normalizedSymbols.filter((symbol) => hasMassiveStream(getSeedStock(symbol), symbol));
     if (streamSymbols.length === 0) return;
 
     const source = new EventSource(`/api/quotes/stream?symbols=${encodeURIComponent(streamSymbols.join(","))}`);
@@ -137,7 +170,7 @@ export function useLiveQuotes(symbols: string[], enabled = true) {
         setLiveStocks((prev) => {
           const key = quote.symbol!.toUpperCase();
           const existing = prev.find((stock) => stock.symbol.toUpperCase() === key);
-          const base = existing || getStock(key);
+          const base = existing || getSeedStock(key);
           if (!base) return prev;
           return mergeStocks(prev, [applyStreamQuote(base, quote as Required<Pick<StreamQuote, "symbol" | "price">> & StreamQuote)]);
         });

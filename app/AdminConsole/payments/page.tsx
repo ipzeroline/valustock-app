@@ -180,7 +180,7 @@ export default function AdminPayments() {
           <span>
             {lang === "th"
               ? "Sandbox Active: การกระทำทั้งหมดจัดเก็บลง Memory ชั่วคราวเนื่องจากฐานข้อมูล production ยังเชื่อมต่อไม่ได้"
-              : "Sandbox Active: Action is operating on memory state because MariaDB SQL server connection is offline."}
+              : "Sandbox Active: Action is operating on memory state because the production data service is offline."}
           </span>
         </div>
       )}

@@ -51,18 +51,12 @@ export default function Dashboard() {
   const getDisplayStock = (symbol: string) => {
     const key = symbol.toUpperCase();
     const local = getStock(key);
-    if (local && hasQuoteProvider(local) && !liveStockMap.has(key)) return undefined;
     return liveStockMap.get(key) || local;
   };
 
   const allStocks = useMemo(() => {
     const bySymbol = new Map<string, Stock>();
-    const liveSymbols = new Set(liveStocks.map((stock) => stock.symbol.toUpperCase()));
-    STOCKS.forEach((stock) => {
-      const key = stock.symbol.toUpperCase();
-      if (hasQuoteProvider(stock) && !liveSymbols.has(key)) return;
-      bySymbol.set(key, stock);
-    });
+    STOCKS.forEach((stock) => bySymbol.set(stock.symbol.toUpperCase(), stock));
     liveStocks.forEach((stock) => bySymbol.set(stock.symbol.toUpperCase(), stock));
     return Array.from(bySymbol.values());
   }, [liveStocks]);
@@ -172,7 +166,7 @@ export default function Dashboard() {
       stocks: ["NVDA", "AAPL", "MSFT"],
       insights: {
         NVDA: lang === "th" ? "ผู้นำด้านชิปประมวลผลกราฟิกและ AI ที่เติบโตอย่างรวดเร็วที่สุดในอุตสาหกรรมเทคโนโลยีสหรัฐฯ" : "Absolute computing monopoly leading the AI infrastructure boom.",
-        AAPL: lang === "th" ? "ระบบนิเวศน์ iPhone ล็อคผู้ใช้งานทั่วโลก ฐานเงินสดสูง ปลอดภัย มั่งคั่งระยะยาวแน่นอน" : "Massive device ecosystem with unbeatable customer lock-in and buybacks.",
+        AAPL: lang === "th" ? "ระบบนิเวศน์ iPhone ล็อคผู้ใช้งานทั่วโลก ฐานเงินสดสูง ปลอดภัย มั่งคั่งระยะยาวแน่นอน" : "Large device ecosystem with unbeatable customer lock-in and buybacks.",
         MSFT: lang === "th" ? "ผู้นำคลาวด์องค์กรและปัญญาประดิษฐ์ AI Copilot เติบโตไร้คู่แข่งในสเกลองค์กร" : "SaaS and cloud leader compounder scaling OpenAI software platforms.",
       } as Record<string, string>,
     },
@@ -184,7 +178,7 @@ export default function Dashboard() {
       badge: lang === "th" ? "ปลอดภัยสูงสุด" : "Deep Margin",
       stocks: ["PTTEP", "CPALL", "BDMS"],
       insights: {
-        PTTEP: lang === "th" ? "ส่วนต่างความปลอดภัย MOS สูงถึง 35.5% ธุรกิจสำรวจพลังงานขนาดใหญ่ ปลอดหนี้สินสุทธิ" : "Massive 35.5% Margin of Safety. Debt-free exploration compounder.",
+        PTTEP: lang === "th" ? "ส่วนต่างความปลอดภัย MOS สูงถึง 35.5% ธุรกิจสำรวจพลังงานขนาดใหญ่ ปลอดหนี้สินสุทธิ" : "Strong 35.5% Margin of Safety. Debt-free exploration compounder.",
         CPALL: lang === "th" ? "เจ้าตลาดสะดวกซื้อ 7-Eleven ผูกขาดค้าปลีกไทย ราคาถูกเกินจริง มี MOS 26.1%" : "Consumer retail monopoly (7-Eleven) with solid 26.1% safety margin.",
         BDMS: lang === "th" ? "เครือโรงพยาบาลเอกชนขนาดใหญ่ที่สุดของไทย ลูกค้าชาวต่างชาติหนาแน่น มั่งคั่งต้านโรค" : "Healthcare monopoly. Defensive capital backed by private medical tourism.",
       } as Record<string, string>,

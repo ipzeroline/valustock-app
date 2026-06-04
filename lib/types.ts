@@ -55,6 +55,10 @@ export interface Stock {
   market: "SET" | "mai" | "NASDAQ" | "NYSE" | "MUTUAL_FUND";
   price: number; // ราคาปัจจุบัน (บาท หรือ ดอลลาร์ หรือ NAV)
   prevClose: number; // ราคาปิดก่อนหน้า
+  quoteSource?: string;
+  quoteUpdatedAt?: string;
+  quoteDelayMinutes?: number;
+  quoteIsDelayed?: boolean;
   sharesOutstanding: number; // ล้านหุ้น หรือ ล้านหน่วย
   color: string; // สีโลโก้
   about: string;
@@ -62,6 +66,8 @@ export interface Stock {
   fcfHistory: YearPoint[]; // 5 ปี
   priceHistory: number[]; // ราคา 30 จุด (เดโม)
   ohlcHistory?: OhlcPoint[]; // ราคาเปิด-สูง-ต่ำ-ปิดและ volume สำหรับกราฟแท่งเทียน
+  chartSource?: string;
+  chartUpdatedAt?: string;
   financials: Financials;
   
   // ฟิลด์เพิ่มเติมสำหรับรองรับหลายสินทรัพย์

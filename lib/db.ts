@@ -60,6 +60,8 @@ export async function ensureColumn(table: string, column: string, definition: st
     "comparison_sets",
     "newsletter_subscribers",
     "reviews",
+    "article_view_counts",
+    "article_view_events",
     "telegram_connections",
     "telegram_delivery_logs",
   ]);
@@ -85,8 +87,6 @@ export async function ensureColumn(table: string, column: string, definition: st
 // Automated schema initializer for MariaDB tables
 export async function initDatabase(): Promise<boolean> {
   try {
-    console.log("Initializing database tables...");
-    
     // 1. Users table
     await query(`
       CREATE TABLE IF NOT EXISTS users (
@@ -207,6 +207,25 @@ export async function initDatabase(): Promise<boolean> {
         tag VARCHAR(100),
         lang VARCHAR(10) DEFAULT 'th',
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+    `);
+
+    await query(`
+      CREATE TABLE IF NOT EXISTS article_view_counts (
+        slug VARCHAR(255) PRIMARY KEY,
+        views INT NOT NULL DEFAULT 0,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+    `);
+
+    await query(`
+      CREATE TABLE IF NOT EXISTS article_view_events (
+        id BIGINT AUTO_INCREMENT PRIMARY KEY,
+        slug VARCHAR(255) NOT NULL,
+        visitor_id VARCHAR(96) NOT NULL,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        UNIQUE KEY unique_article_visitor (slug, visitor_id),
+        INDEX idx_article_view_slug (slug)
       ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
     `);
 
@@ -412,10 +431,9 @@ export async function initDatabase(): Promise<boolean> {
     await ensureColumn("reviews", "created_at", "TIMESTAMP DEFAULT CURRENT_TIMESTAMP");
     await ensureColumn("reviews", "updated_at", "TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP");
 
-    console.log("🎉 Database tables successfully initialized!");
     return true;
   } catch (err: any) {
-    console.warn("⚠️ Database auto-initialization skipped:", err.message);
+    console.warn("Database auto-initialization skipped:", err.message);
     return false;
   }
 }

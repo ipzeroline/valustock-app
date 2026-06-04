@@ -228,6 +228,8 @@ export default function InsightsPage() {
 
   const [dbArticles, setDbArticles] = useState<Article[]>([]);
   const [loadingDb, setLoadingDb] = useState(true);
+  const insightsHeroImage =
+    "/article-image/valustock-insights-research-hub?category=Value%20Investing%20Guides&symbol=VI&v=5";
 
   // DB news load
   useEffect(() => {
@@ -351,6 +353,7 @@ export default function InsightsPage() {
           lang === "th"
             ? "ศูนย์บทวิเคราะห์หุ้นไทย หุ้นสหรัฐ Value Investing, DCF, Intrinsic Value, Margin of Safety และภาษีนักลงทุนไทย"
             : "A research hub for Thai and US stocks, value investing, DCF, intrinsic value, margin of safety, and investor tax topics.",
+        image: "https://valustock.com/article-image/valustock-insights-research-hub?category=Value%20Investing%20Guides&symbol=VI&v=5",
         inLanguage: lang === "th" ? "th-TH" : "en-US",
       },
       {
@@ -670,52 +673,74 @@ export default function InsightsPage() {
         dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredData) }}
       />
       {/* A. HEADER WITH TABS CONTROLS */}
-      <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 border-b border-line pb-6">
-        <div>
-          <h1 className="font-display text-2xl font-bold md:text-3xl flex items-center gap-2 text-ink">
-            <Sparkles className="h-6 w-6 text-brand" /> {lang === "th" ? "บทวิเคราะห์หุ้นและคู่มือลงทุน" : "Stock Insights & Investing Guides"}
-          </h1>
-          <p className="mt-1.5 text-sm text-muted">
-            {lang === "th" 
-              ? "ศูนย์ความรู้สำหรับนักลงทุนไทย ครอบคลุมหุ้นไทย หุ้นสหรัฐ Value Investing, DCF, Intrinsic Value, Margin of Safety, กองทุนต่างประเทศ และภาษีลงทุน" 
-              : "Research hub for Thai and US stocks, value investing, DCF, intrinsic value, margin of safety, offshore funds, and investor tax topics."}
-          </p>
-        </div>
+      <section className="overflow-hidden rounded-2xl border border-line bg-surface/55">
+        <div className="grid gap-6 p-5 sm:p-7 lg:grid-cols-[1fr_0.9fr] lg:items-center">
+          <div>
+            <div className="inline-flex items-center gap-2 text-xs font-black uppercase tracking-wide text-brand">
+              <Sparkles className="h-4 w-4" />
+              {lang === "th" ? "ValuStock Insights" : "ValuStock Insights"}
+            </div>
+            <h1 className="mt-4 font-display text-3xl font-black leading-tight text-ink md:text-5xl">
+              {lang === "th" ? "บทวิเคราะห์หุ้นและคู่มือลงทุน" : "Stock Insights & Investing Guides"}
+            </h1>
+            <p className="mt-4 max-w-3xl text-sm font-semibold leading-relaxed text-muted sm:text-base">
+              {lang === "th" 
+                ? "ศูนย์ความรู้สำหรับนักลงทุนไทย ครอบคลุมหุ้นไทย หุ้นสหรัฐ Value Investing, DCF, Intrinsic Value, Margin of Safety, กองทุนต่างประเทศ และภาษีลงทุน" 
+                : "Research hub for Thai and US stocks, value investing, DCF, intrinsic value, margin of safety, offshore funds, and investor tax topics."}
+            </p>
 
-        {/* Dynamic 3 Segmented Tabs */}
-        <div className="flex bg-elevate p-1 rounded-xl gap-1 text-xs font-bold shrink-0 self-start md:self-auto border border-line/60">
-          <button
-            onClick={() => setActiveSegment("articles")}
-            className={`px-3 py-2 rounded-lg transition-all ${
-              activeSegment === "articles"
-                ? "bg-surface text-brand shadow-sm"
-                : "text-muted hover:text-ink"
-            }`}
-          >
-            {lang === "th" ? "บทวิเคราะห์" : "Insights"}
-          </button>
-          <button
-            onClick={() => setActiveSegment("dev_portal")}
-            className={`px-3 py-2 rounded-lg transition-all ${
-              activeSegment === "dev_portal"
-                ? "bg-surface text-brand shadow-sm"
-                : "text-muted hover:text-ink"
-            }`}
-          >
-            {lang === "th" ? "API Sandbox" : "API Developer Portal"}
-          </button>
-          <button
-            onClick={() => setActiveSegment("futures_sandbox")}
-            className={`px-3 py-2 rounded-lg transition-all ${
-              activeSegment === "futures_sandbox"
-                ? "bg-surface text-brand shadow-sm"
-                : "text-muted hover:text-ink"
-            }`}
-          >
-            {lang === "th" ? "Futures & Tax" : "Derivative & Tax Hub"}
-          </button>
+            {/* Dynamic 3 Segmented Tabs */}
+            <div className="mt-6 flex w-fit max-w-full flex-wrap gap-1 rounded-xl border border-line/60 bg-elevate p-1 text-xs font-bold">
+              <button
+                onClick={() => setActiveSegment("articles")}
+                className={`rounded-lg px-3 py-2 transition-all ${
+                  activeSegment === "articles"
+                    ? "bg-surface text-brand shadow-sm"
+                    : "text-muted hover:text-ink"
+                }`}
+              >
+                {lang === "th" ? "บทวิเคราะห์" : "Insights"}
+              </button>
+              <button
+                onClick={() => setActiveSegment("dev_portal")}
+                className={`rounded-lg px-3 py-2 transition-all ${
+                  activeSegment === "dev_portal"
+                    ? "bg-surface text-brand shadow-sm"
+                    : "text-muted hover:text-ink"
+                }`}
+              >
+                {lang === "th" ? "Sandbox" : "Developer Portal"}
+              </button>
+              <button
+                onClick={() => setActiveSegment("futures_sandbox")}
+                className={`rounded-lg px-3 py-2 transition-all ${
+                  activeSegment === "futures_sandbox"
+                    ? "bg-surface text-brand shadow-sm"
+                    : "text-muted hover:text-ink"
+                }`}
+              >
+                {lang === "th" ? "Futures & Tax" : "Derivative & Tax"}
+              </button>
+            </div>
+          </div>
+
+          <figure className="overflow-hidden rounded-2xl border border-line bg-bg shadow-soft">
+            <img
+              src={insightsHeroImage}
+              alt={
+                lang === "th"
+                  ? "ภาพศูนย์บทวิเคราะห์หุ้น Value Investing DCF Intrinsic Value และ Margin of Safety"
+                  : "ValuStock Insights visual for value investing DCF intrinsic value and margin of safety guides"
+              }
+              width={1200}
+              height={630}
+              loading="eager"
+              decoding="async"
+              className="aspect-[1200/630] w-full object-cover object-center"
+            />
+          </figure>
         </div>
-      </div>
+      </section>
 
       <section className="grid gap-3 md:grid-cols-3">
         {seoPillars.map((item) => (

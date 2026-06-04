@@ -80,16 +80,16 @@ valustock/
 
 ---
 
-## 🔌 การเชื่อมต่อ API ข้อมูลจริง
+## 🔌 การเชื่อมต่อข้อมูลตลาดจริง
 
-ปัจจุบันข้อมูลหุ้นมาจาก `lib/stocks.ts` (ตัวอย่าง) ออกแบบให้สลับเป็น API จริงได้ง่าย โดยแก้ให้ `getStock()` / `STOCKS` ดึงจากแหล่งข้อมูลแทน แนะนำ:
+นโยบายข้อมูลปัจจุบัน:
 
-- **Financial Modeling Prep (FMP)** — ครบที่สุดสำหรับประเมินมูลค่า มี endpoint งบการเงิน อัตราส่วน และ DCF สำเร็จรูป
-- **Alpha Vantage** — ฟรีเทียร์ใจกว้าง มีงบการเงินย้อนหลังยาว เหมาะเริ่มต้น
-- **EODHD** — ครอบคลุม **ตลาดหุ้นไทย (SET)** ใช้ ticker ลงท้าย `.BK` (เช่น `PTT.BK`)
-- **Settrade Open API** — ทางการของไทย เน้นราคาเรียลไทม์/ส่งคำสั่งซื้อขาย (ต้องเปิดบัญชีกับโบรกเกอร์)
+- **Global market-data layer** — ใช้สำหรับ quotes, EOD historical OHLC, crypto, commodities, ETF data และ coverage ตลาดโลก
+- **US market-data layer** — ใช้เฉพาะ US stocks/ETFs สำหรับ snapshot, delayed/realtime stream ตามสิทธิ์ API plan และ US aggregates
+- **Smart data cache** — เก็บ quote cache, quote snapshots, health metrics และ historical bars เพื่อลด API calls และให้หน้าเว็บโหลดเร็ว
+- **Thai licensed data** — ยังไม่ได้เปิดใช้ ต้องเพิ่มภายหลังถ้าต้องการ SET realtime ระดับ exchange-grade หรือ NAV กองทุนไทยที่ครบทุก บลจ.
 
-ตัวอย่างแนวทาง: สร้างไฟล์ `lib/api.ts` ที่ map ผลลัพธ์จาก API ให้ตรงกับ type `Stock` ใน `lib/types.ts` แล้วตรรกะประเมินมูลค่าทั้งหมดใน `valuation.ts` จะทำงานต่อได้ทันที
+ข้อมูล seed ใน `lib/stocks.ts` ยังใช้เป็น fallback เมื่อ market-data feed ไม่มีข้อมูลหรือ symbol นั้นต้องใช้ licensed Thai data เพิ่มเติม
 
 ---
 

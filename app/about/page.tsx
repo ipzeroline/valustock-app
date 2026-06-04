@@ -2,6 +2,9 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { ArrowRight, BarChart3, CheckCircle, Filter, Layers, LineChart, Shield, Star, Target } from "@/lib/icons";
 
+const ABOUT_IMAGE_URL = "https://valustock.com/images/about-valuation-platform.png?v=1";
+const ABOUT_IMAGE_PATH = "/images/about-valuation-platform.png?v=1";
+
 export const metadata: Metadata = {
   title: "ValuStock คืออะไร | เครื่องมือวิเคราะห์หุ้นไทย หุ้นอเมริกา ETF และ DCF",
   description:
@@ -33,6 +36,21 @@ export const metadata: Metadata = {
     description:
       "รู้จัก ValuStock แพลตฟอร์มวิเคราะห์หุ้นสำหรับนักลงทุนไทยที่ต้องการดู Fair Value, DCF, Margin of Safety, หุ้น Undervalue, หุ้นปันผล และ ETF ก่อนลงทุนจริง",
     siteName: "ValuStock",
+    images: [
+      {
+        url: ABOUT_IMAGE_URL,
+        width: 1672,
+        height: 941,
+        alt: "ValuStock stock valuation platform dashboard",
+      },
+    ],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "ValuStock คืออะไร | เครื่องมือวิเคราะห์หุ้นไทย หุ้นอเมริกา และ ETF",
+    description:
+      "รู้จัก ValuStock แพลตฟอร์มวิเคราะห์หุ้นสำหรับนักลงทุนไทยที่ต้องการดู Fair Value, DCF, Margin of Safety, หุ้น Undervalue, หุ้นปันผล และ ETF ก่อนลงทุนจริง",
+    images: [ABOUT_IMAGE_URL],
   },
 };
 
@@ -101,6 +119,7 @@ export default function AboutPage() {
         url: "https://valustock.com",
         description:
           "ValuStock is a stock valuation and research platform for Thai investors covering Thai stocks, US stocks, ETFs, DCF, fair value, dividend stocks and undervalued stocks.",
+        image: ABOUT_IMAGE_URL,
         sameAs: ["https://valustock.com"],
       },
       {
@@ -121,6 +140,8 @@ export default function AboutPage() {
         url: "https://valustock.com/about",
         name: "ValuStock คืออะไร",
         description: metadata.description,
+        primaryImageOfPage: ABOUT_IMAGE_URL,
+        image: ABOUT_IMAGE_URL,
         isPartOf: { "@id": "https://valustock.com/#website" },
         about: { "@id": "https://valustock.com/#organization" },
       },
@@ -140,29 +161,46 @@ export default function AboutPage() {
     <main className="mx-auto max-w-6xl px-4 py-8 sm:px-6">
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
 
-      <section className="rounded-2xl border border-line bg-surface/55 p-6 sm:p-8">
-        <div className="flex items-center gap-2 text-xs font-black uppercase tracking-wide text-brand">
-          <Shield className="h-4 w-4" />
-          About ValuStock
+      <section className="grid gap-7 rounded-2xl border border-line bg-surface/55 p-5 sm:p-6 lg:grid-cols-[minmax(0,0.82fr)_minmax(0,1.18fr)] lg:items-center lg:p-8">
+        <div className="min-w-0">
+          <div className="flex items-center gap-2 text-xs font-black uppercase tracking-wide text-brand">
+            <Shield className="h-4 w-4" />
+            About ValuStock
+          </div>
+          <h1 className="mt-4 max-w-2xl font-display text-4xl font-black leading-[1.08] text-ink sm:text-5xl lg:text-5xl">
+            ValuStock คืออะไร
+          </h1>
+          <p className="mt-4 max-w-2xl text-xl font-black leading-snug text-ink/90 sm:text-2xl">
+            เครื่องมือวิเคราะห์หุ้นไทย หุ้นอเมริกา และ ETF สำหรับนักลงทุนที่ต้องการตัดสินใจจากมูลค่าจริง
+          </p>
+          <p className="mt-4 max-w-2xl text-sm font-semibold leading-relaxed text-muted sm:text-base">
+            ValuStock ถูกสร้างขึ้นเพื่อช่วยให้นักลงทุนไทยวิเคราะห์หุ้นไทย หุ้นอเมริกา และ ETF อย่างเป็นระบบ
+            ก่อนตัดสินใจซื้อ ขาย หรือถือหลักทรัพย์ เป้าหมายของเราไม่ใช่การบอกว่า “หุ้นตัวไหนต้องซื้อ”
+            แต่คือการให้เครื่องมือและกรอบคิดที่ช่วยให้นักลงทุนประเมินมูลค่า ความเสี่ยง และโอกาสด้วยตัวเอง
+          </p>
+          <p className="mt-3 max-w-2xl text-sm font-semibold leading-relaxed text-muted" lang="en">
+            ValuStock helps Thai investors research Thai equities, U.S. stocks, ETFs, fair value, DCF,
+            dividend quality and margin of safety before making real investment decisions.
+          </p>
+          <div className="mt-6 flex flex-wrap gap-2">
+            {["DCF Calculator", "Fair Value", "Margin of Safety", "หุ้น Undervalue", "หุ้นปันผลสูง", "หุ้นอเมริกา", "ETF"].map((item) => (
+              <span key={item} className="rounded-full border border-line bg-bg px-3 py-1.5 text-xs font-bold text-muted">
+                {item}
+              </span>
+            ))}
+          </div>
         </div>
-        <h1 className="mt-4 max-w-4xl font-display text-3xl font-black leading-tight text-ink sm:text-5xl">
-          ValuStock คือเครื่องมือวิเคราะห์หุ้นสำหรับนักลงทุนไทยที่อยากตัดสินใจจากมูลค่าจริง ไม่ใช่กระแสข่าว
-        </h1>
-        <p className="mt-4 max-w-3xl text-sm font-semibold leading-relaxed text-muted sm:text-base">
-          ValuStock ถูกสร้างขึ้นเพื่อช่วยให้นักลงทุนไทยวิเคราะห์หุ้นไทย หุ้นอเมริกา และ ETF อย่างเป็นระบบ
-          ก่อนตัดสินใจซื้อ ขาย หรือถือหลักทรัพย์ เป้าหมายของเราไม่ใช่การบอกว่า “หุ้นตัวไหนต้องซื้อ”
-          แต่คือการให้เครื่องมือและกรอบคิดที่ช่วยให้นักลงทุนประเมินมูลค่า ความเสี่ยง และโอกาสด้วยตัวเอง
-        </p>
-        <p className="mt-3 max-w-3xl text-sm font-semibold leading-relaxed text-muted" lang="en">
-          ValuStock helps Thai investors research Thai equities, U.S. stocks, ETFs, fair value, DCF,
-          dividend quality and margin of safety before making real investment decisions.
-        </p>
-        <div className="mt-6 flex flex-wrap gap-2">
-          {["DCF Calculator", "Fair Value", "Margin of Safety", "หุ้น Undervalue", "หุ้นปันผลสูง", "หุ้นอเมริกา", "ETF"].map((item) => (
-            <span key={item} className="rounded-full border border-line bg-bg px-3 py-1.5 text-xs font-bold text-muted">
-              {item}
-            </span>
-          ))}
+
+        <div className="min-w-0 overflow-hidden rounded-2xl border border-line bg-bg/55 shadow-card lg:-mr-2">
+          <img
+            src={ABOUT_IMAGE_PATH}
+            alt="ValuStock valuation dashboard showing DCF, fair value, margin of safety, Thai stocks, US stocks and ETFs"
+            width={1672}
+            height={941}
+            loading="eager"
+            decoding="async"
+            className="block aspect-[16/9] w-full object-cover"
+          />
         </div>
       </section>
 

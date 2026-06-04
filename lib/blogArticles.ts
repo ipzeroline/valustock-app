@@ -32,6 +32,9 @@ type StockWorthConfig = {
   slug: string;
   angleTh: string;
   riskTh: string;
+  extraKeywords?: string[];
+  published?: string;
+  modified?: string;
 };
 
 function buildStockWorthArticle(item: StockWorthConfig): BlogArticle {
@@ -43,12 +46,19 @@ function buildStockWorthArticle(item: StockWorthConfig): BlogArticle {
     descriptionTh: `วิเคราะห์หุ้น ${item.symbol} น่าซื้อไหม 2569 ครอบคลุมธุรกิจ ${item.sectorTh} มูลค่าเหมาะสม ปันผล กระแสเงินสด ความเสี่ยง และเช็กลิสต์ก่อนซื้อจริง`,
     descriptionEn: `A bilingual 2026 ${item.symbol} stock analysis covering business quality, valuation, dividends, cash flow, risks and a practical pre-buy checklist.`,
     category: "Thai Stock Worth Buying",
-    published: "2026-06-03",
-    modified: "2026-06-03",
+    published: item.published || "2026-06-03",
+    modified: item.modified || item.published || "2026-06-03",
     readTime: "10 min",
     verdictTh: `หุ้น ${item.symbol} อาจน่าสนใจเมื่อราคาตลาดต่ำกว่ามูลค่าที่ประเมินได้และความเสี่ยงหลักถูกสะท้อนในราคาแล้ว แต่ไม่ควรซื้อเพียงเพราะเป็นหุ้นใหญ่หรือมีชื่อเสียง ควรเทียบ P/E, P/BV, ROE, กระแสเงินสด และ dividend yield กับหุ้นในกลุ่มเดียวกันก่อนเสมอ`,
     verdictEn: `${item.symbol} may be worth studying when valuation offers a margin of safety, but investors should compare multiples, ROE, cash flow and dividend quality against sector peers before buying.`,
-    keywords: [`หุ้น ${item.symbol} น่าซื้อไหม`, `หุ้น ${item.symbol} น่าซื้อไหม 2569`, `${item.symbol} stock analysis`, `${item.symbol} valuation`, `${item.symbol} dividend`],
+    keywords: [
+      `หุ้น ${item.symbol} น่าซื้อไหม`,
+      `หุ้น ${item.symbol} น่าซื้อไหม 2569`,
+      ...(item.extraKeywords || []),
+      `${item.symbol} stock analysis`,
+      `${item.symbol} valuation`,
+      `${item.symbol} dividend`,
+    ],
     metrics: [
       { label: "Keyword intent", value: "Pre-buy", note: "คำค้นก่อนซื้อหุ้นจริง มีโอกาสสมัครสมาชิกสูง" },
       { label: "Core checks", value: "P/E P/BV ROE", note: "ใช้เทียบกับหุ้นในอุตสาหกรรมเดียวกัน" },
@@ -195,6 +205,14 @@ const generatedStockWorthArticles = [
   buildStockWorthArticle({ symbol: "AOT", nameTh: "ท่าอากาศยานไทย", nameEn: "Airports of Thailand", sectorTh: "ท่องเที่ยวและสนามบิน", slug: "aot-stock-worth-buying-2026", angleTh: "AOT เป็นหุ้นโครงสร้างพื้นฐานท่องเที่ยวที่คุณภาพสูง แต่ราคามักให้ premium จึงต้องระวังซื้อแพง", riskTh: "ความเสี่ยงหลักคือจำนวนนักท่องเที่ยว ค่า concession capex สนามบิน regulation และ valuation premium" }),
   buildStockWorthArticle({ symbol: "BDMS", nameTh: "กรุงเทพดุสิตเวชการ", nameEn: "Bangkok Dusit Medical Services", sectorTh: "การแพทย์", slug: "bdms-stock-worth-buying-2026", angleTh: "BDMS เด่นด้านเครือข่ายโรงพยาบาลและ medical tourism แต่ต้องประเมิน growth เทียบกับ valuation", riskTh: "ความเสี่ยงหลักคือค่าใช้จ่ายบุคลากร medical tourism ค่าเงินบาท การแข่งขันโรงพยาบาล และ valuation สูง" }),
   buildStockWorthArticle({ symbol: "BCH", nameTh: "บางกอก เชน ฮอสปิทอล", nameEn: "Bangkok Chain Hospital", sectorTh: "การแพทย์", slug: "bch-stock-worth-buying-2026", angleTh: "BCH มี exposure โรงพยาบาลและประกันสังคม จึงต้องดู margin หลังรายได้พิเศษลดลงและการเติบโตผู้ป่วยปกติ", riskTh: "ความเสี่ยงหลักคืออัตราชดเชยประกันสังคม margin ผู้ป่วยต่างชาติ และค่าใช้จ่ายบุคลากร" }),
+  buildStockWorthArticle({ symbol: "BH", nameTh: "โรงพยาบาลบำรุงราษฎร์", nameEn: "Bumrungrad Hospital", sectorTh: "การแพทย์และโรงพยาบาล", slug: "bh-stock-worth-buying-2026", angleTh: "BH เป็นหุ้นโรงพยาบาล premium ที่ได้ประโยชน์จากผู้ป่วยต่างชาติและแบรนด์ Bumrungrad แต่ valuation มักสะท้อนคุณภาพไว้สูง จึงต้องเทียบ growth กับราคาเสมอ", riskTh: "ความเสี่ยงหลักคือ medical tourism ค่าเงินบาท การแข่งขันโรงพยาบาล premium ค่าใช้จ่ายบุคลากร regulation และ valuation premium", extraKeywords: ["BH", "โรงพยาบาล bumrungrad", "Bumrungrad", "หุ้นโรงพยาบาล", "โรงพยาบาลบำรุงราษฎร์"], published: "2026-06-04", modified: "2026-06-04" }),
+  buildStockWorthArticle({ symbol: "MTC", nameTh: "เมืองไทย แคปปิตอล", nameEn: "Muangthai Capital", sectorTh: "สินเชื่อรายย่อย", slug: "mtc-stock-worth-buying-2026", angleTh: "MTC เป็นหุ้นสินเชื่อรายย่อยที่เติบโตจากเครือข่ายสาขาและฐานลูกค้ารายย่อย แต่ต้องประเมินคุณภาพลูกหนี้ ต้นทุนเงินทุน และการตั้งสำรองมากกว่าดู loan growth อย่างเดียว", riskTh: "ความเสี่ยงหลักคือ NPL, credit cost, หนี้ครัวเรือน, cost of fund, regulation สินเชื่อจำนำทะเบียน และการแข่งขันในสินเชื่อรายย่อย", extraKeywords: ["MTC", "สินเชื่อรายย่อย", "เมืองไทย แคปปิตอล", "หุ้นไฟแนนซ์", "จำนำทะเบียน"], published: "2026-06-04", modified: "2026-06-04" }),
+  buildStockWorthArticle({ symbol: "GULF", nameTh: "กัลฟ์ ดีเวลลอปเมนท์", nameEn: "Gulf Development", sectorTh: "พลังงานและพลังงานทดแทน", slug: "gulf-stock-worth-buying-2026", angleTh: "GULF เป็นหุ้นโครงสร้างพื้นฐานพลังงานที่มีทั้งโรงไฟฟ้า conventional, renewable และธุรกิจต่อยอด แต่ต้องดู backlog, leverage, cost of capital และสมมติฐานการเติบโตระยะยาว", riskTh: "ความเสี่ยงหลักคือดอกเบี้ย หนี้สิน capex โครงการใหม่ regulation พลังงาน ความล่าช้าโครงการ และ valuation ที่มักซื้อขายบน growth premium", extraKeywords: ["GULF", "พลังงานทดแทน", "หุ้นโรงไฟฟ้า", "renewable energy", "กัลฟ์"], published: "2026-06-04", modified: "2026-06-04" }),
+  buildStockWorthArticle({ symbol: "MINT", nameTh: "ไมเนอร์ อินเตอร์เนชั่นแนล", nameEn: "Minor International", sectorTh: "โรงแรม ท่องเที่ยว และร้านอาหาร", slug: "mint-stock-worth-buying-2026", angleTh: "MINT เป็นหุ้นโรงแรมและท่องเที่ยวระดับสากลที่เชื่อมโยงกับ occupancy, RevPAR, ค่าใช้จ่ายดอกเบี้ย และการฟื้นตัวของนักท่องเที่ยว แต่ leverage ทำให้ต้องดูความเสี่ยงงบดุลควบคู่", riskTh: "ความเสี่ยงหลักคือวัฏจักรท่องเที่ยว ค่าเงิน ดอกเบี้ย หนี้สิน occupancy RevPAR ต้นทุนแรงงาน และความผันผวนของเศรษฐกิจยุโรป", extraKeywords: ["MINT", "โรงแรม ท่องเที่ยว", "Minor International", "หุ้นโรงแรม", "หุ้นท่องเที่ยว"], published: "2026-06-04", modified: "2026-06-04" }),
+  buildStockWorthArticle({ symbol: "IVL", nameTh: "อินโดรามา เวนเจอร์ส", nameEn: "Indorama Ventures", sectorTh: "ปิโตรเคมี", slug: "ivl-stock-worth-buying-2026", angleTh: "IVL เป็นหุ้นปิโตรเคมีระดับโลกที่ต้องวิเคราะห์ผ่าน spread, cycle, utilization, inventory และต้นทุนพลังงาน เพราะกำไรสามารถผันผวนตามวัฏจักรสินค้าโภคภัณฑ์สูง", riskTh: "ความเสี่ยงหลักคือ petrochemical spread, oversupply, demand cycle, ราคาพลังงาน ค่าเงิน หนี้สิน และการด้อยค่าของสินทรัพย์ในช่วงวัฏจักรขาลง", extraKeywords: ["IVL", "ปิโตรเคมี", "Indorama Ventures", "หุ้นปิโตรเคมี", "PET"], published: "2026-06-04", modified: "2026-06-04" }),
+  buildStockWorthArticle({ symbol: "HMPRO", nameTh: "โฮม โปรดักส์ เซ็นเตอร์", nameEn: "Home Product Center", sectorTh: "ค้าปลีกของใช้บ้าน", slug: "hmpro-stock-worth-buying-2026", angleTh: "HMPRO เป็นหุ้นค้าปลีก home improvement ที่เด่นเรื่องแบรนด์ HomePro, network สาขา และ margin แต่ต้องดูยอดขายสาขาเดิม กำลังซื้อ และการฟื้นตัวของอสังหาริมทรัพย์", riskTh: "ความเสี่ยงหลักคือกำลังซื้อผู้บริโภค ตลาดที่อยู่อาศัย same-store sales, gross margin, ต้นทุนค่าเช่า และการแข่งขันค้าปลีกของใช้บ้าน", extraKeywords: ["HMPRO", "home pro", "HomePro", "หุ้นค้าปลีก", "ของใช้บ้าน"], published: "2026-06-04", modified: "2026-06-04" }),
+  buildStockWorthArticle({ symbol: "SCC", nameTh: "ปูนซิเมนต์ไทย", nameEn: "Siam Cement Group", sectorTh: "วัสดุก่อสร้างและปิโตรเคมี", slug: "scc-stock-worth-buying-2026", angleTh: "SCC เป็นหุ้นอุตสาหกรรมขนาดใหญ่ที่มีทั้งปูนซิเมนต์ วัสดุก่อสร้าง packaging และปิโตรเคมี จึงต้องวิเคราะห์หลายวัฏจักรรวมกัน ไม่ใช่ดู P/E ปีเดียว", riskTh: "ความเสี่ยงหลักคือปิโตรเคมีขาลง demand วัสดุก่อสร้าง ต้นทุนพลังงาน capex หนี้สิน spread ของธุรกิจเคมี และวัฏจักรเศรษฐกิจภูมิภาค", extraKeywords: ["SCC", "ปูนซิเมนต์ไทย", "SCG", "หุ้นวัสดุก่อสร้าง", "หุ้นปูน"], published: "2026-06-04", modified: "2026-06-04" }),
+  buildStockWorthArticle({ symbol: "BJC", nameTh: "เบอร์ลี่ ยุคเกอร์", nameEn: "Berli Jucker", sectorTh: "ค้าปลีกและสินค้าอุปโภคบริโภค", slug: "bjc-stock-worth-buying-2026", angleTh: "BJC มีทั้งธุรกิจค้าปลีก Big C บรรจุภัณฑ์ และสินค้าอุปโภคบริโภค จุดสำคัญคือ margin, หนี้สิน, same-store sales และความสามารถแปลงยอดขายเป็นกระแสเงินสด", riskTh: "ความเสี่ยงหลักคือกำลังซื้อผู้บริโภค การแข่งขันค้าปลีก หนี้สิน ดอกเบี้ย margin ของ Big C ต้นทุนสินค้า และ capex สาขาใหม่", extraKeywords: ["BJC", "ค้าปลีก", "Big C", "เบอร์ลี่ ยุคเกอร์", "สินค้าอุปโภคบริโภค"], published: "2026-06-04", modified: "2026-06-04" }),
   buildStockWorthArticle({ symbol: "CPN", nameTh: "เซ็นทรัลพัฒนา", nameEn: "Central Pattana", sectorTh: "อสังหาริมทรัพย์และค้าปลีก", slug: "cpn-stock-worth-buying-2026", angleTh: "CPN เด่นจากศูนย์การค้า recurring income และ mixed-use projects แต่ต้องดูหนี้ capex และ occupancy", riskTh: "ความเสี่ยงหลักคือเศรษฐกิจผู้บริโภค ค่าเช่า occupancy ดอกเบี้ย และแผนลงทุนโครงการใหม่" }),
   buildStockWorthArticle({ symbol: "CPALL", nameTh: "ซีพี ออลล์", nameEn: "CP All", sectorTh: "ค้าปลีก", slug: "cpall-stock-worth-buying-2026", angleTh: "CPALL มี moat จาก 7-Eleven และ scale แต่ต้องดูหนี้ margin และกำลังซื้อผู้บริโภค", riskTh: "ความเสี่ยงหลักคือกำลังซื้อ ต้นทุนสินค้า margin หนี้สิน และการแข่งขันค้าปลีก" }),
   buildStockWorthArticle({ symbol: "OR", nameTh: "ปตท. น้ำมันและการค้าปลีก", nameEn: "PTT Oil and Retail", sectorTh: "ค้าปลีกพลังงาน", slug: "or-stock-worth-buying-2026", angleTh: "OR มีแบรนด์สถานีบริการและ Cafe Amazon แต่ต้องพิสูจน์การเติบโตนอกน้ำมันและ margin ของ retail ecosystem", riskTh: "ความเสี่ยงหลักคือ oil marketing margin การแข่งขันค้าปลีก non-oil capex และกำลังซื้อ" }),
@@ -216,7 +234,7 @@ const generatedKeywordGuides = [
   buildKeywordGuideArticle({ slug: "best-day-to-buy-stocks-thailand", symbol: "TIMING", titleTh: "ซื้อหุ้นวันไหนดี? วิธีคิดจังหวะซื้อแบบไม่เดาตลาด", titleEn: "What Is the Best Day to Buy Stocks? A Practical Timing Guide", descriptionTh: "อธิบายซื้อหุ้นวันไหนดีสำหรับมือใหม่ ใช้ DCA, valuation, margin of safety และ watchlist แทนการเดาวัน", descriptionEn: "A practical guide to stock buying timing using DCA, valuation, margin of safety and watchlists.", category: "Beginner Investing Guide", keywords: ["ซื้อหุ้นวันไหนดี", "จังหวะซื้อหุ้น", "DCA คืออะไร"], verdictTh: "วันซื้อที่ดีคือวันที่ thesis ชัด ราคาให้ margin of safety และสัดส่วนพอร์ตยังเหมาะ ไม่ใช่วันที่มีสูตรลับว่าตลาดจะขึ้น", verdictEn: "The best buying day is when thesis, valuation and allocation align, not when a calendar trick says so.", pillarsTh: ["ใช้ watchlist ตั้งราคาเป้าหมาย", "ทยอยซื้อเมื่อตลาดผันผวนแทนการเดาจุดต่ำสุด"] }),
 ];
 
-export const blogArticles: BlogArticle[] = [
+const blogArticleSource: BlogArticle[] = [
   {
     slug: "tisco-stock-worth-buying",
     symbol: "TISCO",
@@ -605,12 +623,12 @@ export const blogArticles: BlogArticle[] = [
   {
     slug: "how-to-invest-sp500-thailand",
     symbol: "S&P 500",
-    titleTh: "สมัครเล่น S&P 500 ยังไง? คู่มือลงทุน S&P 500 สำหรับมือใหม่ 2 ภาษา",
+    titleTh: "ลงทุน S&P 500 ยังไง? คู่มือเริ่มต้นสำหรับนักลงทุนไทย",
     titleEn: "How to Invest in the S&P 500: A Beginner Guide for Thai Investors",
     descriptionTh:
-      "อธิบายวิธีสมัครลงทุน S&P 500 สำหรับมือใหม่ เลือก ETF หรือกองทุนดัชนี เปิดบัญชี ดูค่าธรรมเนียม ภาษี ความเสี่ยงค่าเงิน และวิธีทยอยลงทุน",
+      "อธิบายวิธีลงทุน S&P 500 สำหรับมือใหม่ เลือก ETF หรือกองทุนดัชนี เปิดบัญชี ดูค่าธรรมเนียม ภาษี ความเสี่ยงค่าเงิน และวิธีทยอยลงทุน",
     descriptionEn:
-      "A bilingual beginner guide to investing in the S&P 500 through ETFs or index funds, including account setup, fees, FX risk, taxes and risk control.",
+      "A beginner guide to investing in the S&P 500 through ETFs or index funds, including account setup, fees, FX risk, taxes and risk control.",
     category: "US Index Investing Guide",
     published: "2026-06-03",
     modified: "2026-06-03",
@@ -619,7 +637,7 @@ export const blogArticles: BlogArticle[] = [
       "การลงทุน S&P 500 เหมาะกับผู้เริ่มต้นที่อยากกระจายลงทุนหุ้นสหรัฐผ่านกองทุนหรือ ETF แต่ควรเข้าใจว่าดัชนีไม่ใช่เงินฝาก มีความผันผวน ค่าเงิน ภาษี และค่าธรรมเนียมที่ต้องตรวจสอบก่อนสมัคร",
     verdictEn:
       "The S&P 500 is a practical first step for diversified U.S. equity exposure, but investors should understand volatility, currency risk, fund fees and tax treatment before opening an account.",
-    keywords: ["สมัครเล่น S&P500 ยังไง", "ลงทุน S&P 500", "ซื้อ S&P 500 ETF", "S&P 500 มือใหม่", "กองทุนดัชนีสหรัฐ"],
+    keywords: ["ลงทุน S&P 500 ยังไง", "ลงทุน S&P 500", "ซื้อ S&P 500 ETF", "S&P 500 มือใหม่", "กองทุนดัชนีสหรัฐ"],
     metrics: [
       { label: "Index type", value: "500 stocks", note: "Large-cap U.S. equity benchmark" },
       { label: "Main route", value: "ETF / Fund", note: "Retail investors usually buy funds tracking the index" },
@@ -628,7 +646,7 @@ export const blogArticles: BlogArticle[] = [
     ],
     sectionsTh: [
       {
-        heading: "สรุปคำตอบ: สมัครเล่น S&P 500 ยังไง",
+        heading: "สรุปคำตอบ: ลงทุน S&P 500 ยังไง",
         body: [
           "คนทั่วไปไม่ได้สมัครซื้อดัชนี S&P 500 โดยตรง เพราะ S&P 500 เป็นดัชนี ไม่ใช่หุ้นหนึ่งตัว วิธีที่ใช้จริงคือซื้อ ETF หรือกองทุนดัชนีที่พยายามติดตามผลตอบแทนของ S&P 500 เช่น ETF ในตลาดสหรัฐ หรือกองทุนไทยที่ไปลงทุนใน master fund ต่างประเทศ",
           "ขั้นตอนหลักคือเลือกช่องทางลงทุน เปิดบัญชีกับโบรกเกอร์หรือบริษัทหลักทรัพย์จัดการกองทุน ยืนยันตัวตน ฝากเงิน เลือกกองทุนหรือ ETF ที่ track S&P 500 ตรวจค่าธรรมเนียม แล้วกำหนดแผนลงทุน เช่น DCA รายเดือน",
@@ -901,6 +919,12 @@ export const blogArticles: BlogArticle[] = [
   ...generatedStockWorthArticles,
   ...generatedKeywordGuides,
 ];
+
+export const blogArticles: BlogArticle[] = [...blogArticleSource].sort((a, b) => {
+  const dateA = new Date(a.modified || a.published).getTime();
+  const dateB = new Date(b.modified || b.published).getTime();
+  return dateB - dateA;
+});
 
 export function getBlogArticle(slug: string) {
   return blogArticles.find((article) => article.slug === slug);

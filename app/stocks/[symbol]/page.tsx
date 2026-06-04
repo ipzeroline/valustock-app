@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, type ReactNode } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { getStock, STOCKS } from "@/lib/stocks";
@@ -36,6 +36,12 @@ import {
   Target,
   Shield,
   FileText,
+  BarChart3,
+  Calendar,
+  Database,
+  CheckCircle,
+  AlertTriangle,
+  MessageSquare,
 } from "@/lib/icons";
 
 const verdictTone = {
@@ -46,6 +52,34 @@ const verdictTone = {
 
 type PriceChartMode = "line" | "candles";
 type CandleRange = "1M" | "3M" | "6M" | "1Y" | "5Y";
+type IntelligenceTab = "overview" | "news" | "technical" | "events" | "options" | "macro";
+
+type MarketIntelligence = {
+  symbol: string;
+  ticker: string;
+  provider: string;
+  updatedAt: string;
+  capabilities: string[];
+  news: Array<{ title: string; date: string | null; source: string | null; url: string | null; sentiment?: string | null }>;
+  technicals: Array<{ label: string; value: number | null; signal: "bullish" | "neutral" | "bearish"; source: string }>;
+  dividends: Array<{ date: string; value: number; currency?: string | null }>;
+  splits: Array<{ date: string; split: string }>;
+  earnings: Array<{ date: string; epsActual: number | null; epsEstimate: number | null; surprisePct: number | null }>;
+  etf: {
+    aum: number | null;
+    expenseRatio: number | null;
+    nav: number | null;
+    holdings: Array<{ name: string; symbol?: string | null; weight: number | null }>;
+    sectors: Array<{ name: string; weight: number | null }>;
+  } | null;
+  options: {
+    available: boolean;
+    nearestExpiration: string | null;
+    sampleContracts: Array<{ code: string; type: string | null; strike: number | null; last: number | null; volume: number | null }>;
+  };
+  macro: Array<{ indicator: string; value: number | null; date: string | null }>;
+  dataQuality: Array<{ label: string; status: "ok" | "partial" | "missing"; detail: string }>;
+};
 
 const candleRangeSize: Record<CandleRange, number> = {
   "1M": 22,
@@ -89,6 +123,9 @@ export default function StockDetail() {
   const [searchQuery, setSearchQuery] = useState("");
   const [priceChartMode, setPriceChartMode] = useState<PriceChartMode>("line");
   const [candleRange, setCandleRange] = useState<CandleRange>("6M");
+  const [intelligence, setIntelligence] = useState<MarketIntelligence | null>(null);
+  const [intelligenceLoading, setIntelligenceLoading] = useState(false);
+  const [activeIntelligenceTab, setActiveIntelligenceTab] = useState<IntelligenceTab>("overview");
   const plan = useCurrentPlan();
   const { isWatched, toggleWatch } = useStore();
   const { t, lang } = useTranslation();
@@ -131,7 +168,7 @@ export default function StockDetail() {
     let cancelled = false;
     const loadLiveStock = () => {
       setLoading(true);
-      fetch(`/api/stock/${symbol}`, { cache: "no-store" })
+      fetch(`/api/stock/${symbol}`)
         .then((res) => res.json())
         .then((data) => {
           if (!cancelled && data && !data.error) {
@@ -152,6 +189,25 @@ export default function StockDetail() {
 
   useEffect(() => {
     if (!symbol) return;
+    let cancelled = false;
+    setIntelligence(null);
+    setIntelligenceLoading(true);
+    fetch(`/api/stock/${encodeURIComponent(symbol)}/intelligence`)
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => {
+        if (!cancelled && data && !data.error) setIntelligence(data);
+      })
+      .catch(() => null)
+      .finally(() => {
+        if (!cancelled) setIntelligenceLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [symbol]);
+
+  useEffect(() => {
+    if (!symbol) return;
     const liveStock = liveStockMap.get(symbol.toUpperCase());
     if (!liveStock) return;
 
@@ -163,6 +219,8 @@ export default function StockDetail() {
       ohlcHistory: liveStock.ohlcHistory || prev?.ohlcHistory,
       quoteSource: liveStock.quoteSource,
       quoteUpdatedAt: liveStock.quoteUpdatedAt,
+      quoteDelayMinutes: liveStock.quoteDelayMinutes,
+      quoteIsDelayed: liveStock.quoteIsDelayed,
     }));
   }, [symbol, liveStockMap]);
 
@@ -189,7 +247,7 @@ export default function StockDetail() {
   }
 
   const isFund = stock.assetType === "FUND";
-  const isUS = stock.assetType === "US_STOCK";
+  const isUS = stock.assetType === "US_STOCK" || stock.assetType === "ETF" || stock.currency === "USD";
   const isCrypto = stock.assetType === "CRYPTO";
   const isFutures = stock.assetType === "FUTURES";
   const isStock = !isFund && !isCrypto && !isFutures;
@@ -210,6 +268,19 @@ export default function StockDetail() {
   // Dynamic values
   const displayName = lang === "th" ? stock.name : (stock.enName || stock.name);
   const localizedSector = lang === "th" ? stock.sector : (SECTOR_TRANS[stock.sector as string] || stock.sector);
+  const quoteTime = stock.quoteUpdatedAt
+    ? new Date(stock.quoteUpdatedAt).toLocaleTimeString(lang === "th" ? "th-TH" : "en-US", {
+        hour: "2-digit",
+        minute: "2-digit",
+      })
+    : "";
+  const quoteStatus = stock.quoteIsDelayed
+    ? lang === "th"
+      ? `Delayed ${stock.quoteDelayMinutes || 15} นาที`
+      : `${stock.quoteDelayMinutes || 15}m delayed`
+    : lang === "th"
+    ? "อัปเดตล่าสุด"
+    : "Latest";
 
   const formatPrice = (p: number) => {
     if (isUS || isCrypto || isFutures) return dollar(p);
@@ -330,6 +401,12 @@ export default function StockDetail() {
               )}
               {pct(change)} {lang === "th" ? "วันนี้" : "Today"}
             </div>
+            <div className="mt-1 flex flex-wrap items-center justify-end gap-2 text-[11px] font-semibold text-muted">
+              <span className="rounded-md border border-line bg-elevate px-2 py-0.5">
+                {quoteStatus}
+              </span>
+              {quoteTime && <span>{quoteTime}</span>}
+            </div>
           </div>
         </div>
         <div className="mt-4 flex items-center gap-2">
@@ -392,6 +469,13 @@ export default function StockDetail() {
           </div>
         </Card>
       )}
+
+      <MarketIntelligencePanel
+        data={intelligence}
+        loading={intelligenceLoading}
+        activeTab={activeIntelligenceTab}
+        onTabChange={setActiveIntelligenceTab}
+      />
 
       {/* 3. DYNAMIC CONTENT SECTION */}
       {/* 3. DYNAMIC CONTENT SECTION */}
@@ -859,6 +943,278 @@ export default function StockDetail() {
           </div>
         </Link>
       )}
+    </div>
+  );
+}
+
+function MarketIntelligencePanel({
+  data,
+  loading,
+  activeTab,
+  onTabChange,
+}: {
+  data: MarketIntelligence | null;
+  loading: boolean;
+  activeTab: IntelligenceTab;
+  onTabChange: (tab: IntelligenceTab) => void;
+}) {
+  const { t, lang } = useTranslation();
+  const tabs: Array<{ id: IntelligenceTab; label: string; icon: ReactNode }> = [
+    { id: "overview", label: t("stockDetail.intelligence.tabs.overview"), icon: <Database className="h-4 w-4" /> },
+    { id: "news", label: t("stockDetail.intelligence.tabs.news"), icon: <MessageSquare className="h-4 w-4" /> },
+    { id: "technical", label: t("stockDetail.intelligence.tabs.technical"), icon: <BarChart3 className="h-4 w-4" /> },
+    { id: "events", label: t("stockDetail.intelligence.tabs.events"), icon: <Calendar className="h-4 w-4" /> },
+    { id: "options", label: t("stockDetail.intelligence.tabs.options"), icon: <CircleDollarSign className="h-4 w-4" /> },
+    { id: "macro", label: t("stockDetail.intelligence.tabs.macro"), icon: <Gauge className="h-4 w-4" /> },
+  ];
+
+  const updatedAt = data?.updatedAt
+    ? new Date(data.updatedAt).toLocaleString(lang === "th" ? "th-TH" : "en-US", {
+        dateStyle: "medium",
+        timeStyle: "short",
+      })
+    : "";
+
+  return (
+    <Card className="border border-line">
+      <CardHeader
+        title={t("stockDetail.intelligence.title")}
+        subtitle={data ? `${data.ticker} · ${updatedAt}` : t("stockDetail.intelligence.subtitle")}
+        icon={<Sparkles className="h-4 w-4 text-brand" />}
+      />
+      <div className="p-4">
+        <div className="flex gap-1 overflow-x-auto rounded-xl border border-line bg-bg p-1">
+          {tabs.map((tab) => {
+            const active = activeTab === tab.id;
+            return (
+              <button
+                key={tab.id}
+                type="button"
+                onClick={() => onTabChange(tab.id)}
+                className={`flex h-9 shrink-0 items-center gap-1.5 rounded-lg px-3 text-xs font-bold transition ${
+                  active ? "bg-surface text-brand shadow-sm" : "text-muted hover:text-ink"
+                }`}
+              >
+                {tab.icon}
+                {tab.label}
+              </button>
+            );
+          })}
+        </div>
+
+        {loading && !data ? (
+          <div className="mt-4 rounded-xl border border-line bg-bg p-5 text-sm font-semibold text-muted">
+            {t("stockDetail.intelligence.loading")}
+          </div>
+        ) : !data ? (
+          <div className="mt-4 rounded-xl border border-line bg-bg p-5 text-sm font-semibold text-muted">
+            {t("stockDetail.intelligence.empty")}
+          </div>
+        ) : (
+          <div className="mt-4">
+            {activeTab === "overview" && <IntelligenceOverview data={data} />}
+            {activeTab === "news" && <IntelligenceNews data={data} />}
+            {activeTab === "technical" && <IntelligenceTechnicals data={data} />}
+            {activeTab === "events" && <IntelligenceEvents data={data} />}
+            {activeTab === "options" && <IntelligenceOptions data={data} />}
+            {activeTab === "macro" && <IntelligenceMacro data={data} />}
+          </div>
+        )}
+      </div>
+    </Card>
+  );
+}
+
+function IntelligenceEmpty({ text }: { text: string }) {
+  return <div className="rounded-xl border border-line bg-bg p-4 text-sm font-semibold text-muted">{text}</div>;
+}
+
+function qualityTone(status: "ok" | "partial" | "missing") {
+  if (status === "ok") return "text-up";
+  if (status === "missing") return "text-down";
+  return "text-gold";
+}
+
+function IntelligenceOverview({ data }: { data: MarketIntelligence }) {
+  const { t, lang } = useTranslation();
+  const etfHoldings = data.etf?.holdings?.slice(0, 5) || [];
+  return (
+    <div className="grid gap-4 lg:grid-cols-3">
+      <div className="rounded-xl border border-line bg-bg p-4 lg:col-span-2">
+        <div className="mb-3 flex items-center gap-2 text-sm font-bold text-ink">
+          <CheckCircle className="h-4 w-4 text-up" />
+          {t("stockDetail.intelligence.coverage")}
+        </div>
+        <div className="grid gap-2 sm:grid-cols-2">
+          {data.dataQuality.map((row) => (
+            <div key={row.label} className="rounded-lg border border-line bg-surface px-3 py-2">
+              <div className={`text-xs font-black ${qualityTone(row.status)}`}>{row.label}</div>
+              <div className="mt-0.5 text-[11px] font-semibold text-muted">{row.detail}</div>
+            </div>
+          ))}
+        </div>
+      </div>
+      <div className="rounded-xl border border-line bg-bg p-4">
+        <div className="mb-3 flex items-center gap-2 text-sm font-bold text-ink">
+          <Database className="h-4 w-4 text-brand" />
+          {t("stockDetail.intelligence.etfSnapshot")}
+        </div>
+        {data.etf ? (
+          <div className="space-y-2">
+            <MiniMetric label="AUM" value={data.etf.aum ? num(data.etf.aum / 1_000_000, 1) + "M" : "—"} />
+            <MiniMetric label={t("stockDetail.intelligence.expense")} value={data.etf.expenseRatio !== null ? `${num(data.etf.expenseRatio, 2)}%` : "—"} />
+            <MiniMetric label="NAV" value={data.etf.nav !== null ? num(data.etf.nav, 2) : "—"} />
+          </div>
+        ) : (
+          <p className="text-xs font-semibold text-muted">{t("stockDetail.intelligence.noEtf")}</p>
+        )}
+      </div>
+      {etfHoldings.length > 0 && (
+        <div className="rounded-xl border border-line bg-bg p-4 lg:col-span-3">
+          <div className="mb-3 text-sm font-bold text-ink">{t("stockDetail.intelligence.holdings")}</div>
+          <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-5">
+            {etfHoldings.map((row) => (
+              <div key={`${row.name}-${row.symbol}`} className="rounded-lg border border-line bg-surface p-3">
+                <div className="truncate text-xs font-bold text-ink" title={row.name}>{row.name}</div>
+                <div className="mt-1 text-[11px] font-semibold text-muted">
+                  {row.symbol || ""} {row.weight !== null ? `· ${num(row.weight, 2)}%` : ""}
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+      <div className="rounded-xl border border-line bg-elevate p-3 text-xs font-semibold text-muted lg:col-span-3">
+        {lang === "th"
+          ? "ข้อมูลส่วนนี้รวบรวมจากระบบข้อมูลตลาดหลายหมวด และเตรียมไว้เพื่อลดเวลารอ หากบางหมวดไม่มีข้อมูล ระบบจะแสดงสถานะ partial/missing แทนการใส่ข้อมูลจำลอง"
+          : "This panel aggregates multiple market-data categories and optimizes them for speed. Missing coverage is shown as partial/missing instead of simulated filler."}
+      </div>
+    </div>
+  );
+}
+
+function MiniMetric({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="flex items-center justify-between border-b border-line/60 pb-2 text-xs last:border-0 last:pb-0">
+      <span className="font-semibold text-muted">{label}</span>
+      <span className="num font-black text-ink">{value}</span>
+    </div>
+  );
+}
+
+function IntelligenceNews({ data }: { data: MarketIntelligence }) {
+  const { t } = useTranslation();
+  if (!data.news.length) return <IntelligenceEmpty text={t("stockDetail.intelligence.noNews")} />;
+  return (
+    <div className="grid gap-3 md:grid-cols-2">
+      {data.news.map((row, index) => (
+        <a
+          key={`${row.title}-${index}`}
+          href={row.url || "#"}
+          target={row.url ? "_blank" : undefined}
+          rel="noreferrer"
+          className="rounded-xl border border-line bg-bg p-4 transition hover:border-brand/50"
+        >
+          <div className="line-clamp-2 text-sm font-bold text-ink">{row.title}</div>
+          <div className="mt-2 flex flex-wrap gap-2 text-[11px] font-semibold text-muted">
+            {row.source && <span>{row.source}</span>}
+            {row.date && <span>{row.date}</span>}
+            {row.sentiment && <Badge tone="muted">{row.sentiment}</Badge>}
+          </div>
+        </a>
+      ))}
+    </div>
+  );
+}
+
+function IntelligenceTechnicals({ data }: { data: MarketIntelligence }) {
+  const { t } = useTranslation();
+  return (
+    <div className="grid gap-3 sm:grid-cols-3">
+      {data.technicals.map((row) => (
+        <div key={row.label} className="rounded-xl border border-line bg-bg p-4">
+          <div className="text-xs font-bold text-muted">{row.label}</div>
+          <div className="num mt-2 text-2xl font-extrabold text-ink">{row.value !== null ? num(row.value, 2) : "—"}</div>
+          <Badge tone={row.signal === "bullish" ? "up" : row.signal === "bearish" ? "down" : "muted"} className="mt-2">
+            {t(`stockDetail.intelligence.signals.${row.signal}`)}
+          </Badge>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function IntelligenceEvents({ data }: { data: MarketIntelligence }) {
+  const { t } = useTranslation();
+  const hasData = data.dividends.length || data.splits.length || data.earnings.length;
+  if (!hasData) return <IntelligenceEmpty text={t("stockDetail.intelligence.noEvents")} />;
+  return (
+    <div className="grid gap-4 lg:grid-cols-3">
+      <EventList title={t("stockDetail.intelligence.dividends")} rows={data.dividends.map((row) => `${row.date} · ${num(row.value, 4)} ${row.currency || ""}`)} />
+      <EventList title={t("stockDetail.intelligence.earnings")} rows={data.earnings.map((row) => `${row.date} · EPS ${row.epsActual ?? "—"} / ${row.epsEstimate ?? "—"}`)} />
+      <EventList title={t("stockDetail.intelligence.splits")} rows={data.splits.map((row) => `${row.date} · ${row.split}`)} />
+    </div>
+  );
+}
+
+function EventList({ title, rows }: { title: string; rows: string[] }) {
+  return (
+    <div className="rounded-xl border border-line bg-bg p-4">
+      <div className="mb-3 text-sm font-bold text-ink">{title}</div>
+      {rows.length ? (
+        <div className="space-y-2">
+          {rows.slice(0, 6).map((row) => (
+            <div key={row} className="rounded-lg border border-line bg-surface px-3 py-2 text-xs font-semibold text-muted">
+              {row}
+            </div>
+          ))}
+        </div>
+      ) : (
+        <div className="text-xs font-semibold text-muted">—</div>
+      )}
+    </div>
+  );
+}
+
+function IntelligenceOptions({ data }: { data: MarketIntelligence }) {
+  const { t } = useTranslation();
+  if (!data.options.available) return <IntelligenceEmpty text={t("stockDetail.intelligence.noOptions")} />;
+  return (
+    <div className="rounded-xl border border-line bg-bg p-4">
+      <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
+        <div className="text-sm font-bold text-ink">{t("stockDetail.intelligence.optionChain")}</div>
+        {data.options.nearestExpiration && <Badge tone="gold">{data.options.nearestExpiration}</Badge>}
+      </div>
+      <div className="grid gap-2 md:grid-cols-2">
+        {data.options.sampleContracts.map((row) => (
+          <div key={row.code} className="rounded-lg border border-line bg-surface p-3">
+            <div className="truncate text-xs font-bold text-ink">{row.code}</div>
+            <div className="mt-1 text-[11px] font-semibold text-muted">
+              {row.type || "Option"} · Strike {row.strike ?? "—"} · Last {row.last ?? "—"} · Vol {row.volume ?? "—"}
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function IntelligenceMacro({ data }: { data: MarketIntelligence }) {
+  const { t } = useTranslation();
+  if (!data.macro.length) return <IntelligenceEmpty text={t("stockDetail.intelligence.noMacro")} />;
+  return (
+    <div className="grid gap-3 sm:grid-cols-3">
+      {data.macro.map((row) => (
+        <div key={row.indicator} className="rounded-xl border border-line bg-bg p-4">
+          <div className="text-xs font-bold text-muted">{row.indicator}</div>
+          <div className="num mt-2 text-xl font-extrabold text-ink">{row.value !== null ? num(row.value, 2) : "—"}</div>
+          {row.date && <div className="mt-1 text-[11px] font-semibold text-muted">{row.date}</div>}
+        </div>
+      ))}
+      <div className="rounded-xl border border-gold/30 bg-gold/5 p-4 text-xs font-semibold leading-relaxed text-muted sm:col-span-3">
+        <AlertTriangle className="mb-2 h-4 w-4 text-gold" />
+        {t("stockDetail.intelligence.macroNote")}
+      </div>
     </div>
   );
 }
@@ -2078,7 +2434,7 @@ function ScreenerSeoLanding({ symbol }: { symbol: string }) {
       if (lang === "th") {
         return `ระบบตรวจคัดกรองพบหลักทรัพย์ที่มีตัวคูณราคาต่อกำไรระดับต้อยต่ำ (Low P/E Ratio) ที่ปลอดภัยจำนวน ${totalCount} บริษัท โดยมีตัวชี้วัดโดดเด่นอย่าง ${topAssetsText} เป็นแกนนำ\n\n**บทวิเคราะห์จากปัญญาประดิษฐ์ (AI Multiple Discount Verdict):**\nกลยุทธ์ P/E Discount ช่วยสกรีนหาอสังหาริมทรัพย์และธนาคารที่ตลาดมองข้ามทำให้มี Earnings Yield สูงเป็นพิเศษ อย่างไรก็ดี ระบบแนะนำให้ตรวจสอบควบคู่กับอัตราส่วน P/BV และ FCF เพื่อแยกแยะ "กับดักราคาถูกชั่วคราว" (Value Trap) ที่เกิดจากกำไรพิเศษก้อนโตที่ไม่ยั่งยืน ซึ่งระบบได้กรองรายชื่อกำไรผันผวนรุนแรงออกไปเรียบร้อยแล้ว`;
       } else {
-        return `Our multiples discount screener has mapped ${totalCount} defensive corporations trading at highly depressed Price-to-Earnings ratios, led by high-earnings-yield entities like ${topAssetsText}.\n\n**AI Multiple Discount Verdict:**\nLow PE multiples represent strong relative value plays, frequently offering massive earnings yields in cyclical or asset-heavy sectors. To protect compounders from typical "Value Traps" (collapsing businesses with temporary non-recurring gains), our algorithm integrates strict trailing FCF stability metrics, ensuring the underlying earnings power is durable and organic.`;
+        return `Our multiples discount screener has mapped ${totalCount} defensive corporations trading at highly depressed Price-to-Earnings ratios, led by high-earnings-yield entities like ${topAssetsText}.\n\n**AI Multiple Discount Verdict:**\nLow PE multiples represent strong relative value plays, frequently offering high earnings yields in cyclical or asset-heavy sectors. To protect compounders from typical "Value Traps" (collapsing businesses with temporary non-recurring gains), our algorithm integrates strict trailing FCF stability metrics, ensuring the underlying earnings power is durable and organic.`;
       }
     } else {
       // high-roe

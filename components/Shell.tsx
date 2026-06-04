@@ -23,10 +23,14 @@ import {
   Wallet,
   Mail,
   MessageSquare,
+  FileText,
 } from "@/lib/icons";
 import { Button } from "./ui/Button";
 
 const MARKETING = ["/", "/about", "/pricing", "/login", "/contact", "/member-reviews"];
+const MARKETING_PREFIXES = ["/blog"];
+const blogLabel = (lang: "th" | "en") => (lang === "th" ? "บทความ" : "Blog");
+
 function Logo({ compact = false }: { compact?: boolean }) {
   return (
     <Link href="/" className="flex shrink-0 items-center gap-2.5">
@@ -90,6 +94,7 @@ function MarketingHeader() {
         <nav className="hidden items-center gap-7 text-sm text-muted md:flex">
           <Link href="/#features" className="hover:text-ink">{t("common.features")}</Link>
           <Link href="/stocks" className="hover:text-ink">{t("common.searchStocks")}</Link>
+          <Link href="/blog" className="hover:text-ink">{blogLabel(lang)}</Link>
           <Link href="/member-reviews" className="hover:text-ink">{lang === "th" ? "รีวิวจากสมาชิก" : "Member Reviews"}</Link>
           <Link href="/about" className="hover:text-ink">{lang === "th" ? "เกี่ยวกับเรา" : "About"}</Link>
           <Link href="/pricing" className="hover:text-ink">{pricingLabel}</Link>
@@ -126,6 +131,7 @@ function MarketingHeader() {
           <div className="flex flex-col gap-1 text-sm">
             <Link href="/#features" onClick={() => setOpen(false)} className="rounded-lg px-3 py-2.5 hover:bg-elevate">{t("common.features")}</Link>
             <Link href="/stocks" onClick={() => setOpen(false)} className="rounded-lg px-3 py-2.5 hover:bg-elevate">{t("common.searchStocks")}</Link>
+            <Link href="/blog" onClick={() => setOpen(false)} className="rounded-lg px-3 py-2.5 hover:bg-elevate">{blogLabel(lang)}</Link>
             <Link href="/member-reviews" onClick={() => setOpen(false)} className="rounded-lg px-3 py-2.5 hover:bg-elevate">{lang === "th" ? "รีวิวจากสมาชิก" : "Member Reviews"}</Link>
             <Link href="/about" onClick={() => setOpen(false)} className="rounded-lg px-3 py-2.5 hover:bg-elevate">{lang === "th" ? "เกี่ยวกับเรา" : "About"}</Link>
             <Link href="/pricing" onClick={() => setOpen(false)} className="rounded-lg px-3 py-2.5 hover:bg-elevate">{pricingLabel}</Link>
@@ -245,6 +251,7 @@ const NAV = [
   { href: "/stocks", key: "searchStocks", icon: Search },
   { href: "/compare", key: "compare", icon: Layers },
   { href: "/portfolio", key: "portfolio", icon: Wallet },
+  { href: "/blog", icon: FileText, labelTh: "บทความ", labelEn: "Blog" },
   { href: "/insights", key: "insights", icon: Sparkles },
   { href: "/reviews", icon: MessageSquare, labelTh: "เขียนรีวิว", labelEn: "Write Review" },
   { href: "/pricing", key: "pricing", icon: Crown },
@@ -252,7 +259,7 @@ const NAV = [
   { href: "/contact", key: "contact", icon: Mail },
 ];
 
-const MOBILE_NAV_HREFS = ["/dashboard", "/stocks", "/portfolio", "/reviews", "/account"];
+const MOBILE_NAV_HREFS = ["/dashboard", "/stocks", "/blog", "/portfolio", "/account"];
 
 function AppSidebar({ pathname }: { pathname: string }) {
   const plan = useCurrentPlan();
@@ -397,7 +404,7 @@ export function Shell({ children }: { children: React.ReactNode }) {
     return <>{children}</>;
   }
 
-  const isMarketing = MARKETING.includes(pathname);
+  const isMarketing = MARKETING.includes(pathname) || MARKETING_PREFIXES.some((prefix) => pathname.startsWith(prefix));
 
   if (isMarketing) {
     return (

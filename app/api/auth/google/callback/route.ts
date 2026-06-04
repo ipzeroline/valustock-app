@@ -3,6 +3,7 @@ import { isDbConnected, query } from "@/lib/db";
 import { signToken } from "@/lib/auth";
 import { createSingleActiveSession } from "@/lib/sessions";
 import { normalizeMemberEmail } from "@/lib/member-identity";
+import { getRequestOrigin } from "@/lib/request-origin";
 
 function getCookieValue(req: Request, name: string) {
   const cookieHeader = req.headers.get("cookie") || "";
@@ -18,9 +19,7 @@ export async function GET(req: Request) {
   const code = searchParams.get("code");
   const state = searchParams.get("state");
 
-  const host = req.headers.get("host") || "localhost:7887";
-  const protocol = host.includes("localhost") || host.includes("127.0.0.1") ? "http" : "https";
-  const loginPageUrl = `${protocol}://${host}/login`;
+  const loginPageUrl = getRequestOrigin(req, "/login");
 
   if (!code) {
     console.error("Google Callback Error: Missing auth code");
@@ -39,7 +38,7 @@ export async function GET(req: Request) {
       throw new Error("OAuth credentials not configured properly");
     }
 
-    const redirectUri = `${protocol}://${host}/api/auth/google/callback`;
+    const redirectUri = getRequestOrigin(req, "/api/auth/google/callback");
 
     // 1. Exchange OAuth code for Google tokens
     const tokenResponse = await fetch("https://oauth2.googleapis.com/token", {
@@ -80,10 +79,10 @@ export async function GET(req: Request) {
       throw new Error("Google userinfo did not contain email address");
     }
 
-    // 3. Register or log in the user in the MariaDB database
+    // 3. Register or log in the user in the production data store.
     const dbConnected = await isDbConnected();
     if (!dbConnected) {
-      throw new Error("Database is offline. User login was not saved.");
+      throw new Error("Data service is offline. User login was not saved.");
     }
 
     try {
@@ -94,8 +93,8 @@ export async function GET(req: Request) {
         [email, name]
       );
     } catch (dbErr: any) {
-      console.error("Database user upsert failure:", dbErr.message);
-      throw new Error("Database user upsert failed");
+      console.error("User upsert failure:", dbErr.message);
+      throw new Error("User upsert failed");
     }
 
     // 4. Create a single active member session. New login replaces older devices.
@@ -103,12 +102,12 @@ export async function GET(req: Request) {
     const token = signToken({ email, name, sessionId });
 
     // 5. Redirect back to client callback route with the signed token
-    const callbackTargetUrl = `${protocol}://${host}/login/callback?token=${encodeURIComponent(token)}`;
+    const callbackTargetUrl = `${getRequestOrigin(req, "/login/callback")}?token=${encodeURIComponent(token)}`;
     const response = NextResponse.redirect(callbackTargetUrl);
     response.cookies.set("valustock_google_oauth_state", "", {
       httpOnly: true,
       sameSite: "lax",
-      secure: protocol === "https",
+      secure: callbackTargetUrl.startsWith("https://"),
       path: "/",
       maxAge: 0,
     });

@@ -35,11 +35,29 @@ import {
   Info,
   CheckCircle,
   Shield,
+  Database,
 } from "@/lib/icons";
 
 type SortKey = "mos" | "pe" | "growth" | "yield" | "symbol";
 type TabType = "valuation" | "performance" | "dividends" | "funds";
 type MetricTone = "up" | "down" | "gold" | "muted" | "brand";
+
+type MarketMover = {
+  symbol: string;
+  price: number;
+  changePct: number;
+  source: string;
+  isDelayed: boolean;
+  delayMinutes: number;
+  fetchedAt: string;
+};
+
+type MarketMoversPayload = {
+  gainers: MarketMover[];
+  losers: MarketMover[];
+  volatile: MarketMover[];
+  updatedAt: string | null;
+};
 
 export default function StocksPage() {
   const plan = useCurrentPlan();
@@ -70,6 +88,7 @@ export default function StocksPage() {
   const [nasdaqStocks, setNasdaqStocks] = useState<Stock[]>([]);
   const [isSearchingApi, setIsSearchingApi] = useState(false);
   const [apiSearchError, setApiSearchError] = useState<string | null>(null);
+  const [marketMovers, setMarketMovers] = useState<MarketMoversPayload | null>(null);
 
   // Asynchronously load the 5,472 NASDAQ stocks in the background after mounting.
   // This splits it into a separate lazy-loaded JS chunk, reducing initial bundle size
@@ -84,6 +103,17 @@ export default function StocksPage() {
       });
   }, []);
 
+  useEffect(() => {
+    fetch("/api/market/movers?limit=5")
+      .then((res) => (res.ok ? res.json() : null))
+      .then((payload) => {
+        if (payload) setMarketMovers(payload);
+      })
+      .catch(() => {
+        /* Market movers are an enhancement; screener data remains primary. */
+      });
+  }, []);
+
   const canScreen = plan.limits.screener;
   const maxStocks = plan.limits.maxStocks;
   const isAssetVisible = (assetType: AssetType | undefined) => assetAllowed(plan, assetType);
@@ -92,16 +122,9 @@ export default function StocksPage() {
   // results may refresh US seed rows, while the index only fills missing rows.
   const allStocks = useMemo(() => {
     const bySymbol = new Map<string, Stock>();
-    const quoteProviderSymbols = new Set(STOCKS.filter(hasQuoteProvider).map((stock) => stock.symbol.toUpperCase()));
-    const dynamicSymbols = new Set(dynamicStocks.map((stock) => stock.symbol.toUpperCase()));
-    STOCKS.forEach((stock) => {
-      const key = stock.symbol.toUpperCase();
-      if (quoteProviderSymbols.has(key) && !dynamicSymbols.has(key)) return;
-      bySymbol.set(key, stock);
-    });
+    STOCKS.forEach((stock) => bySymbol.set(stock.symbol.toUpperCase(), stock));
     nasdaqStocks.forEach((stock) => {
       const key = stock.symbol.toUpperCase();
-      if (quoteProviderSymbols.has(key) && !dynamicSymbols.has(key)) return;
       if (!bySymbol.has(key)) bySymbol.set(key, stock);
     });
     dynamicStocks.forEach((stock) => bySymbol.set(stock.symbol.toUpperCase(), stock));
@@ -166,7 +189,7 @@ export default function StocksPage() {
     setIsSearchingApi(true);
     setApiSearchError(null);
     try {
-      const res = await fetch(`/api/stock/${sym}`, { cache: "no-store" });
+      const res = await fetch(`/api/stock/${sym}`);
       if (!res.ok) {
         throw new Error(lang === "th" ? `ไม่พบข้อมูลของสัญลักษณ์ "${sym}" หรืออยู่นอกขอบเขตบริการ` : `Could not fetch ticker details for "${sym}".`);
       }
@@ -206,7 +229,7 @@ export default function StocksPage() {
 
     const timer = setTimeout(async () => {
       try {
-        const res = await fetch(`/api/stock/${query}`, { cache: "no-store" });
+        const res = await fetch(`/api/stock/${query}`);
         if (res.ok) {
           const data = await res.json();
           if (data && data.symbol && data.symbol === query) {
@@ -492,6 +515,17 @@ export default function StocksPage() {
     return baht(p);
   };
 
+  const formatMoverPrice = (mover: MarketMover) => {
+    const stock = allStocks.find((item) => item.symbol.toUpperCase() === mover.symbol.toUpperCase());
+    return formatPrice(stock || { currency: "USD", assetType: "US_STOCK" }, mover.price);
+  };
+
+  const moverName = (symbol: string) => {
+    const stock = allStocks.find((item) => item.symbol.toUpperCase() === symbol.toUpperCase());
+    if (!stock) return symbol;
+    return lang === "th" ? stock.name : stock.enName;
+  };
+
   const screenerGuides = [
     {
       title: lang === "th" ? "เริ่มจาก Margin of Safety" : "Start with Margin of Safety",
@@ -772,6 +806,86 @@ export default function StocksPage() {
         </Card>
       </div>
 
+      {marketMovers && (marketMovers.gainers.length > 0 || marketMovers.losers.length > 0 || marketMovers.volatile.length > 0) && (
+        <Card className="border border-line/70 bg-surface/35 p-4">
+          <div className="mb-3 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+            <div className="flex min-w-0 items-center gap-3">
+              <span className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-brand/10 text-brand">
+                <TrendingUp className="h-4.5 w-4.5" />
+              </span>
+              <div className="min-w-0">
+                <h2 className="font-display text-sm font-bold text-ink">
+                  {lang === "th" ? "Market Pulse" : "Market Pulse"}
+                </h2>
+                <p className="text-[11px] leading-relaxed text-muted">
+                  {lang === "th"
+                    ? "สรุปแรงเคลื่อนไหวล่าสุดของตลาดจากข้อมูลราคาที่อัปเดตแล้ว"
+                    : "Fresh market movement signals from the latest available pricing data."}
+                </p>
+              </div>
+            </div>
+            <Badge tone="muted" className="self-start text-[10px] sm:self-auto">
+              {lang === "th" ? "สัญญาณล่าสุด" : "Latest signals"}
+            </Badge>
+          </div>
+
+          <div className="grid gap-3 lg:grid-cols-3">
+            {[
+              {
+                title: lang === "th" ? "ตัวขึ้นเด่น" : "Top Gainers",
+                rows: marketMovers.gainers,
+                tone: "up" as const,
+              },
+              {
+                title: lang === "th" ? "ตัวลงแรง" : "Top Losers",
+                rows: marketMovers.losers,
+                tone: "down" as const,
+              },
+              {
+                title: lang === "th" ? "ผันผวนสูง" : "Most Active Moves",
+                rows: marketMovers.volatile,
+                tone: "gold" as const,
+              },
+            ].map((group) => (
+              <div key={group.title} className="rounded-xl border border-line bg-elevate/25 p-3">
+                <div className="mb-2 flex items-center justify-between gap-2">
+                  <div className="text-[11px] font-black uppercase tracking-wider text-muted">{group.title}</div>
+                  <Badge tone={group.tone} className="text-[9px]">
+                    {group.rows.length}
+                  </Badge>
+                </div>
+                <div className="space-y-2">
+                  {group.rows.slice(0, 5).map((mover) => {
+                    const isUpMove = mover.changePct >= 0;
+                    return (
+                      <Link
+                        key={`${group.title}-${mover.symbol}`}
+                        href={`/stocks/${mover.symbol}`}
+                        className="flex min-w-0 items-center justify-between gap-3 rounded-lg px-2 py-1.5 transition hover:bg-surface"
+                      >
+                        <div className="min-w-0">
+                          <div className="flex items-center gap-2">
+                            <span className="font-mono text-xs font-black text-ink">{mover.symbol}</span>
+                            <span className="truncate text-[10px] text-muted">{moverName(mover.symbol)}</span>
+                          </div>
+                          <div className="mt-0.5 text-[10px] text-muted">
+                            {formatMoverPrice(mover)} · {mover.isDelayed ? `${mover.delayMinutes}m delayed` : "Market data"}
+                          </div>
+                        </div>
+                        <div className={`num shrink-0 text-xs font-black ${isUpMove ? "text-up" : "text-down"}`}>
+                          {isUpMove ? "+" : ""}
+                          {mover.changePct.toFixed(2)}%
+                        </div>
+                      </Link>
+                    );
+                  })}
+                </div>
+              </div>
+            ))}
+          </div>
+        </Card>
+      )}
+
       {/* 🚀 D. SECTOR HEATMAP CLICKABLE BAR */}
       <div className="space-y-2">
         <label className="text-[10px] uppercase font-bold text-muted tracking-widest block">
@@ -888,7 +1002,7 @@ export default function StocksPage() {
                         {isSearchingApi ? (
                           <span className="animate-spin inline-block h-2.5 w-2.5 border-2 border-ink border-t-transparent rounded-full" />
                         ) : (
-                          lang === "th" ? "เจาะลึก API" : "Deep Search"
+                          lang === "th" ? "ดึงข้อมูล" : "Fetch"
                         )}
                       </button>
                     )}
@@ -1085,8 +1199,8 @@ export default function StocksPage() {
             <div className="space-y-3 md:hidden">
               {visibleRows.length === 0 && isInitialQuoteLoading ? (
                 <QuoteLoadingCard
-                  title={lang === "th" ? "กำลังโหลดราคาล่าสุด" : "Loading live market prices"}
-                  subtitle={lang === "th" ? "กำลังซิงก์ราคาเรียลไทม์จาก API..." : "Syncing realtime quotes from market APIs..."}
+                  title={lang === "th" ? "กำลังโหลดราคาล่าสุด" : "Loading latest market prices"}
+                  subtitle={lang === "th" ? "กำลังซิงก์ราคาล่าสุดจากแหล่งข้อมูลตลาด..." : "Syncing latest market prices..."}
                 />
               ) : visibleRows.length === 0 ? (
                 <Card className="border border-line p-5 text-center">
@@ -1099,7 +1213,7 @@ export default function StocksPage() {
                   </p>
                   {q.trim() && (
                     <Button size="sm" className="mt-4 w-full text-xs" onClick={handleDeepSearch} disabled={isSearchingApi}>
-                      {isSearchingApi ? (lang === "th" ? "กำลังดึงข้อมูล..." : "Fetching...") : (lang === "th" ? `ดึง ${q.toUpperCase().trim()} จาก API` : `Pull ${q.toUpperCase().trim()} from API`)}
+                      {isSearchingApi ? (lang === "th" ? "กำลังดึงข้อมูล..." : "Fetching data...") : (lang === "th" ? `ดึงข้อมูล ${q.toUpperCase().trim()}` : `Fetch ${q.toUpperCase().trim()}`)}
                     </Button>
                   )}
                 </Card>
@@ -1299,8 +1413,8 @@ export default function StocksPage() {
                           {isInitialQuoteLoading ? (
                             <div className="mx-auto max-w-md">
                               <QuoteLoadingCard
-                                title={lang === "th" ? "กำลังโหลดราคาล่าสุด" : "Loading live market prices"}
-                                subtitle={lang === "th" ? "กำลังซิงก์ราคาเรียลไทม์จาก API..." : "Syncing realtime quotes from market APIs..."}
+                                title={lang === "th" ? "กำลังโหลดราคาล่าสุด" : "Loading latest market prices"}
+                                subtitle={lang === "th" ? "กำลังซิงก์ราคาล่าสุดจากแหล่งข้อมูลตลาด..." : "Syncing latest market prices..."}
                               />
                             </div>
                           ) : (
@@ -1313,8 +1427,8 @@ export default function StocksPage() {
                             </h3>
                             <p className="text-xs text-muted leading-relaxed">
                               {lang === "th"
-                                ? "คุณสามารถรันระบบ Deep Ticker Lookup เพื่อดึงข้อมูลเชิงลึกผ่านฐานข้อมูลตลาดสากลได้โดยตรงแบบเรียลไทม์"
-                                : "You can run Deep Ticker Lookup to fetch financial specifications directly from our global API engines."}
+                                ? "คุณสามารถค้นหาเชิงลึกเพื่อดึงข้อมูลหลักทรัพย์จากฐานข้อมูลตลาดสากลได้โดยตรง"
+                                : "You can run deep ticker lookup to fetch asset details from global market data."}
                             </p>
                             
                             {q.trim() && (
@@ -1327,14 +1441,14 @@ export default function StocksPage() {
                                   <>
                                     <span className="animate-spin inline-block mr-1 h-3 w-3 border-2 border-ink border-t-transparent rounded-full" />
                                     <span>
-                                      {lang === "th" ? "กำลังดึงข้อมูล..." : "Fetching specifications..."}
+                                      {lang === "th" ? "กำลังดึงข้อมูล..." : "Fetching data..."}
                                     </span>
                                   </>
                                 ) : (
                                   <span>
                                     {lang === "th" 
-                                      ? `ดึงข้อมูลสัญลักษณ์ "${q.toUpperCase().trim()}" จาก API` 
-                                      : `Pull "${q.toUpperCase().trim()}" from Global API`}
+                                      ? `ดึงข้อมูลสัญลักษณ์ "${q.toUpperCase().trim()}"`
+                                      : `Fetch "${q.toUpperCase().trim()}"`}
                                   </span>
                                 )}
                               </button>

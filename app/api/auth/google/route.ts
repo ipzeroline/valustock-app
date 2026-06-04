@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { getRequestOrigin } from "@/lib/request-origin";
 
 export async function GET(req: Request) {
   const clientId = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID;
@@ -6,10 +7,7 @@ export async function GET(req: Request) {
     return NextResponse.json({ error: "Google Client ID is not configured" }, { status: 500 });
   }
 
-  // Dynamically determine redirect URI based on the request host
-  const host = req.headers.get("host") || "localhost:7887";
-  const protocol = host.includes("localhost") || host.includes("127.0.0.1") ? "http" : "https";
-  const redirectUri = `${protocol}://${host}/api/auth/google/callback`;
+  const redirectUri = getRequestOrigin(req, "/api/auth/google/callback");
   const state = crypto.randomUUID();
 
   // Create Google OAuth Auth URL
@@ -26,7 +24,7 @@ export async function GET(req: Request) {
   response.cookies.set("valustock_google_oauth_state", state, {
     httpOnly: true,
     sameSite: "lax",
-    secure: protocol === "https",
+    secure: redirectUri.startsWith("https://"),
     path: "/",
     maxAge: 60 * 10,
   });

@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useMemo } from "react";
 import Link from "next/link";
-import { STOCKS, getStock } from "@/lib/stocks";
+import { STOCKS } from "@/lib/stocks";
 import { computeValuation, defaultDCFParams } from "@/lib/valuation";
 import { useCurrentPlan, useStore } from "@/lib/store";
 import { Card, CardHeader, Badge } from "@/components/ui/Card";
@@ -102,6 +102,7 @@ export default function PortfolioPage() {
 
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [portfolioError, setPortfolioError] = useState("");
+  const [externalStocks, setExternalStocks] = useState<Stock[]>([]);
 
   // Transaction form states
   const [txSymbol, setTxSymbol] = useState("PTT");
@@ -110,6 +111,11 @@ export default function PortfolioPage() {
   const [txShares, setTxShares] = useState<string>("500");
   const [txFee, setTxFee] = useState<string>("0");
   const [txCurrency, setTxCurrency] = useState<string>("THB");
+  const [txBudgetThb, setTxBudgetThb] = useState<string>("");
+  const [usdThbRate, setUsdThbRate] = useState<number>(36.5);
+  const [usdThbRateDate, setUsdThbRateDate] = useState<string>("");
+  const [usdThbRateSource, setUsdThbRateSource] = useState<string>("fallback-usdthb");
+  const [isFxLoading, setIsFxLoading] = useState(false);
   const [txNotes, setTxNotes] = useState<string>("");
   const [txDate, setTxDate] = useState("2026-05-30");
 
@@ -131,7 +137,29 @@ export default function PortfolioPage() {
 
   const getDisplayStock = (symbol: string) => {
     const key = symbol.toUpperCase();
-    return liveStockMap.get(key) || getStock(key);
+    return (
+      liveStockMap.get(key) ||
+      externalStocks.find((stock) => stock.symbol.toUpperCase() === key) ||
+      STOCKS.find((stock) => stock.symbol.toUpperCase() === key)
+    );
+  };
+
+  const ensureExternalStock = async (symbol: string) => {
+    const normalized = symbol.toUpperCase().trim();
+    const existing = getDisplayStock(normalized);
+    if (existing && (liveStockMap.has(normalized) || externalStocks.some((stock) => stock.symbol.toUpperCase() === normalized))) {
+      return existing;
+    }
+
+    const res = await fetch(`/api/stock/${encodeURIComponent(normalized)}`);
+    if (!res.ok) return existing;
+    const stock = await res.json();
+    if (!stock?.symbol) return existing;
+    setExternalStocks((current) => {
+      const rest = current.filter((item) => item.symbol.toUpperCase() !== normalized);
+      return [...rest, stock];
+    });
+    return stock as Stock;
   };
 
   useEffect(() => {
@@ -206,10 +234,12 @@ export default function PortfolioPage() {
       if (alert?.symbol) symbols.add(String(alert.symbol));
     });
     return Array.from(symbols).filter((symbol) => {
-      const stock = getStock(symbol);
-      return stock && hasQuoteProvider(stock);
+      const stock =
+        STOCKS.find((item) => item.symbol.toUpperCase() === symbol.toUpperCase()) ||
+        externalStocks.find((item) => item.symbol.toUpperCase() === symbol.toUpperCase());
+      return stock ? hasQuoteProvider(stock) : /^[A-Z0-9._-]{1,20}$/.test(symbol);
     });
-  }, [txSymbol, backtestSymbol, alertSymbol, transactions, alerts]);
+  }, [txSymbol, backtestSymbol, alertSymbol, transactions, alerts, externalStocks]);
   const { liveStockMap } = useLiveQuotes(liveRefreshSymbols);
 
   const isPortfolioQuotesLoading = liveRefreshSymbols.some((symbol) => !liveStockMap.has(symbol.toUpperCase()));
@@ -288,7 +318,8 @@ export default function PortfolioPage() {
 
   const getDefaultCurrency = (symbol: string) => {
     const s = getDisplayStock(symbol);
-    return s?.currency || (s?.assetType === "US_STOCK" ? "USD" : "THB");
+    if (s?.currency) return s.currency;
+    return /^[A-Z]{1,5}(\.[A-Z])?$/.test(symbol.toUpperCase()) ? "USD" : "THB";
   };
 
   // 1. DYNAMIC LEDGER COMPUTATION
@@ -353,12 +384,65 @@ export default function PortfolioPage() {
       netProfit,
       netProfitPct,
     };
-  }, [transactions, liveStockMap]);
+  }, [transactions, liveStockMap, externalStocks]);
 
   useEffect(() => {
     if (activeTab === "backtest" && !plan.limits.scenarioDcf) setActiveTab("ledger");
     if (activeTab === "alerts" && !plan.limits.alerts) setActiveTab("ledger");
   }, [activeTab, plan.limits.alerts, plan.limits.scenarioDcf]);
+
+  useEffect(() => {
+    let cancelled = false;
+    setIsFxLoading(true);
+    fetch(`/api/fx/usd-thb?date=${encodeURIComponent(txDate)}`)
+      .then((res) => (res.ok ? res.json() : null))
+      .then((payload) => {
+        if (cancelled || !payload?.rate) return;
+        setUsdThbRate(Number(payload.rate));
+        setUsdThbRateDate(payload.date || txDate);
+        setUsdThbRateSource(payload.source || "fx-provider");
+      })
+      .catch(() => {
+        if (!cancelled) {
+          setUsdThbRate(36.5);
+          setUsdThbRateDate(txDate);
+          setUsdThbRateSource("fallback-usdthb");
+        }
+      })
+      .finally(() => {
+        if (!cancelled) setIsFxLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [txDate]);
+
+  const calculateSharesFromThb = () => {
+    const budget = Number(txBudgetThb);
+    const price = Number(txPrice);
+    const fee = Number(txFee || 0);
+    if (!Number.isFinite(budget) || !Number.isFinite(price) || budget <= 0 || price <= 0) return;
+
+    const effectiveBudget = Math.max(0, budget - Math.max(0, fee));
+    const priceInThb = txCurrency === "USD" ? price * usdThbRate : price;
+    const shares = priceInThb > 0 ? effectiveBudget / priceInThb : 0;
+    const isThaiAsset = txCurrency === "THB";
+    setTxShares((isThaiAsset ? Math.floor(shares) : shares).toFixed(isThaiAsset ? 0 : 6).replace(/\.?0+$/, ""));
+  };
+
+  useEffect(() => {
+    if (!txBudgetThb) return;
+    const budget = Number(txBudgetThb);
+    const price = Number(txPrice);
+    const fee = Number(txFee || 0);
+    if (!Number.isFinite(budget) || !Number.isFinite(price) || budget <= 0 || price <= 0) return;
+
+    const effectiveBudget = Math.max(0, budget - Math.max(0, fee));
+    const priceInThb = txCurrency === "USD" ? price * usdThbRate : price;
+    const shares = priceInThb > 0 ? effectiveBudget / priceInThb : 0;
+    const isThaiAsset = txCurrency === "THB";
+    setTxShares((isThaiAsset ? Math.floor(shares) : shares).toFixed(isThaiAsset ? 0 : 6).replace(/\.?0+$/, ""));
+  }, [txBudgetThb, txPrice, txFee, txCurrency, usdThbRate]);
 
   // Handle adding transactions
   const handleAddTransaction = async (e: React.FormEvent) => {
@@ -372,7 +456,7 @@ export default function PortfolioPage() {
       return;
     }
     const parsedPrice = parseFloat(txPrice);
-    const parsedShares = parseInt(txShares, 10);
+    const parsedShares = parseFloat(txShares);
     const parsedFee = parseFloat(txFee || "0");
     if (!parsedPrice || !parsedShares || parsedPrice <= 0 || parsedShares <= 0 || parsedFee < 0) return;
 
@@ -859,12 +943,12 @@ export default function PortfolioPage() {
                     groups={securityGroups}
                     lang={lang}
                     placeholder={lang === "th" ? "พิมพ์เช่น PTT, AAPL, SPY, VTSAX" : "Type e.g. PTT, AAPL, SPY, VTSAX"}
-                    onChange={(symbol) => {
+                    onChange={async (symbol) => {
                       const normalized = symbol.toUpperCase();
                       setTxSymbol(normalized);
-                      const s = getDisplayStock(normalized)!;
-                      setTxPrice(s.price.toString());
-                      setTxCurrency(getDefaultCurrency(normalized));
+                      const s = await ensureExternalStock(normalized);
+                      setTxPrice((s?.price || 0).toString());
+                      setTxCurrency(s?.currency || getDefaultCurrency(normalized));
                     }}
                   />
                 </div>
@@ -911,10 +995,60 @@ export default function PortfolioPage() {
                   </div>
                   <div className="space-y-1">
                     <label className="text-[10px] font-bold text-muted uppercase">
+                      {lang === "th" ? "เงินลงทุน (บาท)" : "Investment Amount (THB)"}
+                    </label>
+                    <div className="flex gap-2">
+                      <input
+                        type="number"
+                        step="0.01"
+                        min="0"
+                        className="input-base text-xs font-mono font-bold"
+                        value={txBudgetThb}
+                        onChange={(e) => setTxBudgetThb(e.target.value)}
+                        placeholder={lang === "th" ? "เช่น 10000" : "e.g. 10000"}
+                      />
+                      <button
+                        type="button"
+                        onClick={calculateSharesFromThb}
+                        className="shrink-0 rounded-lg border border-brand/40 bg-brand/10 px-3 text-[10px] font-black text-brand transition hover:bg-brand hover:text-bg"
+                      >
+                        {lang === "th" ? "คำนวณ" : "Calc"}
+                      </button>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="rounded-xl border border-line bg-bg/45 p-3 text-[11px] font-semibold text-muted">
+                  <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
+                    <span>
+                      {lang === "th" ? "อัตราแลกเปลี่ยนวันที่ทำรายการ" : "Trade-date FX rate"}
+                    </span>
+                    <span className="font-mono font-black text-ink">
+                      1 USD = {num(usdThbRate, 4)} THB
+                    </span>
+                  </div>
+                  <div className="mt-1 flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
+                    <span>
+                      {isFxLoading
+                        ? lang === "th" ? "กำลังโหลดค่าเงิน..." : "Loading FX rate..."
+                        : `${usdThbRateDate || txDate} · ${usdThbRateSource}`}
+                    </span>
+                    <span>
+                      {txCurrency === "USD"
+                        ? lang === "th" ? "เงินบาทจะถูกแปลงด้วย USD/THB เพื่อหาจำนวนหุ้น" : "THB budget converts via USD/THB to estimate shares"
+                        : lang === "th" ? "สินทรัพย์สกุลบาทใช้ราคาต่อหุ้นโดยตรง" : "THB assets use the share price directly"}
+                    </span>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                  <div className="space-y-1">
+                    <label className="text-[10px] font-bold text-muted uppercase">
                       {lang === "th" ? "จำนวนหุ้น" : "Shares Count"}
                     </label>
                     <input
                       type="number"
+                      step="0.000001"
                       className="input-base text-xs font-mono font-bold"
                       value={txShares}
                       onChange={(e) => setTxShares(e.target.value)}
@@ -1247,7 +1381,11 @@ export default function PortfolioPage() {
                     groups={backtestSecurityGroups}
                     lang={lang}
                     placeholder={lang === "th" ? "พิมพ์ตัวย่อสำหรับ Backtest" : "Type a ticker for backtest"}
-                    onChange={(symbol) => setBacktestSymbol(symbol.toUpperCase())}
+                    onChange={(symbol) => {
+                      const normalized = symbol.toUpperCase();
+                      setBacktestSymbol(normalized);
+                      ensureExternalStock(normalized).catch(() => null);
+                    }}
                   />
                 </div>
 
@@ -1417,7 +1555,11 @@ export default function PortfolioPage() {
                     groups={securityGroups}
                     lang={lang}
                     placeholder={lang === "th" ? "พิมพ์ตัวย่อที่ต้องการแจ้งเตือน" : "Type a ticker for alert"}
-                    onChange={(symbol) => setAlertSymbol(symbol.toUpperCase())}
+                    onChange={(symbol) => {
+                      const normalized = symbol.toUpperCase();
+                      setAlertSymbol(normalized);
+                      ensureExternalStock(normalized).catch(() => null);
+                    }}
                   />
                 </div>
 
@@ -1919,8 +2061,8 @@ function SecuritySymbolSearch({
               className="mt-1 flex w-full items-center justify-center rounded-lg border border-brand/30 bg-brand/10 px-3 py-2 text-[11px] font-black text-brand transition hover:bg-brand hover:text-bg"
             >
               {lang === "th"
-                ? `ใช้สัญลักษณ์ "${normalizedQuery}" จาก API/fallback`
-                : `Use "${normalizedQuery}" from API/fallback`}
+                ? `ใช้สัญลักษณ์ "${normalizedQuery}" จากข้อมูลตลาด`
+                : `Use "${normalizedQuery}" from market data`}
             </button>
           )}
         </div>

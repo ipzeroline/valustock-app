@@ -1,16 +1,17 @@
 import { NextRequest } from "next/server";
+import { sanitizePublicMarketPayload } from "@/lib/public-market-source";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
 
-type MassiveTrade = {
+type LiveStreamTrade = {
   ev?: string;
   sym?: string;
   p?: number;
   t?: number;
 };
 
-type MassiveStatus = {
+type LiveStreamStatus = {
   ev?: string;
   status?: string;
   message?: string;
@@ -29,7 +30,7 @@ function sanitizeSymbols(value: string | null) {
 }
 
 function encodeSse(event: string, data: unknown) {
-  return `event: ${event}\ndata: ${JSON.stringify(data)}\n\n`;
+  return `event: ${event}\ndata: ${JSON.stringify(sanitizePublicMarketPayload(data))}\n\n`;
 }
 
 export async function GET(request: NextRequest) {
@@ -44,7 +45,7 @@ export async function GET(request: NextRequest) {
   }
 
   if (!apiKey) {
-    return new Response(encodeSse("error", { error: "MASSIVE_API_KEY is not configured" }), {
+    return new Response(encodeSse("error", { error: "Live quote stream is not configured" }), {
       status: 500,
       headers: { "Content-Type": "text/event-stream" },
     });
@@ -90,12 +91,12 @@ export async function GET(request: NextRequest) {
           if (subscribed || socket.readyState !== WebSocket.OPEN) return;
           subscribed = true;
           socket.send(JSON.stringify({ action: "subscribe", params: symbols.map((symbol) => `T.${symbol}`).join(",") }));
-          send("status", { status: "subscribed", source: "massive-websocket", endpoint, symbols });
+          send("status", { status: "subscribed", source: "live-market-stream", symbols });
         };
 
         socket.addEventListener("open", () => {
           socket.send(JSON.stringify({ action: "auth", params: apiKey }));
-          send("status", { status: "connected", source: "massive-websocket", endpoint, symbols });
+          send("status", { status: "connected", source: "live-market-stream", symbols });
           heartbeat = setInterval(() => send("heartbeat", { ts: Date.now() }), 25000);
         });
 
@@ -103,13 +104,13 @@ export async function GET(request: NextRequest) {
           try {
             const payload = JSON.parse(String(event.data));
             const rows = Array.isArray(payload) ? payload : [payload];
-            rows.forEach((row: MassiveTrade | MassiveStatus) => {
+            rows.forEach((row: LiveStreamTrade | LiveStreamStatus) => {
               if ("status" in row || "message" in row) {
                 send("status", row);
                 const statusText = `${row.status || ""} ${row.message || ""}`.toLowerCase();
 
                 if (statusText.includes("not authorized") && canFallback) {
-                  send("status", { status: "fallback", message: "Switching to delayed Massive websocket feed" });
+                  send("status", { status: "fallback", message: "Switching to delayed market-data feed" });
                   if (socket.readyState === WebSocket.OPEN || socket.readyState === WebSocket.CONNECTING) socket.close();
                   connect("wss://delayed.massive.com/stocks", false);
                   return;
@@ -119,7 +120,7 @@ export async function GET(request: NextRequest) {
                 return;
               }
 
-              const trade = row as MassiveTrade;
+              const trade = row as LiveStreamTrade;
               if (trade.ev !== "T" || !trade.sym || typeof trade.p !== "number" || !Number.isFinite(trade.p) || trade.p <= 0) {
                 return;
               }
@@ -127,17 +128,19 @@ export async function GET(request: NextRequest) {
               send("quote", {
                 symbol: trade.sym,
                 price: trade.p,
-                quoteSource: endpoint.includes("delayed") ? "massive-websocket-delayed" : "massive-websocket",
+                quoteSource: endpoint.includes("delayed") ? "live-market-stream-delayed" : "live-market-stream",
                 quoteUpdatedAt: trade.t ? new Date(trade.t).toISOString() : new Date().toISOString(),
+                quoteDelayMinutes: endpoint.includes("delayed") ? 15 : 0,
+                quoteIsDelayed: endpoint.includes("delayed"),
               });
             });
           } catch {
-            send("error", { error: "Unable to parse Massive websocket payload" });
+            send("error", { error: "Unable to parse live quote stream payload" });
           }
         });
 
         socket.addEventListener("error", () => {
-          send("error", { error: "Massive websocket connection failed", endpoint });
+          send("error", { error: "Live quote stream connection failed" });
         });
 
         socket.addEventListener("close", () => {

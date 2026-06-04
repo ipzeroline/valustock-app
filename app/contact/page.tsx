@@ -36,6 +36,7 @@ export default function ContactPage() {
       url: "https://valustock.com/contact",
       description:
         "ช่องทางติดต่อทีมงาน ValuStock สำหรับคำถามเกี่ยวกับเครื่องมือวิเคราะห์หุ้น DCF Calculator, Stock Screener, Portfolio Tracker และการชำระเงิน",
+      primaryImageOfPage: "https://valustock.com/images/contact-command-center.png?v=1",
     },
     {
       "@context": "https://schema.org",
@@ -169,6 +170,18 @@ export default function ContactPage() {
         </div>
 
         <aside className="space-y-4">
+          <div className="overflow-hidden rounded-2xl border border-line bg-surface/55 shadow-card">
+            <img
+              src="/images/contact-command-center.png?v=1"
+              alt={lang === "th" ? "ภาพศูนย์รับเรื่องติดต่อทีมงาน ValuStock" : "ValuStock support command center visual"}
+              width={1672}
+              height={941}
+              loading="eager"
+              decoding="async"
+              className="block aspect-[25/14] w-full object-cover"
+            />
+          </div>
+
           <Card className="border border-line bg-surface p-5">
             <div className="flex items-center gap-3">
               <span className="grid h-10 w-10 place-items-center rounded-xl bg-gold/15 text-gold">

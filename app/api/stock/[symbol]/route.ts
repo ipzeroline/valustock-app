@@ -1,126 +1,269 @@
 import { NextResponse } from "next/server";
 import { STOCKS } from "@/lib/stocks";
-import { Stock } from "@/lib/types";
+import {
+  applyLatestQuote,
+  fetchEodhdFundamentals,
+  getHistoricalBars,
+  getLatestQuote,
+  isThaiExchangeSecurity,
+  isUsExchangeSecurity,
+  searchEodhdSymbol,
+  withStaticQuoteMeta,
+} from "@/lib/market-quotes";
+import { readExternalAsset, saveExternalAsset } from "@/lib/market-data-store";
+import { sanitizePublicMarketPayload } from "@/lib/public-market-source";
+import { normalizeTickerSymbol, tickerAliasNote } from "@/lib/ticker-aliases";
+import type { Stock } from "@/lib/types";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
 
-const NO_STORE_HEADERS = {
-  "Cache-Control": "no-store, no-cache, must-revalidate",
+const QUOTE_HEADERS = {
+  "Cache-Control": "public, max-age=15, stale-while-revalidate=300",
 };
 
-function jsonNoStore(body: unknown, init?: ResponseInit) {
-  return NextResponse.json(body, {
+function jsonQuoteCache(body: unknown, init?: ResponseInit) {
+  return NextResponse.json(sanitizePublicMarketPayload(body), {
     ...init,
     headers: {
-      ...NO_STORE_HEADERS,
+      ...QUOTE_HEADERS,
       ...(init?.headers || {}),
     },
   });
 }
 
-function finiteNumber(value: unknown) {
+async function applyMarketDataToStaticStock(stock: Stock) {
+  const [quote, history] = await Promise.all([
+    getLatestQuote(stock.symbol, stock, { allowStale: true }),
+    getHistoricalBars(stock.symbol, stock, { years: 5 }),
+  ]);
+
+  const enriched = quote ? applyLatestQuote(stock, quote) : withStaticQuoteMeta(stock);
+  if (!history?.bars?.length) return enriched;
+
+  const ohlcHistory = [...history.bars];
+  const priceHistory = ohlcHistory.map((point) => point.close);
+  if (quote && ohlcHistory.length > 0) {
+    const lastIndex = ohlcHistory.length - 1;
+    ohlcHistory[lastIndex] = {
+      ...ohlcHistory[lastIndex],
+      close: quote.price,
+      high: Math.max(ohlcHistory[lastIndex].high, quote.price),
+      low: Math.min(ohlcHistory[lastIndex].low, quote.price),
+    };
+    priceHistory[lastIndex] = quote.price;
+  }
+
+  return {
+    ...enriched,
+    priceHistory,
+    ohlcHistory,
+    chartSource: history.source,
+    chartUpdatedAt: history.fetchedAt,
+  };
+}
+
+function inferExternalUsStock(symbol: string): Stock {
+  return {
+    symbol,
+    name: symbol,
+    enName: symbol,
+    sector: "กองทุนรวมดัชนี",
+    market: "NASDAQ",
+    price: 100,
+    prevClose: 100,
+    sharesOutstanding: 1000,
+    color: "#2563EB",
+    about: `ข้อมูลตลาดล่าสุดสำหรับ ${symbol} จากระบบข้อมูลตลาดของ ValuStock`,
+    revenueHistory: [],
+    fcfHistory: [],
+    priceHistory: [],
+    financials: {
+      revenue: 0,
+      netIncome: 0,
+      eps: 0,
+      bookValuePerShare: 0,
+      freeCashFlow: 0,
+      ebitda: 0,
+      totalDebt: 0,
+      cash: 0,
+      dividendPerShare: 0,
+      growthRate: 0.06,
+      totalAssets: 0,
+    },
+    assetType: "ETF",
+    currency: "USD",
+    fundType: "External US-listed ETF/security",
+  };
+}
+
+function numberOrNull(value: unknown) {
   const number = Number(value);
   return Number.isFinite(number) && number > 0 ? number : null;
 }
 
-async function fetchLatestQuote(symbol: string, apiKey: string) {
-  const encodedKey = encodeURIComponent(apiKey);
-  const snapshotRes = await fetch(
-    `https://api.massive.com/v2/snapshot/locale/us/markets/stocks/tickers/${symbol}?apiKey=${encodedKey}`,
-    { cache: "no-store" }
-  );
+function eodhdTickerFromSearch(symbol: string, search: Awaited<ReturnType<typeof searchEodhdSymbol>> | null) {
+  const code = search?.Code || symbol;
+  const exchange = search?.Exchange || "US";
+  return `${code}.${exchange}`;
+}
 
-  if (snapshotRes.ok) {
-    const snapshot = await snapshotRes.json();
-    const ticker = snapshot.ticker || {};
-    const price =
-      finiteNumber(ticker.lastTrade?.p) ||
-      finiteNumber(ticker.min?.c) ||
-      finiteNumber(ticker.day?.c);
-    const prevClose = finiteNumber(ticker.prevDay?.c) || finiteNumber(ticker.day?.o);
-    if (price) return { price, prevClose: prevClose || price };
+function inferAssetTypeFromProvider(type: unknown): Stock["assetType"] {
+  const value = String(type || "").toLowerCase();
+  if (value.includes("etf")) return "ETF";
+  if (value.includes("fund")) return "US_FUND";
+  return "US_STOCK";
+}
+
+function rowsFromAnnuals(section: any) {
+  if (!section || typeof section !== "object") return [];
+  return Object.values(section)
+    .filter((row: any) => row && typeof row === "object")
+    .sort((a: any, b: any) => String(a.date || "").localeCompare(String(b.date || "")));
+}
+
+function metric(row: any, keys: string[]) {
+  for (const key of keys) {
+    const value = numberOrNull(row?.[key]);
+    if (value !== null) return value;
   }
-
-  const tradeRes = await fetch(
-    `https://api.massive.com/v2/last/trade/${symbol}?apiKey=${encodedKey}`,
-    { cache: "no-store" }
-  );
-  if (!tradeRes.ok) return null;
-
-  const trade = await tradeRes.json();
-  const price = finiteNumber(trade.results?.p);
-  return price ? { price, prevClose: null } : null;
+  return null;
 }
 
-function isUsExchangeSecurity(stock: Stock | undefined, symbol: string) {
-  if (!stock) return /^[A-Z]{1,5}(\.[A-Z])?$/.test(symbol);
-  if (stock.assetType === "CRYPTO" || stock.assetType === "FUTURES") return false;
-  return (
-    stock.assetType === "US_STOCK" ||
-    stock.assetType === "US_FUND" ||
-    (stock.assetType === "ETF" && stock.currency === "USD") ||
-    stock.market === "NASDAQ" ||
-    stock.market === "NYSE"
-  );
-}
+function buildExternalStockFromEodhd(
+  symbol: string,
+  search: Awaited<ReturnType<typeof searchEodhdSymbol>> | null,
+  fundamentals: any,
+  quotePrice: number,
+  prevClose: number,
+  priceHistory: number[],
+  ohlcHistory: Stock["ohlcHistory"]
+): Stock {
+  const general = fundamentals?.General || {};
+  const highlights = fundamentals?.Highlights || {};
+  const etfData = fundamentals?.ETF_Data || fundamentals?.ETF || {};
+  const financials = fundamentals?.Financials || {};
+  const incomeRows = rowsFromAnnuals(financials?.Income_Statement?.yearly);
+  const cashRows = rowsFromAnnuals(financials?.Cash_Flow?.yearly);
+  const balanceRows = rowsFromAnnuals(financials?.Balance_Sheet?.yearly);
+  const latestIncome = incomeRows[incomeRows.length - 1] || {};
+  const latestCash = cashRows[cashRows.length - 1] || {};
+  const latestBalance = balanceRows[balanceRows.length - 1] || {};
+  const rawShares =
+    numberOrNull(highlights?.SharesOutstanding) ||
+    (numberOrNull(highlights?.MarketCapitalization) ? numberOrNull(highlights?.MarketCapitalization)! / quotePrice : null) ||
+    1_000_000_000;
+  const sharesMillions = rawShares > 1_000_000 ? rawShares / 1_000_000 : rawShares;
+  const revenue = (metric(latestIncome, ["totalRevenue", "revenue"]) || 0) / 1_000_000;
+  const netIncome = (metric(latestIncome, ["netIncome", "netIncomeApplicableToCommonShares"]) || 0) / 1_000_000;
+  const operatingCashFlow = metric(latestCash, ["totalCashFromOperatingActivities", "operatingCashFlow"]) || 0;
+  const capex = metric(latestCash, ["capitalExpenditures", "capital_expenditures"]) || 0;
+  const freeCashFlow = (operatingCashFlow + capex) / 1_000_000;
+  const totalAssets = (metric(latestBalance, ["totalAssets"]) || 0) / 1_000_000;
+  const totalDebt =
+    ((metric(latestBalance, ["shortLongTermDebtTotal", "longTermDebt", "shortTermDebt"]) || 0) / 1_000_000);
+  const cash = (metric(latestBalance, ["cash", "cashAndShortTermInvestments"]) || 0) / 1_000_000;
+  const equity = (metric(latestBalance, ["totalStockholderEquity", "totalEquity"]) || 0) / 1_000_000;
+  const dividendPerShare = numberOrNull(highlights?.DividendShare) || 0;
+  const assetType = inferAssetTypeFromProvider(search?.Type || general.Type);
+  const sector = assetType === "ETF" ? "กองทุนรวมดัชนี" : translateSector(general.Sector || general.Industry || "");
 
-function isThaiExchangeSecurity(stock: Stock | undefined) {
-  if (!stock) return false;
-  return (
-    stock.currency === "THB" &&
-    (stock.assetType === "TH_STOCK" || stock.assetType === "ETF") &&
-    (stock.market === "SET" || stock.market === "mai")
-  );
-}
-
-function thaiTicker(symbol: string) {
-  return symbol.includes(".") ? symbol : `${symbol}.BK`;
-}
-
-async function fetchEodhdQuote(symbol: string, apiKey: string) {
-  const res = await fetch(
-    `https://eodhd.com/api/real-time/${encodeURIComponent(thaiTicker(symbol))}?api_token=${encodeURIComponent(apiKey)}&fmt=json`,
-    { cache: "no-store" }
-  );
-  if (!res.ok) return null;
-
-  const data = await res.json();
-  const price =
-    finiteNumber(data.close) ||
-    finiteNumber(data.last) ||
-    finiteNumber(data.price);
-  const prevClose =
-    finiteNumber(data.previousClose) ||
-    finiteNumber(data.previous_close) ||
-    finiteNumber(data.prev_close);
-  return price ? { price, prevClose: prevClose || price } : null;
-}
-
-function applyLatestQuote<T extends Stock>(stock: T, quote: { price: number; prevClose: number | null }, source: string): T & { quoteSource: string; quoteUpdatedAt: string } {
-  const priceHistory = stock.priceHistory?.length ? [...stock.priceHistory] : [quote.price];
-  priceHistory[priceHistory.length - 1] = quote.price;
-
-  const ohlcHistory = stock.ohlcHistory?.length
-    ? stock.ohlcHistory.map((point, index) => {
-        if (index !== stock.ohlcHistory!.length - 1) return point;
-        return {
-          ...point,
-          close: quote.price,
-          high: Math.max(point.high, quote.price),
-          low: Math.min(point.low, quote.price),
-        };
-      })
-    : stock.ohlcHistory;
+  const years = incomeRows.slice(-5).map((row: any) => Number(String(row.date || "").slice(0, 4))).filter(Boolean);
+  const revenueHistory = incomeRows.slice(-5).map((row: any, index: number) => ({
+    year: years[index] || new Date().getFullYear() - (incomeRows.slice(-5).length - index),
+    value: Math.round((metric(row, ["totalRevenue", "revenue"]) || revenue * 1_000_000) / 1_000_000),
+  }));
+  const fcfHistory = cashRows.slice(-5).map((row: any, index: number) => {
+    const ocf = metric(row, ["totalCashFromOperatingActivities", "operatingCashFlow"]) || freeCashFlow * 1_000_000;
+    const rowCapex = metric(row, ["capitalExpenditures", "capital_expenditures"]) || 0;
+    return {
+      year: Number(String(row.date || "").slice(0, 4)) || new Date().getFullYear() - (cashRows.slice(-5).length - index),
+      value: Math.round((ocf + rowCapex) / 1_000_000),
+    };
+  });
 
   return {
-    ...stock,
-    price: quote.price,
-    prevClose: quote.prevClose || stock.prevClose || quote.price,
+    symbol,
+    name: general.Name || search?.Name || symbol,
+    enName: general.Name || search?.Name || symbol,
+    sector,
+    market: search?.Exchange === "NYSE" ? "NYSE" : "NASDAQ",
+    price: quotePrice,
+    prevClose,
+    sharesOutstanding: Math.max(1, Math.round(sharesMillions)),
+    color: assetType === "ETF" ? "#D22630" : "#2563EB",
+    about: general.Description || `ข้อมูลตลาดและข้อมูลพื้นฐานล่าสุดสำหรับ ${symbol} จากระบบข้อมูลตลาดของ ValuStock`,
+    revenueHistory: revenueHistory.length ? revenueHistory : [],
+    fcfHistory: fcfHistory.length ? fcfHistory : [],
     priceHistory,
     ohlcHistory,
-    quoteSource: source,
-    quoteUpdatedAt: new Date().toISOString(),
+    financials: {
+      revenue: Math.round(revenue),
+      netIncome: Math.round(netIncome),
+      eps: numberOrNull(highlights?.DilutedEpsTTM) || numberOrNull(highlights?.EPSEstimateCurrentYear) || 0,
+      bookValuePerShare: sharesMillions > 0 ? Math.round((equity / sharesMillions) * 100) / 100 : 0,
+      freeCashFlow: Math.round(freeCashFlow),
+      ebitda: Math.round((numberOrNull(highlights?.EBITDA) || 0) / 1_000_000),
+      totalDebt: Math.round(totalDebt),
+      cash: Math.round(cash),
+      dividendPerShare: Math.round(dividendPerShare * 100) / 100,
+      growthRate: 0.06,
+      totalAssets: Math.round(totalAssets),
+    },
+    assetType,
+    currency: search?.Currency === "THB" || general.CurrencyCode === "THB" ? "THB" : "USD",
+    fundType: assetType === "ETF" ? `ETF ${general.Category || search?.Type || ""}`.trim() : undefined,
+    aum: numberOrNull(etfData?.TotalAssets) ? Math.round(numberOrNull(etfData.TotalAssets)! / 1_000_000) : undefined,
+    expenseRatio: numberOrNull(etfData?.NetExpenseRatio) || undefined,
+    riskLevel: assetType === "ETF" ? 6 : undefined,
+  };
+}
+
+async function resolveExternalAsset(symbol: string) {
+  const eodhdApiKey = process.env.EODHD_API_KEY || process.env.EODHD_API_TOKEN;
+  const search = eodhdApiKey ? await searchEodhdSymbol(symbol, eodhdApiKey).catch(() => null) : null;
+  const eodhdTicker = eodhdApiKey ? eodhdTickerFromSearch(symbol, search) : null;
+  const fundamentals = eodhdApiKey && eodhdTicker
+    ? await fetchEodhdFundamentals(eodhdTicker, eodhdApiKey).catch(() => null)
+    : null;
+  const seed = buildExternalStockFromEodhd(
+    symbol,
+    search,
+    fundamentals,
+    100,
+    100,
+    [],
+    []
+  );
+
+  const [quote, history] = await Promise.all([
+    getLatestQuote(symbol, seed, { allowStale: true }),
+    getHistoricalBars(symbol, seed, { years: 5 }),
+  ]);
+
+  if (!quote && !history?.bars?.length && !search && !fundamentals) return null;
+
+  const price = quote?.price || history?.bars?.at(-1)?.close || seed.price;
+  const prevClose = quote?.prevClose || history?.bars?.at(-2)?.close || price;
+  const priceHistory = history?.bars?.length ? history.bars.map((bar) => bar.close) : [price];
+  if (priceHistory.length) priceHistory[priceHistory.length - 1] = price;
+  const ohlcHistory = history?.bars?.length ? [...history.bars] : [];
+  if (ohlcHistory.length) {
+    const lastIndex = ohlcHistory.length - 1;
+    ohlcHistory[lastIndex] = {
+      ...ohlcHistory[lastIndex],
+      close: price,
+      high: Math.max(ohlcHistory[lastIndex].high, price),
+      low: Math.min(ohlcHistory[lastIndex].low, price),
+    };
+  }
+
+  const stock = buildExternalStockFromEodhd(symbol, search, fundamentals, price, prevClose, priceHistory, ohlcHistory);
+  const enriched = quote ? applyLatestQuote(stock, quote) : withStaticQuoteMeta(stock, history?.source || "eodhd-reference");
+  return {
+    ...enriched,
+    chartSource: history?.source || "provider-reference",
+    chartUpdatedAt: history?.fetchedAt || new Date().toISOString(),
   };
 }
 
@@ -131,106 +274,106 @@ export async function GET(
   const url = new URL(request.url);
   const quoteOnly = url.searchParams.get("quote") === "1";
   const { symbol: rawSymbol } = await params;
-  const symbol = rawSymbol.toUpperCase().trim();
+  const requestedSymbol = rawSymbol.toUpperCase().trim();
+  const symbol = normalizeTickerSymbol(requestedSymbol);
   if (!symbol) {
-    return jsonNoStore({ error: "Symbol is required" }, { status: 400 });
+    return jsonQuoteCache({ error: "Symbol is required" }, { status: 400 });
   }
+  const aliasMeta = tickerAliasNote(requestedSymbol);
 
   const staticFound = STOCKS.find(s => s.symbol.toUpperCase() === symbol);
   const massiveApiKey = process.env.MASSIVE_API_KEY;
-  const eodhdApiKey = process.env.EODHD_API_KEY || process.env.EODHD_API_TOKEN;
 
-  if (quoteOnly && staticFound) {
-    if (isThaiExchangeSecurity(staticFound) && eodhdApiKey) {
-      const quote = await fetchEodhdQuote(symbol, eodhdApiKey).catch(() => null);
-      if (quote) return jsonNoStore(applyLatestQuote(staticFound, quote, "eodhd"));
+  if (!staticFound) {
+    const cachedExternal = await readExternalAsset(symbol);
+    if (cachedExternal) {
+      if (quoteOnly) {
+        const quote = await getLatestQuote(symbol, cachedExternal, { allowStale: true });
+        return jsonQuoteCache({ ...(quote ? applyLatestQuote(cachedExternal, quote) : cachedExternal), ...aliasMeta });
+      }
+      return jsonQuoteCache({ ...(await applyMarketDataToStaticStock(cachedExternal)), ...aliasMeta });
     }
 
-    if (isUsExchangeSecurity(staticFound, symbol) && massiveApiKey) {
-      const quote = await fetchLatestQuote(symbol, massiveApiKey).catch(() => null);
-      if (quote) return jsonNoStore(applyLatestQuote(staticFound, quote, "massive-snapshot"));
+    const resolvedExternal = await resolveExternalAsset(symbol);
+    if (resolvedExternal) {
+      await saveExternalAsset(symbol, resolvedExternal, resolvedExternal.quoteSource || resolvedExternal.chartSource || "external-provider");
+      if (quoteOnly) return jsonQuoteCache({ ...resolvedExternal, ...aliasMeta });
+      return jsonQuoteCache({ ...resolvedExternal, ...aliasMeta });
     }
 
-    return jsonNoStore({
-      ...staticFound,
-      quoteSource: "static",
-      quoteUpdatedAt: new Date().toISOString(),
-    });
+    return jsonQuoteCache(
+      {
+        error: "Symbol not found from configured market-data feeds",
+        symbol,
+      },
+      { status: 404 }
+    );
   }
 
-  if (staticFound && isThaiExchangeSecurity(staticFound) && eodhdApiKey) {
-    const quote = await fetchEodhdQuote(symbol, eodhdApiKey).catch(() => null);
-    if (quote) return jsonNoStore(applyLatestQuote(staticFound, quote, "eodhd"));
+  if (quoteOnly && staticFound) {
+    const quote = await getLatestQuote(symbol, staticFound, { allowStale: true });
+    if (quote) return jsonQuoteCache({ ...applyLatestQuote(staticFound, quote), ...aliasMeta });
+    return jsonQuoteCache({ ...withStaticQuoteMeta(staticFound), ...aliasMeta });
+  }
+
+  if (staticFound && isThaiExchangeSecurity(staticFound)) {
+    return jsonQuoteCache({ ...(await applyMarketDataToStaticStock(staticFound)), ...aliasMeta });
   }
 
   if (staticFound && !isUsExchangeSecurity(staticFound, symbol)) {
-    return jsonNoStore({
-      ...staticFound,
-      quoteSource: "static",
-      quoteUpdatedAt: new Date().toISOString(),
-    });
+    return jsonQuoteCache({ ...(await applyMarketDataToStaticStock(staticFound)), ...aliasMeta });
   }
 
   try {
     const apiKey = massiveApiKey;
     if (!apiKey) {
-      const fallback = staticFound || getSimulatedStock(symbol);
-      return jsonNoStore({
-        ...fallback,
-        quoteSource: staticFound ? "static" : "simulated",
-        quoteUpdatedAt: new Date().toISOString(),
-      });
+      return jsonQuoteCache({ ...(await applyMarketDataToStaticStock(staticFound)), ...aliasMeta });
     }
 
-    // 1. Fetch Ticker Details from Massive API
+    // 1. Fetch ticker reference details from the configured US market feed.
     const tickerRes = await fetch(
       `https://api.massive.com/v3/reference/tickers/${symbol}?apiKey=${encodeURIComponent(apiKey)}`,
       { next: { revalidate: 86400 } }
     );
 
     if (!tickerRes.ok) {
-      // If ticker not found in Massive (e.g. Thai stocks or funds), fall back to generator
-      const simulated = staticFound || getSimulatedStock(symbol);
-      return jsonNoStore({
-        ...simulated,
-        quoteSource: staticFound ? "static" : "simulated",
-        quoteUpdatedAt: new Date().toISOString(),
-      });
+      const providerStock = staticFound || inferExternalUsStock(symbol);
+      const quote = await getLatestQuote(symbol, providerStock, { allowStale: true });
+      const history = await getHistoricalBars(symbol, providerStock, { years: 5 });
+      if (!staticFound && quote) {
+        const fallbackStock = await applyMarketDataToStaticStock({
+          ...providerStock,
+          price: quote.price,
+          prevClose: quote.prevClose || quote.price,
+          name: symbol,
+          enName: symbol,
+          about: `External market-data profile for ${symbol}. Provider reference details were unavailable, but quote/history data was found.`,
+        });
+        await saveExternalAsset(symbol, fallbackStock, quote.source || history?.source || "external-provider");
+        return jsonQuoteCache({ ...fallbackStock, ...aliasMeta });
+      }
+
+      return jsonQuoteCache({ ...(await applyMarketDataToStaticStock(staticFound)), ...aliasMeta });
     }
 
     const tickerData = await tickerRes.json();
     const tResults = tickerData.results || {};
 
     // 2. Fetch 5 Years of Daily Price Aggregates (Daily Bars)
-    const today = new Date().toISOString().split("T")[0];
-    const fiveYearsAgo = new Date();
-    fiveYearsAgo.setFullYear(fiveYearsAgo.getFullYear() - 5);
-    const fromDate = fiveYearsAgo.toISOString().split("T")[0];
+    const providerStock = staticFound || inferExternalUsStock(symbol);
+    const history = await getHistoricalBars(symbol, providerStock, { years: 5 });
+    const rawHistory = history?.bars || [];
 
-    const aggRes = await fetch(
-      `https://api.massive.com/v2/aggs/ticker/${symbol}/range/1/day/${fromDate}/${today}?adjusted=true&sort=asc&limit=50000&apiKey=${encodeURIComponent(apiKey)}`,
-      { cache: "no-store" }
-    );
-    const aggData = aggRes.ok ? await aggRes.json() : { results: [] };
-    const rawHistory = aggData.results || [];
-    
     // Map close prices. If history is empty, generate realistic ones
-    let priceHistory = rawHistory.map((r: any) => r.c);
+    let priceHistory = rawHistory.map((r: any) => r.close);
     if (priceHistory.length === 0) {
       priceHistory = generateMockPrices(100, symbol.charCodeAt(0));
     }
     const ohlcHistory = rawHistory.length > 0
-      ? rawHistory.map((r: any) => ({
-          date: new Date(r.t).toISOString().split("T")[0],
-          open: Number(r.o),
-          high: Number(r.h),
-          low: Number(r.l),
-          close: Number(r.c),
-          volume: Number(r.v || 0),
-        }))
+      ? rawHistory
       : generateMockOhlc(priceHistory);
 
-    const latestQuote = await fetchLatestQuote(symbol, apiKey).catch(() => null);
+    const latestQuote = await getLatestQuote(symbol, providerStock, { allowStale: true });
     const latestPrice = latestQuote?.price || (priceHistory.length > 0 ? priceHistory[priceHistory.length - 1] : 150.0);
     if (priceHistory.length > 0) {
       priceHistory[priceHistory.length - 1] = latestPrice;
@@ -423,21 +566,24 @@ export async function GET(
         growthRate: calculatedGrowthRate,
         totalAssets: Math.round(totalAssets),
       },
-      assetType: staticFound?.assetType || "US_STOCK",
+      assetType: staticFound?.assetType || (String(tResults.type || "").toLowerCase().includes("etf") ? "ETF" : "US_STOCK"),
       currency: "USD",
-      quoteSource: latestQuote ? "massive-snapshot" : "massive-daily",
-      quoteUpdatedAt: new Date().toISOString(),
+      quoteSource: latestQuote?.source || "massive-daily",
+      quoteUpdatedAt: latestQuote?.updatedAt || new Date().toISOString(),
+      quoteDelayMinutes: latestQuote?.delayMinutes || 15,
+      quoteIsDelayed: true,
+      chartSource: history?.source || "simulated-history",
+      chartUpdatedAt: history?.fetchedAt || new Date().toISOString(),
     };
 
-    return jsonNoStore(stock);
+    if (!staticFound) {
+      await saveExternalAsset(symbol, stock, latestQuote?.source || history?.source || "external-provider");
+    }
+
+    return jsonQuoteCache({ ...stock, ...aliasMeta });
   } catch (error: any) {
     console.error("API Integration error:", error);
-    const simulated = staticFound || getSimulatedStock(symbol);
-    return jsonNoStore({
-      ...simulated,
-      quoteSource: staticFound ? "static" : "simulated",
-      quoteUpdatedAt: new Date().toISOString(),
-    });
+    return jsonQuoteCache({ ...(await applyMarketDataToStaticStock(staticFound)), ...aliasMeta });
   }
 }
 

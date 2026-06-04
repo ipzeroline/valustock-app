@@ -1,5 +1,8 @@
 import type { Metadata } from "next";
 
+const INSIGHTS_IMAGE_URL =
+  "https://valustock.com/article-image/valustock-insights-research-hub?category=Value%20Investing%20Guides&symbol=VI&v=5";
+
 export const metadata: Metadata = {
   title: "บทวิเคราะห์หุ้นและคู่มือลงทุน | ValuStock Insights",
   description:
@@ -32,12 +35,21 @@ export const metadata: Metadata = {
     description:
       "ศูนย์ความรู้สำหรับนักลงทุนไทย ครอบคลุม DCF, Intrinsic Value, Margin of Safety, หุ้นไทย, หุ้นสหรัฐ, กองทุน และภาษีลงทุนต่างประเทศ",
     siteName: "ValuStock",
+    images: [
+      {
+        url: INSIGHTS_IMAGE_URL,
+        width: 1200,
+        height: 630,
+        alt: "ValuStock Insights value investing and stock valuation guides",
+      },
+    ],
   },
   twitter: {
     card: "summary_large_image",
     title: "ValuStock Insights | บทวิเคราะห์หุ้นและคู่มือลงทุน",
     description:
       "อ่านบทวิเคราะห์หุ้น คู่มือ VI, DCF, หุ้นปันผล, กองทุนต่างประเทศ และภาษีนักลงทุนไทย",
+    images: [INSIGHTS_IMAGE_URL],
   },
 };
 

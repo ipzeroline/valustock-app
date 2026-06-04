@@ -1,17 +1,7 @@
 import { NextResponse } from "next/server";
 import { createCheckoutSession } from "@/lib/stripe";
 import { PlanId } from "@/lib/types";
-
-function getOrigin(req: Request) {
-  const host = req.headers.get("host") || "localhost:3000";
-  const protocol = host.includes("localhost") || host.includes("127.0.0.1") ? "http" : "https";
-  if (protocol === "http") return `${protocol}://${host}`;
-
-  const envOrigin = process.env.NEXT_PUBLIC_SITE_URL;
-  if (envOrigin) return envOrigin.replace(/\/$/, "");
-
-  return `${protocol}://${host}`;
-}
+import { getRequestOrigin } from "@/lib/request-origin";
 
 export async function POST(req: Request) {
   try {
@@ -30,7 +20,7 @@ export async function POST(req: Request) {
     }
 
     const session = await createCheckoutSession({
-      origin: getOrigin(req),
+      origin: getRequestOrigin(req),
       email,
       name,
       planId: plan,

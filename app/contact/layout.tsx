@@ -24,6 +24,21 @@ export const metadata: Metadata = {
     description:
       "สอบถามการใช้งาน ValuStock, DCF Calculator, Stock Screener, Portfolio Tracker, แพ็กเกจสมาชิก และการชำระเงิน",
     siteName: "ValuStock",
+    images: [
+      {
+        url: "https://valustock.com/images/contact-command-center.png?v=1",
+        width: 1672,
+        height: 941,
+        alt: "ValuStock support command center contact page",
+      },
+    ],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "ติดต่อทีมงาน ValuStock",
+    description:
+      "สอบถามการใช้งาน ValuStock, DCF Calculator, Stock Screener, Portfolio Tracker, แพ็กเกจสมาชิก และการชำระเงิน",
+    images: ["https://valustock.com/images/contact-command-center.png?v=1"],
   },
 };
 

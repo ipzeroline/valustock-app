@@ -338,8 +338,8 @@ export default function MethodologyPage() {
         <Card className="border border-line p-6 bg-surface/35 space-y-4">
           <p className="text-xs sm:text-sm text-muted leading-relaxed font-semibold">
             {lang === "th"
-              ? "เพื่อรักษามาตรฐานความน่าเชื่อถือสูงสด ระบบ ValuStock เชื่อมต่อและรวบรวมข้อมูลทางการเงินจากแหล่งข้อมูลชั้นนำของโลกแบบเรียลไทม์และรายวัน ดังนี้:"
-              : "To maintain absolute data integrity and regulatory transparency, ValuStock aggregates and syncs financial statistics and market prices from industry-grade global provider feeds:"}
+              ? "เพื่อรักษามาตรฐานความน่าเชื่อถือ ระบบ ValuStock รวบรวมข้อมูลราคาตลาด งบการเงิน และข้อมูลย้อนหลังจากแหล่งข้อมูลตลาดที่เชื่อถือได้ โดยแสดงสถานะความสดใหม่ของราคาอย่างชัดเจน:"
+              : "To keep data provenance clear, ValuStock aggregates market prices, financial statements, and historical data from trusted market-data feeds, with quote freshness shown clearly:"}
           </p>
 
           <div className="grid gap-4 sm:grid-cols-3 text-xs">

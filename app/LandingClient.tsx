@@ -12,7 +12,7 @@ import { Sparkline } from "@/components/Charts";
 import { AssetLogo } from "@/components/AssetLogo";
 import { useTranslation } from "@/lib/translations";
 import { useStore } from "@/lib/store";
-import { getBlogArticle } from "@/lib/blogArticles";
+import { blogArticles } from "@/lib/blogArticles";
 import {
   Calculator,
   Gauge,
@@ -26,6 +26,10 @@ import {
   ChevronRight,
   Target,
   Info,
+  Database,
+  Clock,
+  CheckCircle,
+  Eye,
 } from "@/lib/icons";
 
 interface Article {
@@ -148,14 +152,19 @@ const FEATURED_ARTICLES_EN: Article[] = [
   }
 ];
 
-const homeBlogSlugs = [
-  "best-stocks-to-buy-thailand-2026",
-  "high-dividend-stocks-thailand-2026",
-  "tisco-stock-worth-buying",
-  "kbank-stock-worth-buying",
-  "pttep-stock-worth-buying",
-  "how-to-invest-sp500-thailand",
-];
+function formatArticleDate(value: string, lang: "th" | "en") {
+  const date = new Date(`${value}T00:00:00`);
+  if (Number.isNaN(date.getTime())) return value;
+  return new Intl.DateTimeFormat(lang === "th" ? "th-TH" : "en-US", {
+    day: "numeric",
+    month: "short",
+    year: "numeric",
+  }).format(date);
+}
+
+function formatArticleViews(value: number, lang: "th" | "en") {
+  return new Intl.NumberFormat(lang === "th" ? "th-TH" : "en-US").format(value);
+}
 
 function buildHomeBlogArticles(lang: "th" | "en"): Article[] {
   const tones = [
@@ -169,14 +178,12 @@ function buildHomeBlogArticles(lang: "th" | "en"): Article[] {
 
   const articles: Article[] = [];
 
-  homeBlogSlugs.forEach((slug, index) => {
-    const article = getBlogArticle(slug);
-    if (!article) return;
+  blogArticles.slice(0, 6).forEach((article, index) => {
     articles.push({
         id: article.slug,
         title: lang === "th" ? article.titleTh : article.titleEn,
         category: lang === "th" ? article.category : article.category,
-        date: lang === "th" ? "3 มิ.ย. 2026" : "Jun 3, 2026",
+        date: formatArticleDate(article.modified || article.published, lang),
         readTime: article.readTime,
         tag: article.symbol,
         gradient: tones[index % tones.length],
@@ -204,6 +211,7 @@ export default function Landing() {
   const [reviewSaving, setReviewSaving] = useState(false);
   const [reviewMessage, setReviewMessage] = useState("");
   const [reviewError, setReviewError] = useState("");
+  const [articleViews, setArticleViews] = useState<Record<string, number>>({});
 
   // Newsletter subscription states
   const [email, setEmail] = useState("");
@@ -367,6 +375,27 @@ export default function Landing() {
     }
     return unique.slice(0, 6);
   }, [dbArticles, lang]);
+
+  useEffect(() => {
+    const slugs = articlesList
+      .filter((article) => article.href?.startsWith("/blog/"))
+      .map((article) => article.id);
+    if (!slugs.length) return;
+
+    let cancelled = false;
+    fetch(`/api/blog/views?slugs=${encodeURIComponent(slugs.join(","))}`, { cache: "no-store" })
+      .then((res) => res.json())
+      .then((payload) => {
+        if (!cancelled && payload.views) {
+          setArticleViews((current) => ({ ...current, ...payload.views }));
+        }
+      })
+      .catch(() => undefined);
+
+    return () => {
+      cancelled = true;
+    };
+  }, [articlesList]);
 
   // Real-time top 3 undervalued stocks from DB
   const topUndervalued = useMemo(() => {
@@ -572,8 +601,8 @@ export default function Landing() {
     {
       q: lang === "th" ? "ข้อมูลราคาและอัตราส่วนการเงินอัปเดตบ่อยแค่ไหน?" : "How often are the financial metrics updated?",
       a: lang === "th"
-        ? "ราคาตลาดล่าสุดอัปเดตแบบเรียลไทม์ระหว่างวันสำหรับตลาดสหรัฐฯ และตลาดหลักทรัพย์แห่งประเทศไทย ส่วนข้อมูลสรุปงบการเงินและอัตราส่วนปันผล (Yield) จะอัปเดตรายวันตรงตามรอบรายงานบัญชีล่าสุด"
-        : "Market prices update in real-time during active trading hours, while key financial ratios, balance sheets, and dividend yields are updated daily matching the latest SEC/SET filings."
+        ? "ราคาตลาดล่าสุดซิงก์จากแหล่งข้อมูลตลาด พร้อมแสดงสถานะความสดใหม่ของราคา ส่วนข้อมูลสรุปงบการเงินและอัตราส่วนปันผลจะอัปเดตตามรอบข้อมูลล่าสุด"
+        : "Market prices sync from market-data feeds with quote freshness shown clearly. Financial ratios and dividend metrics update on the latest available data cycles."
     },
     {
       q: lang === "th" ? "สามารถประเมินมูลค่ากองทุนรวมหรือ ETF (เช่น SPY, VOO) ได้ด้วยหรือไม่?" : "Can I evaluate ETFs and Mutual Funds like SPY or VOO?",
@@ -614,6 +643,32 @@ export default function Landing() {
   const splitHeaderClass = "mb-6 flex flex-col gap-4 sm:mb-7 md:flex-row md:items-end md:justify-between lg:mb-8";
   const eyebrowClass = "chip mb-3 inline-flex max-w-full items-center gap-1.5 text-xs font-bold leading-relaxed [overflow-wrap:anywhere]";
   const sectionTitleClass = "font-display text-2xl font-bold leading-tight text-ink [text-wrap:balance] sm:text-3xl";
+  const dataInfrastructure = [
+    {
+      title: lang === "th" ? "Global Market Data" : "Global Market Data",
+      detail: lang === "th"
+        ? "ราคา, กราฟย้อนหลัง, งบการเงิน, ETF holdings, ข่าว, technical indicators, dividends และ macro"
+        : "Quotes, historical charts, fundamentals, ETF holdings, news, technical indicators, dividends, and macro data.",
+      badge: lang === "th" ? "Global coverage" : "Global coverage",
+      icon: Database,
+    },
+    {
+      title: lang === "th" ? "US Market Layer" : "US Market Layer",
+      detail: lang === "th"
+        ? "รองรับหุ้นและ ETF สหรัฐฯ พร้อมแสดงสถานะความสดใหม่ของราคาอย่างชัดเจน"
+        : "Supports US stocks and ETFs with clear quote freshness and delayed/realtime status.",
+      badge: lang === "th" ? "US market layer" : "US market layer",
+      icon: Clock,
+    },
+    {
+      title: lang === "th" ? "Smart Speed Layer" : "Smart Speed Layer",
+      detail: lang === "th"
+        ? "จัดเก็บข้อมูลที่ใช้บ่อยอย่างเหมาะสม เพื่อให้ราคา กราฟ และ Market Intelligence เปิดเร็ว"
+        : "Optimizes frequently used market data so quotes, charts, and intelligence panels load quickly.",
+      badge: lang === "th" ? "Fast loading" : "Fast loading",
+      icon: CheckCircle,
+    },
+  ];
 
   return (
     <div className="max-w-full overflow-x-hidden pb-10 md:pb-14">
@@ -638,7 +693,7 @@ export default function Landing() {
                   "priceCurrency": "THB",
                   "category": "FreeTrial"
                 },
-                "screenshot": "https://valustock.com/og-image.png",
+                "screenshot": "https://valustock.com/opengraph-image",
                 ...(reviews.length
                   ? {
                       "aggregateRating": {
@@ -683,7 +738,7 @@ export default function Landing() {
                 "@id": "https://valustock.com/#organization",
                 "name": "ValuStock",
                 "url": "https://valustock.com",
-                "logo": "https://valustock.com/logo.png"
+                "logo": "https://valustock.com/icon"
               },
               {
                 "@type": "FAQPage",
@@ -737,8 +792,8 @@ export default function Landing() {
 
             <p className="mx-auto mt-4 max-w-md text-sm font-medium leading-relaxed text-muted [overflow-wrap:anywhere] sm:max-w-xl sm:text-base lg:mx-0">
               {lang === "th" 
-                ? "ตอบคำถาม 'หุ้นตัวไหนดี' และ 'หุ้นไทยถูกหรือแพง' ด้วยเครื่องประเมินมูลค่าหุ้นที่แท้จริง คำนวณ Intrinsic Value, Fair Value, DCF Calculator และ Margin of Safety เพื่อคัดกรองหุ้นปันผลสูง หุ้น undervalue และหุ้นราคาถูกพื้นฐานดีอย่างเป็นระบบ"
-                : "Solve the question of what stocks to buy and evaluate if equities are cheap or expensive. Utilize our professional DCF Calculator and intrinsic value models to discover high dividend, undervalued stocks in seconds."}
+                ? "ตอบคำถาม 'หุ้นตัวไหนดี' และ 'หุ้นไทยถูกหรือแพง' ด้วยข้อมูลตลาดหลายชั้นที่ออกแบบมาให้ราคา กราฟ ข่าว งบ และ Market Intelligence โหลดไวในที่เดียว"
+                : "Answer what to buy and whether equities are cheap or expensive with a multi-layer market-data engine built for fast quotes, charts, news, fundamentals, and market intelligence."}
             </p>
 
             <div className="mx-auto mt-6 flex max-w-sm flex-col items-stretch gap-3 sm:max-w-none sm:flex-row sm:items-center sm:justify-center lg:mx-0 lg:justify-start">
@@ -762,10 +817,23 @@ export default function Landing() {
             </nav>
           </div>
 
-          {/* Floating Valuation Card */}
-          <div className="animate-fade-up min-w-0 w-full overflow-hidden [animation-delay:120ms] lg:justify-self-end">
-            <div className="surface mx-auto w-full max-w-[350px] rounded-2xl border border-line bg-surface/55 p-4 text-left shadow-card backdrop-blur-md sm:max-w-md sm:p-5">
-              <div className="flex min-w-0 flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          {/* Product Visual */}
+          <div className="animate-fade-up min-w-0 w-full [animation-delay:120ms] lg:justify-self-end">
+            <div className="mx-auto w-full max-w-[560px] text-left">
+              <div className="relative overflow-hidden rounded-2xl border border-line bg-surface/55 shadow-card">
+                <img
+                  src="/opengraph-image"
+                  alt={lang === "th" ? "ภาพตัวอย่างหน้าแดชบอร์ด ValuStock สำหรับประเมินมูลค่าหุ้น" : "ValuStock stock valuation dashboard preview"}
+                  width={1200}
+                  height={630}
+                  loading="eager"
+                  decoding="async"
+                  className="block h-auto w-full"
+                />
+              </div>
+
+              <div className="mt-3 rounded-2xl border border-line bg-bg/75 p-4 shadow-card backdrop-blur-md sm:p-5">
+                <div className="flex min-w-0 flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                 <div className="flex min-w-0 items-center gap-3">
                   <AssetLogo symbol={demo.symbol} color={demo.color} size="md" />
                   <div className="min-w-0">
@@ -776,26 +844,54 @@ export default function Landing() {
                 <span className={`chip w-fit border-up/30 bg-up/10 text-up text-xs font-bold`}>
                   {t(`verdict.${val.verdict}`).toUpperCase()}
                 </span>
-              </div>
-              <div className="my-4 h-14">
-                <Sparkline data={demo.priceHistory} up />
-              </div>
-              <div className="grid gap-3 sm:grid-cols-2">
-                <Mini label={t("landing.marketPrice")} value={baht(demo.price)} />
-                <Mini
-                  label={t("landing.fairValue")}
-                  value={baht(val.fairValue)}
-                  accent
-                />
-                <Mini label="P/E" value={num(val.ratios.pe, 1)} />
-                <Mini
-                  label={t("landing.marginOfSafety")}
-                  value={pct(val.marginOfSafety, 0)}
-                  up={val.marginOfSafety >= 0}
-                />
+                </div>
+                <div className="my-4 h-14">
+                  <Sparkline data={demo.priceHistory} up />
+                </div>
+                <div className="grid gap-3 sm:grid-cols-2">
+                  <Mini label={t("landing.marketPrice")} value={baht(demo.price)} />
+                  <Mini
+                    label={t("landing.fairValue")}
+                    value={baht(val.fairValue)}
+                    accent
+                  />
+                  <Mini label="P/E" value={num(val.ratios.pe, 1)} />
+                  <Mini
+                    label={t("landing.marginOfSafety")}
+                    value={pct(val.marginOfSafety, 0)}
+                    up={val.marginOfSafety >= 0}
+                  />
+                </div>
               </div>
             </div>
           </div>
+        </div>
+      </section>
+
+      {/* DATA INFRASTRUCTURE STRIP */}
+      <section className="border-b border-line/60 bg-surface/35">
+        <div className="mx-auto grid max-w-6xl gap-4 px-5 py-5 md:grid-cols-3">
+          {dataInfrastructure.map((item) => {
+            const Icon = item.icon;
+            return (
+              <div key={item.title} className="rounded-xl border border-line bg-bg/65 p-4">
+                <div className="flex items-start gap-3">
+                  <span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-brand/10 text-brand">
+                    <Icon className="h-5 w-5" />
+                  </span>
+                  <div className="min-w-0">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <h2 className="text-sm font-extrabold text-ink">{item.title}</h2>
+                      <span className="rounded-full border border-line bg-elevate px-2 py-0.5 text-[10px] font-black text-muted">
+                        {item.badge}
+                      </span>
+                    </div>
+                    <p className="mt-1 text-xs font-semibold leading-relaxed text-muted">{item.detail}</p>
+                  </div>
+                </div>
+              </div>
+            );
+          })}
         </div>
       </section>
 
@@ -814,8 +910,8 @@ export default function Landing() {
             </h2>
             <p className="mt-3 max-w-xl text-sm font-medium leading-relaxed text-muted [overflow-wrap:anywhere]">
               {lang === "th"
-                ? "เลือกดูได้ทั้งหุ้นไทย หุ้นอเมริกา ETF สหรัฐ กองทุนทองคำ GLD และสินทรัพย์อย่าง Gold Futures หรือ Bitcoin ในพื้นที่เดียว กราฟนี้ดึงข้อมูลจาก ValuStock API พร้อมประเมิน DCF, Fair Value และ Margin of Safety เพื่อช่วยค้นหาหุ้น undervalue และสินทรัพย์ที่น่าสนใจ"
-                : "Switch between Thai stocks, US equities, US ETFs, GLD gold ETF, Gold Futures, and Bitcoin in one compact panel. Data comes from the ValuStock API with DCF, Fair Value, and Margin of Safety signals."}
+                ? "เลือกดูได้ทั้งหุ้นไทย หุ้นอเมริกา ETF สหรัฐ กองทุนทองคำ GLD และสินทรัพย์อย่าง Gold Futures หรือ Bitcoin ในพื้นที่เดียว ข้อมูลราคาและกราฟถูกเตรียมให้โหลดไว แล้วคำนวณ DCF, Fair Value, Margin of Safety ต่อทันที"
+                : "Switch between Thai stocks, US equities, US ETFs, GLD gold ETF, Gold Futures, and Bitcoin in one compact panel. Quotes and charts are optimized for quick loading, then feed DCF, Fair Value, and Margin of Safety signals."}
             </p>
             <div className="mt-5 flex flex-wrap gap-2">
               {[
@@ -948,7 +1044,7 @@ export default function Landing() {
             </span>
             <h3 className="mt-4 font-display font-bold text-ink group-hover:text-brand transition">Stock Screener</h3>
             <p className="mt-1.5 text-xs text-muted leading-relaxed font-medium">
-              {lang === "th" ? "โปรแกรมคัดกรองหุ้นพื้นฐานดี หุ้นปันผลสูง และหุ้น undervalue ด้วยชุดงบการเงินเรียลไทม์" : "Filter cash cows and deep discounts from our multi-exchange dynamic database."}
+              {lang === "th" ? "โปรแกรมคัดกรองหุ้นพื้นฐานดี หุ้นปันผลสูง และหุ้น undervalue จากราคา งบ ปันผล และข้อมูล ETF ที่อัปเดตจากระบบตลาด" : "Filter cash cows and deep discounts using market-backed quotes, statements, dividends, and ETF datasets."}
             </p>
           </Link>
 
@@ -1091,12 +1187,12 @@ export default function Landing() {
               <Sparkles className="h-3.5 w-3.5" /> Hot Value Reports
             </span>
             <h2 className={`${sectionTitleClass} md:text-4xl`}>
-              {lang === "th" ? "บทความที่คนค้นก่อนซื้อหุ้นจริง" : "Pre-Buy Stock Research Guides"}
+              {lang === "th" ? "บทความล่าสุดที่คนค้นก่อนซื้อหุ้นจริง" : "Latest Pre-Buy Stock Research Guides"}
             </h2>
             <p className="mt-2 text-xs sm:text-sm text-muted font-semibold leading-relaxed">
               {lang === "th"
-                ? "รวมคำค้นที่มีโอกาสเปลี่ยนเป็นสมาชิกสูง เช่น หุ้นตัวไหนดี 2569, หุ้นปันผลสูง, TISCO, KBANK, PTTEP และ S&P 500"
-                : "High-intent guides for users searching before they buy, from Thai stock picks and dividends to S&P 500 investing."}
+                ? "อัปเดตบทความหุ้นรายตัว หุ้นปันผล ETF และคู่มือประเมินมูลค่า เรียงจากบทความใหม่ล่าสุดก่อน"
+                : "Fresh single-stock, dividend, ETF and valuation guides, ordered by the newest research first."}
             </p>
           </div>
           <Link href="/blog">
@@ -1110,19 +1206,43 @@ export default function Landing() {
         <div className="grid gap-4 md:grid-cols-3">
           {articlesList.map((art, idx) => {
             const articleHref = art.href || (art.id === "dcf-for-beginners" ? "/insights/dcf-calculator-stock-valuation" : `/insights?article=${art.id}`);
+            const imageSrc = `/article-image/${encodeURIComponent(art.id)}?category=${encodeURIComponent(art.category)}&symbol=${encodeURIComponent(art.tag)}&v=5`;
             return (
               <article 
                 key={art.id} 
-                className="group relative flex flex-col justify-between surface rounded-2xl p-6 border border-line/60 hover:border-brand/40 hover:shadow-lg transition-all duration-300"
+                className="group relative flex flex-col justify-between overflow-hidden rounded-2xl border border-line/60 bg-surface/70 shadow-card transition-all duration-300 hover:border-brand/40 hover:shadow-lg"
               >
-                <div className="space-y-4">
-                  <div className="flex items-center justify-between">
+                <Link href={articleHref} className="flex aspect-[1200/630] items-center justify-center overflow-hidden border-b border-line/50 bg-bg/55">
+                  <img
+                    src={imageSrc}
+                    alt={lang === "th" ? `ภาพประกอบบทความ ${art.title}` : `${art.title} article cover`}
+                    width={1200}
+                    height={630}
+                    loading={idx < 3 ? "eager" : "lazy"}
+                    decoding="async"
+                    className="h-full w-full object-cover object-center transition duration-500 group-hover:scale-[1.03]"
+                  />
+                </Link>
+
+                <div className="space-y-4 p-5 sm:p-6">
+                  <div className="flex flex-wrap items-center justify-between gap-2">
                     <span className={`chip border px-2 py-0.5 rounded-lg text-[10px] font-bold leading-none ${art.gradient}`}>
                       {art.category}
                     </span>
-                    <span className="text-xs text-muted font-mono flex items-center gap-1 font-semibold">
-                      ⏱️ {art.readTime}
-                    </span>
+                    <div className="flex flex-wrap items-center justify-end gap-2 text-xs text-muted font-mono font-semibold">
+                      <span className="flex items-center gap-1">
+                        <Clock className="h-3.5 w-3.5" />
+                        {art.readTime}
+                      </span>
+                      {art.href?.startsWith("/blog/") ? (
+                        <span className="flex items-center gap-1">
+                          <Eye className="h-3.5 w-3.5" />
+                          {lang === "th"
+                            ? `${formatArticleViews(articleViews[art.id] || 0, lang)} อ่าน`
+                            : `${formatArticleViews(articleViews[art.id] || 0, lang)} reads`}
+                        </span>
+                      ) : null}
+                    </div>
                   </div>
 
                   <h3 className="font-display text-sm sm:text-base font-bold text-ink leading-snug group-hover:text-brand transition duration-200">
@@ -1136,7 +1256,7 @@ export default function Landing() {
                   </p>
                 </div>
 
-                <div className="mt-6 pt-4 border-t border-line/45 flex items-center justify-between">
+                <div className="mx-5 mb-5 flex items-center justify-between border-t border-line/45 pt-4 sm:mx-6 sm:mb-6">
                   <span className="text-[10px] text-muted font-bold tracking-wider font-mono">
                     📅 {art.date}
                   </span>

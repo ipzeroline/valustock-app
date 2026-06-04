@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { getDbConnectionStatus, initDatabase, query } from "@/lib/db";
 import { getPlanForEmail } from "@/lib/entitlements";
 import { getStock } from "@/lib/stocks";
+import { applyLatestQuote, getLatestQuote } from "@/lib/market-quotes";
 import { computeValuation, defaultDCFParams } from "@/lib/valuation";
 import { getTelegramMiniMember } from "@/lib/telegram-mini";
 
@@ -32,15 +33,17 @@ function parseSymbols(value: string) {
   }
 }
 
-function stockSnapshot(symbol: string) {
+async function stockSnapshot(symbol: string) {
   const stock = getStock(symbol);
   if (!stock) return null;
-  const valuation = computeValuation(stock, defaultDCFParams(stock));
-  const changePct = stock.prevClose > 0 ? ((stock.price - stock.prevClose) / stock.prevClose) * 100 : 0;
+  const quote = await getLatestQuote(stock.symbol, stock, { allowStale: true }).catch(() => null);
+  const liveStock = quote ? applyLatestQuote(stock, quote) : stock;
+  const valuation = computeValuation(liveStock, defaultDCFParams(liveStock));
+  const changePct = liveStock.prevClose > 0 ? ((liveStock.price - liveStock.prevClose) / liveStock.prevClose) * 100 : 0;
   return {
-    symbol: stock.symbol,
-    name: stock.name,
-    price: stock.price,
+    symbol: liveStock.symbol,
+    name: liveStock.name,
+    price: liveStock.price,
     changePct,
     fairValue: valuation.fairValue,
     mos: valuation.marginOfSafety,
@@ -50,7 +53,7 @@ function stockSnapshot(symbol: string) {
   };
 }
 
-function buildPortfolio(transactions: TransactionRow[]) {
+async function buildPortfolio(transactions: TransactionRow[]) {
   const bySymbol = new Map<string, { shares: number; cost: number }>();
 
   for (const row of transactions) {
@@ -72,24 +75,25 @@ function buildPortfolio(transactions: TransactionRow[]) {
     bySymbol.set(symbol, current);
   }
 
-  const positions = Array.from(bySymbol.entries())
-    .map(([symbol, pos]) => {
+  const positions = (await Promise.all(Array.from(bySymbol.entries()).map(async ([symbol, pos]) => {
       const stock = getStock(symbol);
       if (!stock || pos.shares <= 0) return null;
-      const value = stock.price * pos.shares;
+      const quote = await getLatestQuote(stock.symbol, stock, { allowStale: true }).catch(() => null);
+      const liveStock = quote ? applyLatestQuote(stock, quote) : stock;
+      const value = liveStock.price * pos.shares;
       const pnl = value - pos.cost;
       const pnlPct = pos.cost > 0 ? (pnl / pos.cost) * 100 : 0;
       return {
         symbol,
-        name: stock.name,
+        name: liveStock.name,
         shares: pos.shares,
         avgCost: pos.cost / pos.shares,
-        price: stock.price,
+        price: liveStock.price,
         value,
         pnl,
         pnlPct,
       };
-    })
+    })))
     .filter(Boolean) as Array<{
       symbol: string;
       name: string;
@@ -105,11 +109,33 @@ function buildPortfolio(transactions: TransactionRow[]) {
   const totalValue = positions.reduce((sum, pos) => sum + pos.value, 0);
   const totalCost = positions.reduce((sum, pos) => sum + pos.avgCost * pos.shares, 0);
   const pnl = totalValue - totalCost;
+  const bestPosition = [...positions].sort((a, b) => b.pnlPct - a.pnlPct)[0] || null;
+  const worstPosition = [...positions].sort((a, b) => a.pnlPct - b.pnlPct)[0] || null;
+  const topPosition = positions[0] || null;
   return {
     totalValue,
+    totalCost,
     pnl,
     pnlPct: totalCost > 0 ? (pnl / totalCost) * 100 : 0,
+    positionCount: positions.length,
+    concentrationPct: totalValue > 0 && topPosition ? (topPosition.value / totalValue) * 100 : 0,
+    bestPosition,
+    worstPosition,
     positions,
+  };
+}
+
+function buildWatchlistStats(watchlist: NonNullable<Awaited<ReturnType<typeof stockSnapshot>>>[]) {
+  const avgMos = watchlist.length ? watchlist.reduce((sum, stock) => sum + stock.mos, 0) / watchlist.length : 0;
+  const undervaluedCount = watchlist.filter((stock) => stock.mos >= 15).length;
+  const topMos = [...watchlist].sort((a, b) => b.mos - a.mos)[0] || null;
+  const topYield = [...watchlist].sort((a, b) => b.dividendYield - a.dividendYield)[0] || null;
+  return {
+    count: watchlist.length,
+    avgMos,
+    undervaluedCount,
+    topMos,
+    topYield,
   };
 }
 
@@ -150,15 +176,14 @@ export async function POST(req: Request) {
       : Promise.resolve([]),
   ]);
 
-  const watchlist = watchlistRows
-    .map((row) => stockSnapshot(row.symbol))
+  const watchlist = (await Promise.all(watchlistRows.map((row) => stockSnapshot(row.symbol))))
     .filter(Boolean)
     .sort((a: any, b: any) => b.mos - a.mos)
     .slice(0, 10);
 
-  const compareSets = compareRows.map((row) => {
+  const compareSets = await Promise.all(compareRows.map(async (row) => {
     const symbols = parseSymbols(row.symbols);
-    const snapshots = symbols.map(stockSnapshot).filter(Boolean) as NonNullable<ReturnType<typeof stockSnapshot>>[];
+    const snapshots = (await Promise.all(symbols.map(stockSnapshot))).filter(Boolean) as NonNullable<Awaited<ReturnType<typeof stockSnapshot>>>[];
     const mosLeader = [...snapshots].sort((a, b) => b.mos - a.mos)[0] || null;
     const yieldLeader = [...snapshots].sort((a, b) => b.dividendYield - a.dividendYield)[0] || null;
     return {
@@ -170,9 +195,11 @@ export async function POST(req: Request) {
       mosLeader,
       yieldLeader,
     };
-  });
+  }));
+  const portfolio = await buildPortfolio(transactions);
 
   return NextResponse.json({
+    generatedAt: new Date().toISOString(),
     member: {
       email: member.email,
       plan: plan.id,
@@ -183,8 +210,9 @@ export async function POST(req: Request) {
       compare: plan.limits.compare,
       alerts: plan.limits.alerts,
     },
-    portfolio: buildPortfolio(transactions),
+    portfolio,
     watchlist,
+    watchlistStats: buildWatchlistStats(watchlist as NonNullable<Awaited<ReturnType<typeof stockSnapshot>>>[]),
     compareSets,
   });
 }

@@ -94,10 +94,10 @@ export const metadata: Metadata = {
     siteName: "ValuStock",
     images: [
       {
-        url: "https://valustock.com/og-image.png",
+        url: "https://valustock.com/opengraph-image",
         width: 1200,
         height: 630,
-        alt: "ValuStock - เครื่องมือประเมินมูลค่าหุ้น",
+        alt: "ValuStock - เครื่องมือประเมินมูลค่าหุ้นและค้นหาหุ้นพื้นฐานดี",
       },
     ],
   },
@@ -105,7 +105,7 @@ export const metadata: Metadata = {
     card: "summary_large_image",
     title: "ValuStock | เครื่องมือประเมินมูลค่าหุ้น คำนวณ DCF และหาหุ้นพื้นฐานดี",
     description: "ประเมินมูลค่าหุ้นด้วย DCF, Intrinsic Value และ Margin of Safety คัดกรองหุ้นพื้นฐานดี หุ้น undervalue หุ้นปันผลสูง และดูว่าหุ้นไทยหรือหุ้นอเมริกาถูกหรือแพง",
-    images: ["https://valustock.com/og-image.png"],
+    images: ["https://valustock.com/opengraph-image"],
     creator: "@valustock",
   },
   alternates: {

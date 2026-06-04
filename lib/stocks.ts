@@ -126,119 +126,119 @@ const RAW: Raw[] = [
   // ==== 🇹🇭 หุ้นไทย (10 อันดับหลัก) ====
   {
     symbol: "PTT", name: "ปตท.", enName: "PTT Public Company", sector: "พลังงาน", market: "SET",
-    price: 32.5, prevClose: 32.0, shares: 28563, color: "#0050A0",
+    price: 36.5, prevClose: 36.5, shares: 28563, color: "#0050A0",
     about: "บริษัทพลังงานครบวงจรรายใหญ่ที่สุดของไทย ครอบคลุมก๊าซ น้ำมัน และปิโตรเคมี",
     revenue: 3100000, netIncome: 92000, equity: 1080000, fcf: 130000, ebitda: 410000,
     totalDebt: 720000, cash: 280000, dps: 2.0, growth: 0.04, assetType: "TH_STOCK", currency: "THB"
   },
   {
     symbol: "AOT", name: "ท่าอากาศยานไทย", enName: "Airports of Thailand", sector: "ขนส่งและโลจิสติกส์", market: "SET",
-    price: 58.0, prevClose: 59.25, shares: 14286, color: "#1B4F9C",
+    price: 56.25, prevClose: 56.25, shares: 14286, color: "#1B4F9C",
     about: "ผู้บริหารท่าอากาศยานหลักของไทยรวมถึงสุวรรณภูมิและดอนเมือง",
     revenue: 68000, netIncome: 19500, equity: 165000, fcf: 16000, ebitda: 34000,
     totalDebt: 42000, cash: 38000, dps: 0.9, growth: 0.10, assetType: "TH_STOCK", currency: "THB"
   },
   {
     symbol: "CPALL", name: "ซีพี ออลล์", enName: "CP All", sector: "ค้าปลีก", market: "SET",
-    price: 60.5, prevClose: 60.0, shares: 8983, color: "#E2231A",
+    price: 46.75, prevClose: 46.75, shares: 8983, color: "#E2231A",
     about: "ผู้บริหารร้านสะดวกซื้อ 7-Eleven และธุรกิจค้าส่งค้าปลีกในไทย",
     revenue: 980000, netIncome: 24000, equity: 215000, fcf: 31000, ebitda: 95000,
     totalDebt: 360000, cash: 70000, dps: 1.0, growth: 0.08, assetType: "TH_STOCK", currency: "THB"
   },
   {
     symbol: "KBANK", name: "ธนาคารกสิกรไทย", enName: "Kasikornbank", sector: "ธนาคาร", market: "SET",
-    price: 158.0, prevClose: 156.5, shares: 2369, color: "#138F2D",
+    price: 204, prevClose: 204, shares: 2369, color: "#138F2D",
     about: "ธนาคารพาณิชย์ขนาดใหญ่ของไทย เด่นด้านดิจิทัลแบงก์กิ้ง",
     revenue: 235000, netIncome: 48000, equity: 510000, fcf: 52000, ebitda: 60000,
     totalDebt: 300000, cash: 90000, dps: 6.0, growth: 0.06, assetType: "TH_STOCK", currency: "THB"
   },
   {
     symbol: "ADVANC", name: "แอดวานซ์ อินโฟร์ เซอร์วิส", enName: "Advanced Info Service", sector: "สื่อสาร", market: "SET",
-    price: 281.0, prevClose: 279.0, shares: 2973, color: "#00A95C",
+    price: 364, prevClose: 364, shares: 2973, color: "#00A95C",
     about: "ผู้ให้บริการเครือข่ายมือถือ AIS รายใหญ่ที่สุดของไทย",
     revenue: 205000, netIncome: 33000, equity: 78000, fcf: 40000, ebitda: 95000,
     totalDebt: 130000, cash: 28000, dps: 9.5, growth: 0.07, assetType: "TH_STOCK", currency: "THB"
   },
   {
     symbol: "BDMS", name: "กรุงเทพดุสิตเวชการ", enName: "Bangkok Dusit Medical Services", sector: "การแพทย์", market: "SET",
-    price: 27.0, prevClose: 26.75, shares: 15886, color: "#0A3D91",
+    price: 18.2, prevClose: 18.2, shares: 15886, color: "#0A3D91",
     about: "เครือโรงพยาบาลเอกชนที่ใหญ่ที่สุดในไทย (กลุ่ม BDMS)",
     revenue: 105000, netIncome: 15000, equity: 95000, fcf: 14000, ebitda: 28000,
     totalDebt: 30000, cash: 12000, dps: 0.75, growth: 0.09, assetType: "TH_STOCK", currency: "THB"
   },
   {
     symbol: "GULF", name: "กัลฟ์ เอ็นเนอร์จี", enName: "Gulf Energy Development", sector: "พลังงาน", market: "SET",
-    price: 47.5, prevClose: 47.0, shares: 11742, color: "#1A1F71",
+    price: 64.5, prevClose: 64.5, shares: 11742, color: "#1A1F71",
     about: "ผู้ผลิตและพัฒนาโรงไฟฟ้าและพลังงานหมุนเวียนรายใหญ่ของไทย",
     revenue: 130000, netIncome: 18500, equity: 140000, fcf: 12000, ebitda: 45000,
     totalDebt: 260000, cash: 40000, dps: 0.66, growth: 0.14, assetType: "TH_STOCK", currency: "THB"
   },
   {
     symbol: "SCC", name: "ปูนซิเมนต์ไทย", enName: "Siam Cement Group", sector: "วัสดุก่อสร้าง", market: "SET",
-    price: 178.0, prevClose: 180.0, shares: 1200, color: "#C8102E",
+    price: 229, prevClose: 229, shares: 1200, color: "#C8102E",
     about: "กลุ่มอุตสาหกรรมซีเมนต์ เคมีภัณฑ์ และบรรจุภัณฑ์ชั้นนำ",
     revenue: 510000, netIncome: 25000, equity: 420000, fcf: 28000, ebitda: 70000,
     totalDebt: 340000, cash: 80000, dps: 7.0, growth: 0.04, assetType: "TH_STOCK", currency: "THB"
   },
   {
     symbol: "MINT", name: "ไมเนอร์ อินเตอร์เนชั่นแนล", enName: "Minor International", sector: "อาหารและเครื่องดื่ม", market: "SET",
-    price: 28.5, prevClose: 28.25, shares: 5800, color: "#6B2C91",
+    price: 22.1, prevClose: 22.1, shares: 5800, color: "#6B2C91",
     about: "ธุรกิจโรงแรม ร้านอาหาร และไลฟ์สไตล์ระดับนานาชาติ",
     revenue: 160000, netIncome: 8000, equity: 110000, fcf: 11000, ebitda: 38000,
     totalDebt: 230000, cash: 35000, dps: 0.5, growth: 0.11, assetType: "TH_STOCK", currency: "THB"
   },
   {
     symbol: "PTTEP", name: "ปตท.สำรวจและผลิตปิโตรเลียม", enName: "PTT Exploration & Production", sector: "พลังงาน", market: "SET",
-    price: 122.0, prevClose: 121.0, shares: 3970, color: "#003F7D",
+    price: 143, prevClose: 143, shares: 3970, color: "#003F7D",
     about: "ผู้สำรวจและผลิตปิโตรเลียมรายใหญ่ของไทยเพื่อความมั่นคงทางพลังงาน",
     revenue: 320000, netIncome: 78000, equity: 480000, fcf: 70000, ebitda: 230000,
     totalDebt: 120000, cash: 110000, dps: 8.5, growth: 0.05, assetType: "TH_STOCK", currency: "THB"
   },
   {
     symbol: "DELTA", name: "เดลต้า อีเลคโทรนิคส์", enName: "Delta Electronics", sector: "เทคโนโลยี", market: "SET",
-    price: 75.00, prevClose: 74.50, shares: 12400, color: "#0093DD",
+    price: 355, prevClose: 355, shares: 12400, color: "#0093DD",
     about: "ผู้ผลิตชิ้นส่วนอิเล็กทรอนิกส์และพัดลมระบายความร้อนระดับโลก รองรับตลาดดาต้าเซ็นเตอร์และยานยนต์ไฟฟ้า",
     revenue: 140000, netIncome: 18000, equity: 65000, fcf: 15000, ebitda: 22000,
     totalDebt: 12000, cash: 9800, dps: 0.45, growth: 0.16, assetType: "TH_STOCK", currency: "THB"
   },
   {
     symbol: "SCB", name: "เอสซีบี เอกซ์", enName: "SCB X", sector: "ธนาคาร", market: "SET",
-    price: 112.50, prevClose: 111.00, shares: 3360, color: "#4E2E7F",
+    price: 137.5, prevClose: 137.5, shares: 3360, color: "#4E2E7F",
     about: "บริษัทโฮลดิ้งด้านเทคโนโลยีการเงินชั้นนำและเป็นบริษัทแม่ของธนาคารไทยพาณิชย์",
     revenue: 165000, netIncome: 41000, equity: 490000, fcf: 35000, ebitda: 62000,
     totalDebt: 320000, cash: 280000, dps: 7.30, growth: 0.04, assetType: "TH_STOCK", currency: "THB"
   },
   {
     symbol: "KKP", name: "ธนาคารเกียรตินาคินภัทร", enName: "Kiatnakin Phatra Bank", sector: "ธนาคาร", market: "SET",
-    price: 53.00, prevClose: 52.75, shares: 846, color: "#5D2E88",
+    price: 90.5, prevClose: 90.5, shares: 846, color: "#5D2E88",
     about: "ธนาคารพาณิชย์ชั้นนำของไทย มีความเชี่ยวชาญด้านเช่าซื้อรถยนต์ สินเชื่อธุรกิจ และธุรกิจสถาบันการเงินการลงทุนเกียรตินาคินภัทร",
     revenue: 28000, netIncome: 6000, equity: 62000, fcf: 5500, ebitda: 8500,
     totalDebt: 45000, cash: 12000, dps: 3.00, growth: 0.04, assetType: "TH_STOCK", currency: "THB"
   },
   {
     symbol: "BBL", name: "ธนาคารกรุงเทพ", enName: "Bangkok Bank", sector: "ธนาคาร", market: "SET",
-    price: 138.50, prevClose: 139.00, shares: 1900, color: "#1E3A8A",
+    price: 175.5, prevClose: 175.5, shares: 1900, color: "#1E3A8A",
     about: "ธนาคารพาณิชย์ที่มีขนาดสินทรัพย์ใหญ่ที่สุดในไทย โดดเด่นด้านสินเชื่อภาคธุรกิจและพอร์ตลูกค้าสากล",
     revenue: 180000, netIncome: 42000, equity: 520000, fcf: 38000, ebitda: 65000,
     totalDebt: 380000, cash: 310000, dps: 7.00, growth: 0.05, assetType: "TH_STOCK", currency: "THB"
   },
   {
     symbol: "CPN", name: "เซ็นทรัลพัฒนา", enName: "Central Pattana", sector: "อสังหาริมทรัพย์", market: "SET",
-    price: 62.50, prevClose: 63.00, shares: 4480, color: "#005F4E",
+    price: 65.25, prevClose: 65.25, shares: 4480, color: "#005F4E",
     about: "ผู้นำด้านการพัฒนาและบริหารศูนย์การค้าเครือเซ็นทรัลพลาซา คอนโดมิเนียม และโรงแรมทั่วประเทศไทย",
     revenue: 45000, netIncome: 12500, equity: 89000, fcf: 9800, ebitda: 19000,
     totalDebt: 72000, cash: 8500, dps: 1.80, growth: 0.09, assetType: "TH_STOCK", currency: "THB"
   },
   {
     symbol: "LH", name: "แลนด์แอนด์เฮ้าส์", enName: "Land and Houses", sector: "อสังหาริมทรัพย์", market: "SET",
-    price: 7.20, prevClose: 7.15, shares: 11950, color: "#FF8C00",
+    price: 3.64, prevClose: 3.64, shares: 11950, color: "#FF8C00",
     about: "ผู้พัฒนาอสังหาริมทรัพย์รายใหญ่ของไทย มุ่งเน้นโครงการบ้านเดี่ยวและทาวน์โฮมระดับกลางถึงไฮเอนด์",
     revenue: 35000, netIncome: 7500, equity: 48000, fcf: 6200, ebitda: 9800,
     totalDebt: 55000, cash: 4200, dps: 0.60, growth: 0.05, assetType: "TH_STOCK", currency: "THB"
   },
   {
     symbol: "BH", name: "โรงพยาบาลบำรุงราษฎร์", enName: "Bumrungrad Hospital", sector: "การแพทย์", market: "SET",
-    price: 245.00, prevClose: 242.00, shares: 790, color: "#006B70",
+    price: 178, prevClose: 178, shares: 790, color: "#006B70",
     about: "โรงพยาบาลเอกชนชั้นนำที่ได้รับการยอมรับในเวทีสากล โดดเด่นด้านการรักษาขั้นสูงและกลุ่มลูกค้าต่างชาติ",
     revenue: 25000, netIncome: 7000, equity: 22000, fcf: 5800, ebitda: 9200,
     totalDebt: 3200, cash: 8500, dps: 4.50, growth: 0.12, assetType: "TH_STOCK", currency: "THB"
@@ -247,112 +247,112 @@ const RAW: Raw[] = [
   // ==== 🇺🇸 หุ้นสหรัฐฯ (10 อันดับหลัก) ====
   {
     symbol: "AAPL", name: "แอปเปิล", enName: "Apple Inc.", sector: "เทคโนโลยี", market: "NASDAQ",
-    price: 189.5, prevClose: 188.0, shares: 15400, color: "#000000",
+    price: 310.26, prevClose: 315.2, shares: 15400, color: "#000000",
     about: "ผู้ผลิตอุปกรณ์เทคโนโลยีชั้นนำระดับโลก เช่น iPhone, iPad, Mac และระบบ AI ส่วนบุคคล",
     revenue: 385000, netIncome: 97000, equity: 62000, fcf: 105000, ebitda: 125000,
     totalDebt: 108000, cash: 73000, dps: 0.96, growth: 0.07, assetType: "US_STOCK", currency: "USD"
   },
   {
     symbol: "MSFT", name: "ไมโครซอฟท์", enName: "Microsoft Corporation", sector: "เทคโนโลยี", market: "NASDAQ",
-    price: 415.2, prevClose: 418.0, shares: 7430, color: "#F25022",
+    price: 427.34, prevClose: 441.31, shares: 7430, color: "#F25022",
     about: "ผู้นำเทคโนโลยีด้านคลาวด์ ซอฟต์แวร์ Windows/Office และระบบปัญญาประดิษฐ์ AI Copilot",
     revenue: 227000, netIncome: 72000, equity: 112000, fcf: 67000, ebitda: 102000,
     totalDebt: 79000, cash: 88000, dps: 3.0, growth: 0.12, assetType: "US_STOCK", currency: "USD"
   },
   {
     symbol: "NVDA", name: "เอ็นวิเดีย", enName: "NVIDIA Corporation", sector: "เทคโนโลยี", market: "NASDAQ",
-    price: 940.5, prevClose: 930.2, shares: 2460, color: "#76B900",
+    price: 214.75, prevClose: 222.82, shares: 2460, color: "#76B900",
     about: "ผู้ผลิตชิปประมวลผลกราฟิก (GPU) และโครงสร้างพื้นฐานสำหรับซูเปอร์คอมพิวเตอร์ปัญญาประดิษฐ์",
     revenue: 60900, netIncome: 29700, equity: 43000, fcf: 27000, ebitda: 34000,
     totalDebt: 9500, cash: 26000, dps: 0.16, growth: 0.28, assetType: "US_STOCK", currency: "USD"
   },
   {
     symbol: "TSLA", name: "เทสลา", enName: "Tesla, Inc.", sector: "เทคโนโลยี", market: "NASDAQ",
-    price: 175.0, prevClose: 179.3, shares: 3180, color: "#CC0000",
+    price: 423.7, prevClose: 423.74, shares: 3180, color: "#CC0000",
     about: "ผู้นำนวัตกรรมรถยนต์ไฟฟ้า (EV) ระบบจัดเก็บพลังงาน และปัญญาประดิษฐ์หุ่นยนต์ฮิวแมนนอยด์",
     revenue: 96700, netIncome: 15000, equity: 62000, fcf: 4300, ebitda: 14000,
     totalDebt: 5000, cash: 29000, dps: 0, growth: 0.15, assetType: "US_STOCK", currency: "USD"
   },
   {
     symbol: "BRK.B", name: "เบิร์กเชียร์ แฮทธาเวย์", enName: "Berkshire Hathaway Inc.", sector: "ธนาคาร", market: "NYSE",
-    price: 405.8, prevClose: 402.1, shares: 1300, color: "#003A70",
+    price: 475.37, prevClose: 471.51, shares: 1300, color: "#003A70",
     about: "บริษัทโฮลดิ้งยักษ์ใหญ่ด้านการลงทุนระดับโลก นำโดยปู่ Warren Buffett เน้นลงทุนในหุ้นปันผลคุณค่าสูง",
     revenue: 364000, netIncome: 96000, equity: 570000, fcf: 38000, ebitda: 52000,
     totalDebt: 110000, cash: 167000, dps: 0, growth: 0.05, assetType: "US_STOCK", currency: "USD"
   },
   {
     symbol: "AMZN", name: "อเมซอน", enName: "Amazon.com, Inc.", sector: "ค้าปลีก", market: "NASDAQ",
-    price: 180.2, prevClose: 179.0, shares: 10400, color: "#FF9900",
+    price: 250.02, prevClose: 256.52, shares: 10400, color: "#FF9900",
     about: "ผู้ให้บริการอีคอมเมิร์ซยักษ์ใหญ่ระดับโลกและผู้นำบริการโครงสร้างพื้นฐานคลาวด์ AWS",
     revenue: 574000, netIncome: 30400, equity: 201000, fcf: 36800, ebitda: 85000,
     totalDebt: 65000, cash: 73000, dps: 0, growth: 0.11, assetType: "US_STOCK", currency: "USD"
   },
   {
     symbol: "GOOGL", name: "กูเกิล", enName: "Alphabet Inc.", sector: "เทคโนโลยี", market: "NASDAQ",
-    price: 172.5, prevClose: 171.0, shares: 12500, color: "#4285F4",
+    price: 358.99, prevClose: 361.85, shares: 12500, color: "#4285F4",
     about: "ผู้นำนวัตกรรมอินเทอร์เน็ต เสิร์ชเอ็นจิ้นอันดับหนึ่ง วิดีโอสตรีมมิ่ง YouTube และระบบคลาวด์ AI Gemini",
     revenue: 307000, netIncome: 73000, equity: 292000, fcf: 69000, ebitda: 96000,
     totalDebt: 28000, cash: 110000, dps: 0.8, growth: 0.10, assetType: "US_STOCK", currency: "USD"
   },
   {
     symbol: "META", name: "เมตา", enName: "Meta Platforms, Inc.", sector: "เทคโนโลยี", market: "NASDAQ",
-    price: 478.4, prevClose: 482.0, shares: 2500, color: "#1877F2",
+    price: 622.98, prevClose: 597.63, shares: 2500, color: "#1877F2",
     about: "ผู้ให้บริการเครือข่ายโซเชียลมีเดียยักษ์ใหญ่ของโลก Facebook, Instagram, WhatsApp และวิสัยทัศน์เมทาเวิร์ส",
     revenue: 134000, netIncome: 39000, equity: 153000, fcf: 43000, ebitda: 55000,
     totalDebt: 18000, cash: 65000, dps: 2.0, growth: 0.14, assetType: "US_STOCK", currency: "USD"
   },
   {
     symbol: "NFLX", name: "เน็ตฟลิกซ์", enName: "Netflix, Inc.", sector: "เทคโนโลยี", market: "NASDAQ",
-    price: 615.5, prevClose: 610.0, shares: 430, color: "#E50914",
+    price: 81.52, prevClose: 83.33, shares: 430, color: "#E50914",
     about: "ผู้ให้บริการความบันเทิงสตรีมมิ่งคอนเทนต์อันดับหนึ่งของโลก ครอบคลุมการผลิตซีรีส์และภาพยนตร์คุณภาพระดับสากล",
     revenue: 33700, netIncome: 5400, equity: 22000, fcf: 6900, ebitda: 8000,
     totalDebt: 14000, cash: 7000, dps: 0, growth: 0.12, assetType: "US_STOCK", currency: "USD"
   },
   {
     symbol: "AMD", name: "เอเอ็มดี", enName: "Advanced Micro Devices", sector: "เทคโนโลยี", market: "NASDAQ",
-    price: 162.8, prevClose: 160.0, shares: 1600, color: "#000000",
+    price: 542.52, prevClose: 521.54, shares: 1600, color: "#000000",
     about: "ผู้ผลิตชิปประมวลผล CPU และสถาปัตยกรรมชิป AI ตระกูล MI300 เพื่อรองรับดาต้าเซ็นเตอร์แห่งอนาคต",
     revenue: 22600, netIncome: 850, equity: 55000, fcf: 1200, ebitda: 3500,
     totalDebt: 3000, cash: 5800, dps: 0, growth: 0.18, assetType: "US_STOCK", currency: "USD"
   },
   {
     symbol: "JNJ", name: "จอห์นสัน แอนด์ จอห์นสัน", enName: "Johnson & Johnson", sector: "การแพทย์", market: "NYSE",
-    price: 155.20, prevClose: 154.50, shares: 2400, color: "#D32F2F",
+    price: 223.24, prevClose: 222.89, shares: 2400, color: "#D32F2F",
     about: "ผู้นำระดับโลกด้านสินค้าอุปโภคบริโภคเพื่อสุขภาพ ยา และอุปกรณ์การแพทย์ที่มีประวัติยาวนานและปันผลสม่ำเสมอ",
     revenue: 85100, netIncome: 15600, equity: 70200, fcf: 18200, ebitda: 24200,
     totalDebt: 32000, cash: 26000, dps: 4.96, growth: 0.04, assetType: "US_STOCK", currency: "USD"
   },
   {
     symbol: "V", name: "วีซ่า", enName: "Visa Inc.", sector: "เทคโนโลยี", market: "NYSE",
-    price: 275.50, prevClose: 273.80, shares: 2050, color: "#1A1F71",
+    price: 312.4, prevClose: 317.32, shares: 2050, color: "#1A1F71",
     about: "ผู้ให้บริการเครือข่ายการชำระเงินดิจิทัลระดับโลก เชื่อมโยงผู้บริโภค ร้านค้า และสถาบันการเงินในกว่า 200 ประเทศ",
     revenue: 32600, netIncome: 17200, equity: 39500, fcf: 19100, ebitda: 22100,
     totalDebt: 20500, cash: 16500, dps: 2.08, growth: 0.11, assetType: "US_STOCK", currency: "USD"
   },
   {
     symbol: "PG", name: "พรอคเตอร์ แอนด์ แกมเบิล", enName: "Procter & Gamble Co.", sector: "ค้าปลีก", market: "NYSE",
-    price: 165.40, prevClose: 164.20, shares: 2350, color: "#4F5D73",
+    price: 140.19, prevClose: 140.82, shares: 2350, color: "#4F5D73",
     about: "ผู้ผลิตและจัดจำหน่ายผลิตภัณฑ์อุปโภคบริโภครายใหญ่ระดับโลก ครอบคลุมแบรนด์ยอดนิยมหลากหลายแบรนด์ เช่น Pampers, Gillette, Tide",
     revenue: 82000, netIncome: 14700, equity: 47000, fcf: 16100, ebitda: 21500,
     totalDebt: 34000, cash: 9500, dps: 3.76, growth: 0.05, assetType: "US_STOCK", currency: "USD"
   },
   {
     symbol: "JPM", name: "เจพีมอร์แกน เชส", enName: "JPMorgan Chase & Co.", sector: "ธนาคาร", market: "NYSE",
-    price: 198.80, prevClose: 197.50, shares: 2850, color: "#0D2E5C",
+    price: 300.85, prevClose: 300.96, shares: 2850, color: "#0D2E5C",
     about: "สถาบันการเงินและธนาคารพาณิชย์ที่มีขนาดสินทรัพย์ใหญ่ที่สุดในสหรัฐอเมริกาและระดับโลก โดดเด่นด้าน Investment Banking และสินเชื่อ",
     revenue: 158000, netIncome: 49500, equity: 328000, fcf: 52000, ebitda: 62000,
     totalDebt: 450000, cash: 120000, dps: 4.20, growth: 0.05, assetType: "US_STOCK", currency: "USD"
   },
   {
     symbol: "WMT", name: "วอลมาร์ต", enName: "Walmart Inc.", sector: "ค้าปลีก", market: "NYSE",
-    price: 65.20, prevClose: 64.80, shares: 8050, color: "#0071CE",
+    price: 116.89, prevClose: 113.06, shares: 8050, color: "#0071CE",
     about: "บริษัทค้าปลีกขนาดใหญ่ที่สุดในโลก ดำเนินธุรกิจซูเปอร์เซ็นเตอร์ ไฮเปอร์มาร์เก็ต และห้างสรรพสินค้าจำหน่ายสินค้าราคาประหยัด",
     revenue: 648000, netIncome: 15500, equity: 84000, fcf: 14800, ebitda: 38200,
     totalDebt: 61000, cash: 9800, dps: 0.84, growth: 0.06, assetType: "US_STOCK", currency: "USD"
   },
   {
     symbol: "LLY", name: "อีไล ลิลลี่", enName: "Eli Lilly and Company", sector: "การแพทย์", market: "NYSE",
-    price: 820.50, prevClose: 815.00, shares: 950, color: "#C41F3C",
+    price: 1078.78, prevClose: 1064.15, shares: 950, color: "#C41F3C",
     about: "บริษัทยาข้ามชาติระดับโลก ผู้นำด้านนวัตกรรมยารักษาโรคเบาหวาน โรคอ้วน มะเร็ง และโรคอัลไซเมอร์ ด้วยการวิจัยทางวิทยาศาสตร์ขั้นสูง",
     revenue: 34100, netIncome: 5240, equity: 14200, fcf: 4800, ebitda: 9800,
     totalDebt: 25000, cash: 2800, dps: 5.20, growth: 0.22, assetType: "US_STOCK", currency: "USD"
@@ -361,7 +361,7 @@ const RAW: Raw[] = [
   // ==== 📊 กองทุน & ETF (ยอดนิยมของไทย และ สหรัฐฯ) ====
   {
     symbol: "TDEX", name: "กองทุนเปิด ThaiDEX SET50 ETF", enName: "ThaiDEX SET50 ETF",
-    sector: "กองทุนรวมดัชนี", market: "SET", price: 9.20, prevClose: 9.15, shares: 450, color: "#D32F2F",
+    sector: "กองทุนรวมดัชนี", market: "SET", price: 10.17, prevClose: 10.17, shares: 450, color: "#D32F2F",
     about: "กองทุนเปิด ThaiDEX SET50 ETF เป็นกองทุนรวมประเภท ETF กองทุนแรกของประเทศไทยที่จดทะเบียนซื้อขายในตลาดหลักทรัพย์แห่งประเทศไทย (SET) โดยมีนโยบายลงทุนเพื่อสร้างผลตอบแทนให้ใกล้เคียงกับดัชนี SET50 Index ซึ่งเป็นดัชนีที่สะท้อนราคาหุ้นสามัญขนาดใหญ่และมีสภาพคล่องสูงที่สุด 50 อันดับแรกของไทย",
     revenue: 0, netIncome: 0, equity: 0, fcf: 0, ebitda: 0, totalDebt: 0, cash: 0, dps: 0.35, growth: 0.05,
     assetType: "ETF", currency: "THB", fundType: "กองทุน ETF ดัชนีหุ้นไทย (SET50)",
@@ -376,7 +376,7 @@ const RAW: Raw[] = [
   },
   {
     symbol: "1DIV", name: "กองทุนเปิด ThaiDEX Select 10 Dividend ETF", enName: "ThaiDEX Select 10 Dividend ETF",
-    sector: "กองทุนรวมตราสารทุน", market: "SET", price: 8.50, prevClose: 8.55, shares: 80, color: "#1976D2",
+    sector: "กองทุนรวมตราสารทุน", market: "SET", price: 12.82, prevClose: 12.82, shares: 80, color: "#1976D2",
     about: "กองทุนเปิด ThaiDEX Select 10 Dividend ETF เน้นลงทุนในหุ้นสามัญที่เป็นส่วนประกอบของดัชนี SECHDIV10 ซึ่งเป็นดัชนีที่คัดเลือกหุ้นไทย 10 ตัวที่มีอัตราการจ่ายเงินปันผลสูงสม่ำเสมอ มีความมั่นคง และมีสภาพคล่องสูง เหมาะสำหรับผู้ลงทุนที่เน้นรับกระแสเงินสดปันผลในระยะยาว",
     revenue: 0, netIncome: 0, equity: 0, fcf: 0, ebitda: 0, totalDebt: 0, cash: 0, dps: 0.65, growth: 0.04,
     assetType: "ETF", currency: "THB", fundType: "กองทุน ETF ปันผลสูงของไทย (Dividend Yield)",
@@ -391,7 +391,7 @@ const RAW: Raw[] = [
   },
   {
     symbol: "BSET100", name: "กองทุนเปิด BBLAM SET100 ETF", enName: "BBLAM SET100 ETF",
-    sector: "กองทุนรวมดัชนี", market: "SET", price: 8.95, prevClose: 8.90, shares: 150, color: "#0D47A1",
+    sector: "กองทุนรวมดัชนี", market: "SET", price: 11.51, prevClose: 11.51, shares: 150, color: "#0D47A1",
     about: "กองทุนเปิด BBLAM SET100 ETF จัดตั้งและบริหารโดย บลจ.บัวหลวง เน้นลงทุนในหลักทรัพย์ที่เป็นส่วนประกอบของดัชนี SET100 Index เพื่อสร้างผลตอบแทนที่สอดคล้องกับภาพรวมของบริษัทจดทะเบียนขนาดใหญ่และกลาง 100 อันดับแรกของตลาดหุ้นไทย",
     revenue: 0, netIncome: 0, equity: 0, fcf: 0, ebitda: 0, totalDebt: 0, cash: 0, dps: 0.28, growth: 0.05,
     assetType: "ETF", currency: "THB", fundType: "กองทุน ETF ดัชนีหุ้นไทย (SET100)",
@@ -421,7 +421,7 @@ const RAW: Raw[] = [
   },
   {
     symbol: "GLD", name: "กองทุนทองคำ SPDR Gold Shares", enName: "SPDR Gold Shares",
-    sector: "กองทุนรวมสินค้าโภคภัณฑ์", market: "NYSE", price: 220.50, prevClose: 218.90, shares: 250, color: "#D4AF37",
+    sector: "กองทุนรวมสินค้าโภคภัณฑ์", market: "NYSE", price: 407.87, prevClose: 411.95, shares: 250, color: "#D4AF37",
     about: "SPDR Gold Shares (GLD) เป็นกองทุนรวมประเภท ETF ทองคำที่ใหญ่ที่สุดในโลก จดทะเบียนซื้อขายหลักในตลาดหุ้นนิวยอร์ก (NYSE Arca) โดยตัวกองทุนจะเน้นถือครองทองคำแท่งจริง (Physical Gold Bullion) ปลอดภัยในตู้นิรภัยสากล เพื่อสร้างผลตอบแทนสอดคล้องกับราคาทองคำสปอตโลกในอัตราส่วนแบบ 1 ต่อ 10 ออนซ์",
     revenue: 0, netIncome: 0, equity: 0, fcf: 0, ebitda: 0, totalDebt: 0, cash: 0, dps: 0, growth: 0.04,
     assetType: "ETF", currency: "USD", fundType: "กองทุน ETF สินค้าโภคภัณฑ์ทองคำแท่ง (Physical Gold)",
@@ -432,7 +432,7 @@ const RAW: Raw[] = [
   },
   {
     symbol: "SPY", name: "กองทุนดัชนีสหรัฐ S&P 500 ETF", enName: "SPDR S&P 500 ETF Trust",
-    sector: "กองทุนรวมดัชนี", market: "MUTUAL_FUND", price: 520.4, prevClose: 518.0, shares: 900, color: "#008080",
+    sector: "กองทุนรวมดัชนี", market: "MUTUAL_FUND", price: 754.24, prevClose: 759.57, shares: 900, color: "#008080",
     about: "กองทุน ETF ที่มีสภาพคล่องสูงที่สุดในโลก ลงทุนเลียนแบบผลตอบแทนดัชนี S&P 500 หุ้นใหญ่ 500 ตัวของอเมริกา",
     revenue: 0, netIncome: 0, equity: 0, fcf: 0, ebitda: 0, totalDebt: 0, cash: 0, dps: 1.62, growth: 0,
     assetType: "ETF", currency: "USD", fundType: "กองทุน ETF ต่างประเทศ (Passive)",
@@ -447,7 +447,7 @@ const RAW: Raw[] = [
   },
   {
     symbol: "QQQ", name: "กองทุนดัชนีเทคโนโลยี Nasdaq 100", enName: "Invesco QQQ Trust",
-    sector: "กองทุนรวมดัชนี", market: "MUTUAL_FUND", price: 440.8, prevClose: 438.0, shares: 410, color: "#0056B3",
+    sector: "กองทุนรวมดัชนี", market: "MUTUAL_FUND", price: 744.21, prevClose: 746.16, shares: 410, color: "#0056B3",
     about: "กองทุนดัชนีที่ลงทุนในหุ้นยักษ์ใหญ่เทคโนโลยี 100 ตัวของสหรัฐอเมริกา ได้ประโยชน์จากกระแส Digitalization ทั่วโลก",
     revenue: 0, netIncome: 0, equity: 0, fcf: 0, ebitda: 0, totalDebt: 0, cash: 0, dps: 0.58, growth: 0,
     assetType: "ETF", currency: "USD", fundType: "กองทุน ETF ต่างประเทศ (Passive)",
@@ -462,7 +462,7 @@ const RAW: Raw[] = [
   },
   {
     symbol: "SCHD", name: "กองทุน ETF หุ้นปันผลคุณค่าสหรัฐฯ", enName: "Schwab U.S. Dividend Equity ETF",
-    sector: "กองทุนรวมตราสารทุน", market: "MUTUAL_FUND", price: 80.2, prevClose: 79.5, shares: 300, color: "#0F2D59",
+    sector: "กองทุนรวมตราสารทุน", market: "MUTUAL_FUND", price: 32.37, prevClose: 32.37, shares: 300, color: "#0F2D59",
     about: "เน้นลงทุนในหุ้นปันผลประวัติศาสตร์ดี จ่ายปันผลสม่ำเสมอ และงบการเงินแข็งแกร่ง 100 อันดับของสหรัฐฯ",
     revenue: 0, netIncome: 0, equity: 0, fcf: 0, ebitda: 0, totalDebt: 0, cash: 0, dps: 3.42, growth: 0,
     assetType: "ETF", currency: "USD", fundType: "กองทุน ETF ต่างประเทศ (Dividend Yield)",
@@ -477,7 +477,7 @@ const RAW: Raw[] = [
   },
   {
     symbol: "DIA", name: "กองทุนดัชนีอุตสาหกรรม Dow Jones", enName: "SPDR Dow Jones Industrial Average ETF",
-    sector: "กองทุนรวมดัชนี", market: "MUTUAL_FUND", price: 390.5, prevClose: 388.5, shares: 200, color: "#D21F3C",
+    sector: "กองทุนรวมดัชนี", market: "MUTUAL_FUND", price: 508.26, prevClose: 514.05, shares: 200, color: "#D21F3C",
     about: "กองทุนเลียนแบบดัชนีดาวโจนส์ ลงทุนในหุ้นยักษ์ใหญ่สีน้ำเงิน (Blue Chip) 30 บริษัทที่เป็นรากฐานเศรษฐกิจสหรัฐฯ",
     revenue: 0, netIncome: 0, equity: 0, fcf: 0, ebitda: 0, totalDebt: 0, cash: 0, dps: 1.85, growth: 0,
     assetType: "ETF", currency: "USD", fundType: "กองทุน ETF ดัชนีหลักต่างประเทศ",
@@ -492,7 +492,7 @@ const RAW: Raw[] = [
   },
   {
     symbol: "TLT", name: "กองทุนตราสารหนี้พันบัตรรัฐบาลสหรัฐ 20+ ปี", enName: "iShares 20+ Year Treasury Bond ETF",
-    sector: "กองทุนรวมตราสารหนี้", market: "MUTUAL_FUND", price: 90.5, prevClose: 89.5, shares: 500, color: "#002B49",
+    sector: "กองทุนรวมตราสารหนี้", market: "MUTUAL_FUND", price: 85.31, prevClose: 85.65, shares: 500, color: "#002B49",
     about: "กองทุน ETF มั่นคงสูง ลงทุนในพันธบัตรสหรัฐอเมริกาอายุมากกว่า 20 ปีขึ้นไป ปลอดภัยสูงและเคลื่อนไหวสวนทางทิศทางดอกเบี้ยนโยบาย",
     revenue: 0, netIncome: 0, equity: 0, fcf: 0, ebitda: 0, totalDebt: 0, cash: 0, dps: 3.65, growth: 0,
     assetType: "ETF", currency: "USD", fundType: "กองทุน ETF ตราสารหนี้ต่างประเทศ",
@@ -507,7 +507,7 @@ const RAW: Raw[] = [
   },
   {
     symbol: "JEPQ", name: "กองทุนเปิด JPMorgan Nasdaq Equity Premium Income ETF", enName: "JPMorgan Nasdaq Equity Premium Income ETF",
-    sector: "กองทุนรวมดัชนี", market: "MUTUAL_FUND", price: 54.20, prevClose: 53.85, shares: 2200, color: "#0D2E5C",
+    sector: "กองทุนรวมดัชนี", market: "MUTUAL_FUND", price: 60.8, prevClose: 60.86, shares: 2200, color: "#0D2E5C",
     about: "กองทุน ETF ยอดนิยมของ JPMorgan ที่เน้นสร้างกระแสเงินสดผ่านกลยุทธ์เขียนออปชั่น (Covered Call) บนดัชนี Nasdaq-100 เพื่อปันผลสูงสม่ำเสมอและผันผวนต่ำ",
     revenue: 0, netIncome: 0, equity: 0, fcf: 0, ebitda: 0, totalDebt: 0, cash: 0, dps: 4.85, growth: 0,
     assetType: "ETF", currency: "USD", fundType: "กองทุน ETF ต่างประเทศ (Covered Call Income)",
@@ -522,7 +522,7 @@ const RAW: Raw[] = [
   },
   {
     symbol: "XLE", name: "กองทุนเปิด Energy Select Sector SPDR Fund", enName: "Energy Select Sector SPDR Fund",
-    sector: "กองทุนรวมดัชนี", market: "MUTUAL_FUND", price: 94.50, prevClose: 94.10, shares: 1500, color: "#003B72",
+    sector: "กองทุนรวมดัชนี", market: "MUTUAL_FUND", price: 58.71, prevClose: 57.96, shares: 1500, color: "#003B72",
     about: "กองทุน ETF กลุ่มพลังงานที่ใหญ่ที่สุดของสหรัฐฯ ลงทุนในบริษัทพลังงานชั้นนำในดัชนี S&P 500 เช่น Exxon Mobil และ Chevron เพื่อล้อตามความร้อนแรงของราคาพลังงานโลก",
     revenue: 0, netIncome: 0, equity: 0, fcf: 0, ebitda: 0, totalDebt: 0, cash: 0, dps: 3.12, growth: 0,
     assetType: "ETF", currency: "USD", fundType: "กองทุน ETF ต่างประเทศกลุ่มพลังงาน (Energy Equity)",
@@ -537,7 +537,7 @@ const RAW: Raw[] = [
   },
   {
     symbol: "IGF", name: "กองทุนเปิด iShares Global Infrastructure ETF", enName: "iShares Global Infrastructure ETF",
-    sector: "กองทุนรวมดัชนี", market: "MUTUAL_FUND", price: 48.20, prevClose: 47.95, shares: 1800, color: "#0080FF",
+    sector: "กองทุนรวมดัชนี", market: "MUTUAL_FUND", price: 66.3, prevClose: 66.68, shares: 1800, color: "#0080FF",
     about: "กองทุน ETF ดัชนีโครงสร้างพื้นฐานระดับโลกที่ใหญ่ที่สุด ลงทุนในบริษัทพลังงาน ขนส่ง สาธารณูปโภค และระบบคมนาคมในกลุ่มประเทศพัฒนาแล้วเพื่อสร้างรายได้ปันผลสม่ำเสมอและมั่นคงสูง",
     revenue: 0, netIncome: 0, equity: 0, fcf: 0, ebitda: 0, totalDebt: 0, cash: 0, dps: 1.88, growth: 0,
     assetType: "ETF", currency: "USD", fundType: "กองทุน ETF ต่างประเทศกลุ่มโครงสร้างพื้นฐาน (Infrastructure)",
@@ -552,7 +552,7 @@ const RAW: Raw[] = [
   },
   {
     symbol: "VOO", name: "กองทุนดัชนีสหรัฐ Vanguard S&P 500 ETF", enName: "Vanguard S&P 500 ETF",
-    sector: "กองทุนรวมดัชนี", market: "MUTUAL_FUND", price: 478.50, prevClose: 476.00, shares: 850, color: "#D22630",
+    sector: "กองทุนรวมดัชนี", market: "MUTUAL_FUND", price: 693.36, prevClose: 698.26, shares: 850, color: "#D22630",
     about: "กองทุน ETF จำลองดัชนี S&P 500 ของ Vanguard ที่มีค่าธรรมเนียมการจัดการต่ำมากเป็นพิเศษ (0.03%) ยอดนิยมในกลุ่มนักลงทุนระยะยาว",
     revenue: 0, netIncome: 0, equity: 0, fcf: 0, ebitda: 0, totalDebt: 0, cash: 0, dps: 1.58, growth: 0,
     assetType: "ETF", currency: "USD", fundType: "กองทุน ETF ต่างประเทศ (Passive S&P 500)",
@@ -566,8 +566,23 @@ const RAW: Raw[] = [
     ]
   },
   {
+    symbol: "VIG", name: "กองทุน Vanguard Dividend Appreciation ETF", enName: "Vanguard Dividend Appreciation ETF",
+    sector: "กองทุนรวมตราสารทุน", market: "MUTUAL_FUND", price: 235.5, prevClose: 235.94, shares: 700, color: "#D22630",
+    about: "กองทุน ETF ของ Vanguard ที่เน้นหุ้นสหรัฐฯ คุณภาพสูงซึ่งมีประวัติการเพิ่มเงินปันผลต่อเนื่อง เหมาะกับนักลงทุนที่ต้องการผสมการเติบโตของเงินปันผลกับความผันผวนที่ควบคุมได้",
+    revenue: 0, netIncome: 0, equity: 0, fcf: 0, ebitda: 0, totalDebt: 0, cash: 0, dps: 3.35, growth: 0,
+    assetType: "ETF", currency: "USD", fundType: "กองทุน ETF ต่างประเทศกลุ่ม Dividend Growth",
+    feederFund: "ไม่มี (ลงทุนตรง)", masterFund: "S&P U.S. Dividend Growers Index", aum: 98000, expenseRatio: 0.05, riskLevel: 5,
+    topHoldings: [
+      { name: "Microsoft Corp (MSFT)", weight: 5.2 },
+      { name: "Apple Inc (AAPL)", weight: 4.6 },
+      { name: "Broadcom Inc (AVGO)", weight: 4.1 },
+      { name: "JPMorgan Chase & Co (JPM)", weight: 3.4 },
+      { name: "Exxon Mobil Corp (XOM)", weight: 2.9 }
+    ]
+  },
+  {
     symbol: "IVV", name: "กองทุนดัชนีสหรัฐ iShares Core S&P 500 ETF", enName: "iShares Core S&P 500 ETF",
-    sector: "กองทุนรวมดัชนี", market: "MUTUAL_FUND", price: 480.20, prevClose: 478.00, shares: 800, color: "#000000",
+    sector: "กองทุนรวมดัชนี", market: "MUTUAL_FUND", price: 757.25, prevClose: 763.06, shares: 800, color: "#000000",
     about: "กองทุน ETF อิงดัชนี S&P 500 จากค่าย BlackRock (iShares) เน้นประสิทธิภาพสูงสุดในการเลียนแบบดัชนีและมีสภาพคล่องสูงมาก",
     revenue: 0, netIncome: 0, equity: 0, fcf: 0, ebitda: 0, totalDebt: 0, cash: 0, dps: 1.60, growth: 0,
     assetType: "ETF", currency: "USD", fundType: "กองทุน ETF ต่างประเทศ (Passive S&P 500)",
@@ -582,7 +597,7 @@ const RAW: Raw[] = [
   },
   {
     symbol: "VEA", name: "กองทุน Vanguard หุ้นต่างประเทศพัฒนาแล้ว ETF", enName: "Vanguard FTSE Developed Markets ETF",
-    sector: "กองทุนรวมต่างประเทศ", market: "MUTUAL_FUND", price: 48.50, prevClose: 48.10, shares: 1200, color: "#9E1B22",
+    sector: "กองทุนรวมต่างประเทศ", market: "MUTUAL_FUND", price: 71.67, prevClose: 72.32, shares: 1200, color: "#9E1B22",
     about: "ลงทุน in หุ้นขนาดใหญ่และกลางของประเทศพัฒนาแล้วนอกสหรัฐฯ เช่น ยุโรป ญี่ปุ่น แคนาดา เพื่อกระจายความเสี่ยงทางภูมิศาสตร์และค่าเงิน",
     revenue: 0, netIncome: 0, equity: 0, fcf: 0, ebitda: 0, totalDebt: 0, cash: 0, dps: 1.48, growth: 0,
     assetType: "ETF", currency: "USD", fundType: "กองทุน ETF ต่างประเทศ (ตลาดพัฒนาแล้วไม่รวมสหรัฐฯ)",
@@ -597,7 +612,7 @@ const RAW: Raw[] = [
   },
   {
     symbol: "VWO", name: "กองทุน Vanguard หุ้นตลาดเกิดใหม่ ETF", enName: "Vanguard FTSE Emerging Markets ETF",
-    sector: "กองทุนรวมต่างประเทศ", market: "MUTUAL_FUND", price: 41.80, prevClose: 41.50, shares: 1500, color: "#E51A22",
+    sector: "กองทุนรวมต่างประเทศ", market: "MUTUAL_FUND", price: 60.33, prevClose: 61.19, shares: 1500, color: "#E51A22",
     about: "เน้นลงทุนในกลุ่มประเทศตลาดเกิดใหม่ เช่น จีน อินเดีย ไต้หวัน บราซิล แอฟริกาใต้ เพื่อคว้าโอกาสเติบโตสูงในระยะยาวตามทิศทางเศรษฐกิจโลกใหม่",
     revenue: 0, netIncome: 0, equity: 0, fcf: 0, ebitda: 0, totalDebt: 0, cash: 0, dps: 1.24, growth: 0,
     assetType: "ETF", currency: "USD", fundType: "กองทุน ETF ต่างประเทศ (ตลาดเกิดใหม่)",
@@ -703,7 +718,7 @@ const RAW: Raw[] = [
   // ==== 🇺🇸 กองทุนรวมสหรัฐอเมริกา (US Mutual Funds) ====
   {
     symbol: "VTSAX", name: "กองทุนดัชนีตลาดหุ้นรวมสหรัฐฯ Vanguard", enName: "Vanguard Total Stock Market Index Fund",
-    sector: "กองทุนรวมดัชนี", market: "MUTUAL_FUND", price: 128.50, prevClose: 127.90, shares: 800, color: "#D22630",
+    sector: "กองทุนรวมดัชนี", market: "MUTUAL_FUND", price: 180.81, prevClose: 182.18, shares: 800, color: "#D22630",
     about: "กองทุนรวมดัชนีขนาดใหญ่ที่สุดในโลกของ Vanguard มุ่งลงทุนในหุ้นสหรัฐอเมริกาครบทุกขนาด (Large, Mid, Small Cap) ครอบคลุมทั้งตลาดเพื่อสร้างผลตอบแทนสอดคล้องกับดัชนี CRSP US Total Market Index",
     revenue: 0, netIncome: 0, equity: 0, fcf: 0, ebitda: 0, totalDebt: 0, cash: 0, dps: 0, growth: 0.08,
     assetType: "US_FUND", currency: "USD", fundType: "กองทุนรวมตราสารทุนต่างประเทศ (US Index Fund)",
@@ -718,7 +733,7 @@ const RAW: Raw[] = [
   },
   {
     symbol: "VFIAX", name: "กองทุนดัชนี Vanguard S&P 500", enName: "Vanguard 500 Index Fund Admiral Shares",
-    sector: "กองทุนรวมดัชนี", market: "MUTUAL_FUND", price: 485.20, prevClose: 486.10, shares: 600, color: "#9E1B22",
+    sector: "กองทุนรวมดัชนี", market: "MUTUAL_FUND", price: 698.33, prevClose: 703.5, shares: 600, color: "#9E1B22",
     about: "กองทุนรวมดัชนี S&P 500 ยอดนิยมของ Vanguard เน้นการลงทุนในบริษัทขนาดใหญ่ที่เป็นผู้นำอุตสาหกรรมในตลาดสหรัฐอเมริกา 500 บริษัทแรก มีค่าธรรมเนียมต่ำมากและประสิทธิภาพการเลียนแบบดัชนีสูงสุด",
     revenue: 0, netIncome: 0, equity: 0, fcf: 0, ebitda: 0, totalDebt: 0, cash: 0, dps: 0, growth: 0.08,
     assetType: "US_FUND", currency: "USD", fundType: "กองทุนรวมตราสารทุนต่างประเทศ (US S&P 500 Index)",
@@ -733,7 +748,7 @@ const RAW: Raw[] = [
   },
   {
     symbol: "AGTHX", name: "กองทุนเติบโตเชิงรุกสหรัฐฯ American Funds", enName: "American Funds Growth Fund of America",
-    sector: "กองทุนรวมต่างประเทศ", market: "MUTUAL_FUND", price: 72.85, prevClose: 72.10, shares: 900, color: "#0D5C75",
+    sector: "กองทุนรวมต่างประเทศ", market: "MUTUAL_FUND", price: 87.87, prevClose: 88.58, shares: 900, color: "#0D5C75",
     about: "หนึ่งในกองทุนรวมแบบ Active Growth ขนาดใหญ่ที่สุดในโลก บริหารโดย Capital Group มุ่งเน้นการเติบโตของเงินลงทุนระยะยาว in หุ้นเติบโตชั้นนำที่มีความมั่นคงทางการเงินสูงและแนวโน้มขยายตัวดีเยี่ยมในสหรัฐฯ",
     revenue: 0, netIncome: 0, equity: 0, fcf: 0, ebitda: 0, totalDebt: 0, cash: 0, dps: 0, growth: 0.10,
     assetType: "US_FUND", currency: "USD", fundType: "กองทุนรวมตราสารทุนต่างประเทศ (US Active Growth)",
@@ -748,7 +763,7 @@ const RAW: Raw[] = [
   },
   {
     symbol: "FCNTX", name: "กองทุนเติบโตเชิงรุก Fidelity Contrafund", enName: "Fidelity Contrafund",
-    sector: "กองทุนรวมต่างประเทศ", market: "MUTUAL_FUND", price: 18.25, prevClose: 18.12, shares: 750, color: "#E57200",
+    sector: "กองทุนรวมต่างประเทศ", market: "MUTUAL_FUND", price: 26.35, prevClose: 26.14, shares: 750, color: "#E57200",
     about: "กองทุนรวมบริหารเชิงรุกระดับตำนานของ Fidelity มุ่งเน้นการลงทุนในบริษัทที่ตลาดมองข้ามหรือมีมูลค่าต่ำกว่าพื้นฐาน แต่มีศักยภาพเติบโตสูงและผู้บริหารมีวิสัยทัศน์ดีเยี่ยมในการขับเคลื่อน",
     revenue: 0, netIncome: 0, equity: 0, fcf: 0, ebitda: 0, totalDebt: 0, cash: 0, dps: 0, growth: 0.09,
     assetType: "US_FUND", currency: "USD", fundType: "กองทุนรวมตราสารทุนต่างประเทศ (US Active Growth / Blend)",
@@ -763,7 +778,7 @@ const RAW: Raw[] = [
   },
   {
     symbol: "PRGFX", name: "กองทุนเติบโตสหรัฐฯ T. Rowe Price", enName: "T. Rowe Price Growth Stock Fund",
-    sector: "กองทุนรวมต่างประเทศ", market: "MUTUAL_FUND", price: 95.40, prevClose: 94.80, shares: 580, color: "#0D2C54",
+    sector: "กองทุนรวมต่างประเทศ", market: "MUTUAL_FUND", price: 113.6, prevClose: 115.04, shares: 580, color: "#0D2C54",
     about: "เน้นการลงทุนในบริษัทขนาดใหญ่ของสหรัฐฯ ที่มีศักยภาพเป็นผู้นำตลาด มีรายได้และกำไรเติบโตอย่างรวดเร็วและยั่งยืนเหนือค่าเฉลี่ยของอุตสาหกรรมในยุคดิจิทัล",
     revenue: 0, netIncome: 0, equity: 0, fcf: 0, ebitda: 0, totalDebt: 0, cash: 0, dps: 0, growth: 0.11,
     assetType: "US_FUND", currency: "USD", fundType: "กองทุนรวมตราสารทุนต่างประเทศ (US Large Cap Growth)",
@@ -778,7 +793,7 @@ const RAW: Raw[] = [
   },
   {
     symbol: "FBALX", name: "กองทุนผสมสมดุลสหรัฐฯ Fidelity Balanced Fund", enName: "Fidelity Balanced Fund",
-    sector: "กองทุนรวมผสม", market: "MUTUAL_FUND", price: 32.60, prevClose: 32.45, shares: 980, color: "#1F4E5B",
+    sector: "กองทุนรวมผสม", market: "MUTUAL_FUND", price: 35.16, prevClose: 35.31, shares: 980, color: "#1F4E5B",
     about: "เน้นกลยุทธ์จัดสรรสินทรัพย์แบบสมดุล (Balanced Fund) โดยแบ่งสัดส่วนการลงทุนประมาณ 60% ในตราสารทุน และ 40% ในตราสารหนี้คุณภาพสูงเพื่อควบคุมความเสี่ยงของพอร์ต",
     revenue: 0, netIncome: 0, equity: 0, fcf: 0, ebitda: 0, totalDebt: 0, cash: 0, dps: 0, growth: 0.06,
     assetType: "US_FUND", currency: "USD", fundType: "กองทุนรวมผสมแบบสมดุล (US Asset Allocation)",
@@ -794,7 +809,7 @@ const RAW: Raw[] = [
   // ==== 🪙 สินทรัพย์ดิจิทัล (Cryptocurrencies) ====
   {
     symbol: "BTC", name: "บิตคอยน์ (Bitcoin)", enName: "Bitcoin",
-    sector: "เทคโนโลยี", market: "NASDAQ", price: 67500, prevClose: 67200, shares: 21, color: "#F7931A",
+    sector: "เทคโนโลยี", market: "NASDAQ", price: 62156.4805, prevClose: 66703.6563, shares: 21, color: "#F7931A",
     about: "ทองคำดิจิทัล (Digital Gold) สินทรัพย์ทางเลือกที่มีอุปทานจำกัดเพียง 21 ล้านเหรียญทั่วโลก ได้รับการยอมรับจากสถาบันการเงินชั้นนำในการกระจายความเสี่ยงพอร์ต",
     revenue: 12000, netIncome: 4500, equity: 85000, fcf: 6500, ebitda: 8000, totalDebt: 0, cash: 12000, dps: 0, growth: 0.15,
     assetType: "CRYPTO", currency: "USD",
@@ -802,7 +817,7 @@ const RAW: Raw[] = [
   },
   {
     symbol: "ETH", name: "อีเธอเรียม (Ethereum)", enName: "Ethereum",
-    sector: "เทคโนโลยี", market: "NASDAQ", price: 3450, prevClose: 3480, shares: 120, color: "#627EEA",
+    sector: "เทคโนโลยี", market: "NASDAQ", price: 1741.3101, prevClose: 1857.7163, shares: 120, color: "#627EEA",
     about: "เครือข่ายบล็อกเชนแบบสัญญาอัจฉริยะ (Smart Contracts) อเนกประสงค์ที่เป็นรากฐานของระบบการเงินไร้ศูนย์กลาง (DeFi) และ Tokenization ทั่วโลก",
     revenue: 4800, netIncome: 1800, equity: 32000, fcf: 2100, ebitda: 2800, totalDebt: 0, cash: 4800, dps: 0, growth: 0.18,
     assetType: "CRYPTO", currency: "USD",
@@ -810,7 +825,7 @@ const RAW: Raw[] = [
   },
   {
     symbol: "SOL", name: "โซลานา (Solana)", enName: "Solana",
-    sector: "เทคโนโลยี", market: "NASDAQ", price: 165.50, prevClose: 162.00, shares: 440, color: "#14F195",
+    sector: "เทคโนโลยี", market: "NASDAQ", price: 68, prevClose: 74.1429, shares: 440, color: "#14F195",
     about: "แพลตฟอร์มบล็อกเชนประสิทธิภาพสูง โดดเด่นด้านความเร็วในการทำธุรกรรมที่รวดเร็วและค่าธรรมเนียมต่ำมาก เหมาะสำหรับการใช้งาน Web3, NFTs และ dApps ขนาดใหญ่ของคนรุ่นใหม่",
     revenue: 250, netIncome: 80, equity: 4200, fcf: 110, ebitda: 150, totalDebt: 0, cash: 450, dps: 0, growth: 0.25,
     assetType: "CRYPTO", currency: "USD",
@@ -818,7 +833,7 @@ const RAW: Raw[] = [
   },
   {
     symbol: "USDT", name: "เทเธอร์ (Tether)", enName: "Tether",
-    sector: "เทคโนโลยี", market: "NASDAQ", price: 1.00, prevClose: 1.00, shares: 110000, color: "#26A17B",
+    sector: "เทคโนโลยี", market: "NASDAQ", price: 0.9991, prevClose: 0.9987, shares: 110000, color: "#26A17B",
     about: "เหรียญสเตเบิลคอยน์ (Stablecoin) ที่มีขนาดมูลค่าตลาดใหญ่ที่สุดในโลก ตรึงมูลค่าแบบ 1:1 กับดอลลาร์สหรัฐ โดยมีหลักประกันทางการเงินสำรองหนุนหลังเต็มจำนวนเพื่อเสถียรภาพสูงสุด",
     revenue: 6200, netIncome: 5500, equity: 8200, fcf: 5800, ebitda: 6000, totalDebt: 0, cash: 8500, dps: 0, growth: 0.05,
     assetType: "CRYPTO", currency: "USD",
@@ -826,7 +841,7 @@ const RAW: Raw[] = [
   },
   {
     symbol: "BNB", name: "บีเอ็นบี (BNB)", enName: "BNB",
-    sector: "เทคโนโลยี", market: "NASDAQ", price: 580.40, prevClose: 575.20, shares: 147, color: "#F3BA2F",
+    sector: "เทคโนโลยี", market: "NASDAQ", price: 599.28, prevClose: 650.43, shares: 147, color: "#F3BA2F",
     about: "โทเคนหลักในระบบนิเวศ BNB Chain และศูนย์ซื้อขายสินทรัพย์ดิจิทัลอันดับหนึ่งของโลกอย่าง Binance ใช้สำหรับชำระค่าธรรมเนียม ขับเคลื่อน DApps และเข้าร่วมกิจกรรมการเงินต่างๆ",
     revenue: 1800, netIncome: 1200, equity: 9500, fcf: 1300, ebitda: 1450, totalDebt: 0, cash: 2200, dps: 0, growth: 0.12,
     assetType: "CRYPTO", currency: "USD",
@@ -835,7 +850,7 @@ const RAW: Raw[] = [
   // ==== 📊 สัญญาซื้อขายล่วงหน้า (Futures & Commodities) ====
   {
     symbol: "GOLD", name: "สัญญาซื้อขายทองคำล่วงหน้า", enName: "Gold Futures",
-    sector: "กองทุนรวมสินค้าโภคภัณฑ์", market: "NYSE", price: 2340, prevClose: 2330, shares: 100, color: "#D4AF37",
+    sector: "กองทุนรวมสินค้าโภคภัณฑ์", market: "NYSE", price: 4474.5098, prevClose: 4474.5098, shares: 100, color: "#D4AF37",
     about: "สัญญาซื้อขายล่วงหน้าทองคำเกณฑ์มาตรฐานเพื่อการป้องกันความเสี่ยง (Hedging) จากอัตราเงินเฟ้อและความผันผวนทางภูมิรัฐศาสตร์โลก",
     revenue: 0, netIncome: 0, equity: 0, fcf: 0, ebitda: 0, totalDebt: 0, cash: 0, dps: 0, growth: 0.05,
     assetType: "FUTURES", currency: "USD",
@@ -843,7 +858,7 @@ const RAW: Raw[] = [
   },
   {
     symbol: "OIL", name: "สัญญาน้ำมันดิบเบรนท์ล่วงหน้า", enName: "Brent Crude Futures",
-    sector: "กองทุนรวมสินค้าโภคภัณฑ์", market: "NYSE", price: 82.50, prevClose: 83.10, shares: 50, color: "#333333",
+    sector: "กองทุนรวมสินค้าโภคภัณฑ์", market: "NYSE", price: 95.96, prevClose: 91.16, shares: 50, color: "#333333",
     about: "สัญญาน้ำมันดิบล่วงหน้าเกณฑ์มาตรฐานยุโรป ตัวชี้วัดต้นทุนพลังงานของภาคอุตสาหกรรมทั่วโลกและความตึงเครียดทางเศรษฐกิจ",
     revenue: 0, netIncome: 0, equity: 0, fcf: 0, ebitda: 0, totalDebt: 0, cash: 0, dps: 0, growth: 0.03,
     assetType: "FUTURES", currency: "USD",
@@ -851,7 +866,7 @@ const RAW: Raw[] = [
   },
   {
     symbol: "SILVER", name: "สัญญาซื้อขายโลหะเงินล่วงหน้า", enName: "Silver Futures",
-    sector: "กองทุนรวมสินค้าโภคภัณฑ์", market: "NYSE", price: 29.50, prevClose: 29.20, shares: 100, color: "#C0C0C0",
+    sector: "กองทุนรวมสินค้าโภคภัณฑ์", market: "NYSE", price: 74.8287, prevClose: 74.8287, shares: 100, color: "#C0C0C0",
     about: "สัญญาซื้อขายแร่เงินล่วงหน้า มีความสำคัญทั้งในฐานะโลหะมีค่าเพื่อการปกป้องความเสี่ยงและวัตถุดิบทางอุตสาหกรรมเทคโนโลยี รวมถึงพลังงานหมุนเวียน",
     revenue: 0, netIncome: 0, equity: 0, fcf: 0, ebitda: 0, totalDebt: 0, cash: 0, dps: 0, growth: 0.05,
     assetType: "FUTURES", currency: "USD",
@@ -859,7 +874,7 @@ const RAW: Raw[] = [
   },
   {
     symbol: "COPPER", name: "สัญญาซื้อขายทองแดงล่วงหน้า", enName: "Copper Futures",
-    sector: "กองทุนรวมสินค้าโภคภัณฑ์", market: "NYSE", price: 4.65, prevClose: 4.62, shares: 100, color: "#B87333",
+    sector: "กองทุนรวมสินค้าโภคภัณฑ์", market: "NYSE", price: 12528.7095, prevClose: 12951.345, shares: 100, color: "#B87333",
     about: "สัญญาซื้อขายทองแดงล่วงหน้า สินค้าโภคภัณฑ์ที่เป็นตัวดัชนีชี้วัดเศรษฐกิจโลกเนื่องจากใช้แพร่หลายในงานวิศวกรรมไฟฟ้า ก่อสร้าง และยานยนต์ไฟฟ้า",
     revenue: 0, netIncome: 0, equity: 0, fcf: 0, ebitda: 0, totalDebt: 0, cash: 0, dps: 0, growth: 0.04,
     assetType: "FUTURES", currency: "USD",
@@ -867,7 +882,7 @@ const RAW: Raw[] = [
   },
   {
     symbol: "GAS", name: "สัญญาซื้อขายก๊าซธรรมชาติล่วงหน้า", enName: "Natural Gas Futures",
-    sector: "กองทุนรวมสินค้าโภคภัณฑ์", market: "NYSE", price: 2.45, prevClose: 2.50, shares: 100, color: "#4A90E2",
+    sector: "กองทุนรวมสินค้าโภคภัณฑ์", market: "NYSE", price: 3.07, prevClose: 3.34, shares: 100, color: "#4A90E2",
     about: "สัญญาซื้อขายก๊าซธรรมชาติล่วงหน้า แหล่งพลังงานสำคัญสำหรับผลิตกระแสไฟฟ้าและทำความร้อนในภาคครัวเรือนและโรงงานอุตสาหกรรมในทวีปอเมริกาและยุโรป",
     revenue: 0, netIncome: 0, equity: 0, fcf: 0, ebitda: 0, totalDebt: 0, cash: 0, dps: 0, growth: 0.04,
     assetType: "FUTURES", currency: "USD",

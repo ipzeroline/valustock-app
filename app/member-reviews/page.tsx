@@ -6,6 +6,9 @@ import { ArrowRight, CheckCircle, MessageSquare, Star, User } from "@/lib/icons"
 
 export const dynamic = "force-dynamic";
 
+const MEMBER_REVIEWS_IMAGE_URL = "https://valustock.com/images/member-reviews-hero.png?v=1";
+const MEMBER_REVIEWS_IMAGE_PATH = "/images/member-reviews-hero.png?v=1";
+
 export const metadata: Metadata = {
   title: "รีวิวจากสมาชิก ValuStock | ประสบการณ์ใช้งานเครื่องมือวิเคราะห์หุ้น",
   description:
@@ -21,6 +24,21 @@ export const metadata: Metadata = {
     description:
       "รวมประสบการณ์จากสมาชิกที่ใช้ ValuStock วิเคราะห์หุ้นไทย หุ้นอเมริกา ETF, DCF, Fair Value และ Margin of Safety",
     siteName: "ValuStock",
+    images: [
+      {
+        url: MEMBER_REVIEWS_IMAGE_URL,
+        width: 1672,
+        height: 941,
+        alt: "ValuStock member reviews and verified feedback",
+      },
+    ],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "รีวิวจากสมาชิก ValuStock",
+    description:
+      "รวมประสบการณ์จากสมาชิกที่ใช้ ValuStock วิเคราะห์หุ้นไทย หุ้นอเมริกา ETF, DCF, Fair Value และ Margin of Safety",
+    images: [MEMBER_REVIEWS_IMAGE_URL],
   },
 };
 
@@ -85,12 +103,15 @@ export default async function MemberReviewsPage() {
     url: "https://valustock.com/member-reviews",
     description:
       "รวมรีวิวจากสมาชิก ValuStock ที่ใช้เครื่องมือวิเคราะห์หุ้น DCF, Fair Value, Margin of Safety, Watchlist และ Portfolio",
+    primaryImageOfPage: MEMBER_REVIEWS_IMAGE_URL,
+    image: MEMBER_REVIEWS_IMAGE_URL,
     mainEntity: {
       "@type": "SoftwareApplication",
       name: "ValuStock",
       applicationCategory: "FinanceApplication",
       operatingSystem: "Web",
       url: "https://valustock.com",
+      image: MEMBER_REVIEWS_IMAGE_URL,
       ...(reviews.length
         ? {
             aggregateRating: {
@@ -123,7 +144,7 @@ export default async function MemberReviewsPage() {
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
 
       <section className="border-b border-line">
-        <div className="mx-auto grid max-w-6xl gap-8 px-5 py-12 md:grid-cols-[minmax(0,1fr)_320px] md:items-end md:py-16">
+        <div className="mx-auto grid max-w-6xl gap-8 px-5 py-12 lg:grid-cols-[minmax(0,0.86fr)_minmax(0,1.14fr)] lg:items-center md:py-16">
           <div>
             <div className="inline-flex items-center gap-2 rounded-full border border-gold/30 bg-gold/10 px-3 py-1.5 text-xs font-bold text-gold">
               <MessageSquare className="h-3.5 w-3.5" />
@@ -151,6 +172,19 @@ export default async function MemberReviewsPage() {
             </div>
           </div>
 
+          <div className="space-y-4">
+          <div className="overflow-hidden rounded-2xl border border-line bg-surface/55 shadow-card">
+            <img
+              src={MEMBER_REVIEWS_IMAGE_PATH}
+              alt="ValuStock member reviews dashboard with verified feedback and rating cards"
+              width={1672}
+              height={941}
+              loading="eager"
+              decoding="async"
+              className="block aspect-[16/9] w-full object-cover"
+            />
+          </div>
+
           <div className="rounded-2xl border border-line bg-surface p-5">
             <div className="flex items-center justify-between gap-3">
               <div>
@@ -169,6 +203,7 @@ export default async function MemberReviewsPage() {
                 <div className="text-xs font-semibold text-muted">รีวิวต่อสมาชิก</div>
               </div>
             </div>
+          </div>
           </div>
         </div>
       </section>

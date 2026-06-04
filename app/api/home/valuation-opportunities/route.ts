@@ -6,7 +6,7 @@ export async function GET(req: Request) {
   const { searchParams } = new URL(req.url);
   const limit = Math.min(Number(searchParams.get("limit") || 6), 10);
 
-  const etfPriority = ["GLD", "SPY", "QQQ", "VOO", "SCHD", "TLT", "JEPQ", "XLE"];
+  const etfPriority = ["GLD", "SPY", "QQQ", "VOO", "VIG", "SCHD", "TLT", "JEPQ", "XLE"];
   const alternativePriority = ["GOLD", "BTC", "ETH", "OIL", "SILVER", "COPPER"];
 
   function categoryOf(stock: (typeof STOCKS)[number]) {

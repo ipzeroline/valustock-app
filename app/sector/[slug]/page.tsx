@@ -128,7 +128,7 @@ export default function SectorSlug() {
         ? `หุ้นกลุ่ม${sectorKey} ตัวไหนน่าสนใจและมีราคาถูกกว่ามูลค่า (Undervalued) มากที่สุด?`
         : `Which stocks in the ${sectorNameEN} sector are currently undervalued with the highest Margin of Safety?`,
       a: lang === "th"
-        ? `จากการกรองแบบเรียลไทม์ ปัจจุบันในกลุ่ม${sectorKey} มีหุ้นราคาถูกกว่ามูลค่าแนะนำทั้งหมด ${undervaluedCount} ตัว โดยหุ้นที่มีส่วนลดสูงสุดในกลุ่มมีค่า Margin of Safety เฉลี่ยอยู่ที่ระดับดีเยี่ยม พร้อมสัญญาณคำแนะนำเป็นราคาถูกน่าสะสม`
+        ? `จากการกรองด้วยข้อมูลล่าสุด ปัจจุบันในกลุ่ม${sectorKey} มีหุ้นราคาถูกกว่ามูลค่าแนะนำทั้งหมด ${undervaluedCount} ตัว โดยหุ้นที่มีส่วนลดสูงสุดในกลุ่มมีค่า Margin of Safety เฉลี่ยอยู่ที่ระดับดีเยี่ยม พร้อมสัญญาณคำแนะนำเป็นราคาถูกน่าสะสม`
         : `Based on our automated sector screening, there are currently ${undervaluedCount} undervalued stocks in the ${sectorNameEN} sector. The top undervalued assets trade at high Margin of Safety percentages, signaling defensive entry parameters.`
     },
     {
