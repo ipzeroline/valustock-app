@@ -225,7 +225,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
       authToken: authToken || d.authToken || null,
     }));
 
-    if (authToken && process.env.NODE_ENV === "production") return;
+    if (authToken) return;
 
     fetch("/api/auth/email", {
       method: "POST",

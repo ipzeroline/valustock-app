@@ -10,24 +10,24 @@ const PAGE_SIZE = 12;
 
 const clusters = [
   {
-    titleTh: "หุ้นรายตัวก่อนซื้อจริง",
-    titleEn: "Single-Stock Pre-Buy Research",
-    descTh: "รวมคำถามหุ้นรายตัว เช่น หุ้นน่าซื้อไหม มูลค่าเหมาะสม ปันผล ความเสี่ยง และจุดที่ควรตรวจในงบ",
-    descEn: "Single-stock research around fair value, dividends, business quality, risks, and pre-buy checklists.",
+    titleTh: "วิเคราะห์หุ้นรายตัว",
+    titleEn: "Single-Stock Analysis",
+    descTh: "คำตอบก่อนตัดสินใจซื้อหุ้น เช่น น่าซื้อไหม มูลค่าเหมาะสม ปันผล ความเสี่ยง และคุณภาพงบการเงิน",
+    descEn: "Practical answers before buying a stock: fair value, dividends, risks, and financial statement quality.",
     icon: Target,
   },
   {
-    titleTh: "หุ้นปันผลและรายได้สม่ำเสมอ",
-    titleEn: "Dividend And Income Research",
-    descTh: "ดู dividend yield, payout, cash flow, dividend trap และความเหมาะสมกับพอร์ตระยะยาว",
-    descEn: "Dividend yield, payout quality, cash flow, dividend traps, and long-term portfolio fit.",
+    titleTh: "หุ้นปันผลและกระแสเงินสด",
+    titleEn: "Dividend And Cash Flow Ideas",
+    descTh: "คัดหุ้นที่จ่ายปันผลสม่ำเสมอ ดู yield, payout, cash flow และสัญญาณเตือนของ dividend trap",
+    descEn: "Find consistent dividend stocks by checking yield, payout, cash flow, and dividend trap warning signs.",
     icon: Shield,
   },
   {
-    titleTh: "มือใหม่และ ETF",
-    titleEn: "Beginner And ETF Guides",
-    descTh: "คู่มือเริ่มลงทุน S&P 500, Nasdaq, ETF, DCA และวิธีจัดพอร์ตสำหรับคนเริ่มต้น",
-    descEn: "Beginner guides for S&P 500, Nasdaq, ETFs, DCA, and practical portfolio building.",
+    titleTh: "เริ่มลงทุนและ ETF",
+    titleEn: "Beginner Investing And ETFs",
+    descTh: "พื้นฐานสำหรับมือใหม่ ตั้งแต่ DCA, ETF, S&P 500, Nasdaq ไปจนถึงการจัดพอร์ตให้เหมาะกับเป้าหมาย",
+    descEn: "Beginner-friendly guides for DCA, ETFs, S&P 500, Nasdaq, and building a portfolio around your goals.",
     icon: FileText,
   },
 ];
@@ -99,7 +99,6 @@ export function BlogIndexClient({ articles, currentPage: requestedPage = 1 }: { 
   const pageSubtitle = isTh
     ? "แยกบทความตามหัวข้อที่นักลงทุนค้นหาก่อนตัดสินใจจริง พร้อมกรอบ DCF, Fair Value, Margin of Safety, ปันผล และความเสี่ยง"
     : "Research organized by real investor search intent, with DCF, fair value, margin of safety, dividends, and risk checklists.";
-  const heroImageSrc = "/article-image/valustock-research-library?category=Stock%20ETF%20Research&symbol=VS&v=5";
 
   useEffect(() => {
     const slugs = visibleArticles.map((article) => article.slug);
@@ -123,16 +122,16 @@ export function BlogIndexClient({ articles, currentPage: requestedPage = 1 }: { 
   return (
     <>
       <section className="overflow-hidden rounded-2xl border border-line bg-surface/55">
-        <div className="grid gap-6 p-5 sm:p-8 lg:grid-cols-[1fr_0.92fr] lg:items-center">
+        <div className="p-5 sm:p-8">
           <div>
             <div className="flex items-center gap-2 text-xs font-black uppercase tracking-wide text-brand">
               <FileText className="h-4 w-4" />
               {isTh ? "คลังบทวิเคราะห์ ValuStock" : "ValuStock Research Library"}
             </div>
-            <h1 className="mt-4 max-w-3xl font-display text-3xl font-black leading-tight text-ink sm:text-5xl">
+            <h1 className="mt-4 max-w-5xl font-display text-3xl font-black leading-tight text-ink sm:text-5xl">
               {pageTitle}
             </h1>
-            <p className="mt-4 max-w-3xl text-sm font-semibold leading-relaxed text-muted sm:text-base">
+            <p className="mt-4 max-w-4xl text-sm font-semibold leading-relaxed text-muted sm:text-base">
               {pageSubtitle}
             </p>
             <div className="mt-6 flex flex-wrap gap-2">
@@ -146,22 +145,6 @@ export function BlogIndexClient({ articles, currentPage: requestedPage = 1 }: { 
               ))}
             </div>
           </div>
-
-          <figure className="overflow-hidden rounded-2xl border border-line bg-bg shadow-soft">
-            <img
-              src={heroImageSrc}
-              alt={
-                isTh
-                  ? "ภาพคลังบทวิเคราะห์หุ้น ETF DCF Fair Value และ Margin of Safety ของ ValuStock"
-                  : "ValuStock stock and ETF research library cover for DCF fair value and margin of safety articles"
-              }
-              width={1200}
-              height={630}
-              loading="eager"
-              decoding="async"
-              className="aspect-[1200/630] w-full object-cover object-center"
-            />
-          </figure>
         </div>
       </section>
 
@@ -225,15 +208,15 @@ export function BlogIndexClient({ articles, currentPage: requestedPage = 1 }: { 
       <section className="mt-8 rounded-2xl border border-line bg-surface p-5 sm:p-6">
         <div className="flex items-center gap-2 text-xs font-black uppercase tracking-wide text-brand">
           <Search className="h-4 w-4" />
-          {isTh ? "Topic Clusters สำหรับ SEO" : "SEO Topic Clusters"}
+          {isTh ? "กลุ่มบทความลงทุน" : "Investment Guide Collections"}
         </div>
         <h2 className="mt-2 font-display text-2xl font-black text-ink sm:text-3xl">
-          {isTh ? "เลือกอ่านตามเจตนาการค้นหา" : "Browse By Search Intent"}
+          {isTh ? "อ่านตามเป้าหมายการลงทุน" : "Browse By Investing Goal"}
         </h2>
         <p className="mt-3 max-w-3xl text-sm font-semibold leading-relaxed text-muted">
           {isTh
-            ? "ทุกบทความถูกจัดให้ตอบคำถามก่อนซื้อหุ้นจริง เช่น มูลค่าเหมาะสม ปันผล ความเสี่ยง และวิธีใช้เครื่องมือวิเคราะห์ต่อ"
-            : "Every guide is structured around pre-buy questions: valuation, dividend quality, risk, and the next research workflow."}
+            ? "รวมบทความหุ้นและ ETF ที่จัดเป็นหมวดให้ค้นง่าย ตั้งแต่เลือกหุ้นรายตัว หุ้นปันผล ไปจนถึงคู่มือเริ่มลงทุนสำหรับมือใหม่"
+            : "Explore stock and ETF guides organized around real investing goals, from single-stock analysis and dividends to beginner portfolio building."}
         </p>
         <div className="mt-5 grid gap-4 md:grid-cols-3">
           {clusters.map((cluster) => {

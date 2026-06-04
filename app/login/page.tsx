@@ -19,13 +19,56 @@ function LoginContent() {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [formError, setFormError] = useState("");
   const demoAuthEnabled = process.env.NODE_ENV !== "production";
 
-  const submit = () => {
+  const submit = async () => {
     if (!demoAuthEnabled) return;
-    if (!email.includes("@")) return;
-    login(email, mode === "register" ? name : undefined);
+    const normalizedEmail = email.trim().toLowerCase();
+    if (!normalizedEmail.includes("@")) {
+      setFormError(lang === "th" ? "กรุณากรอกอีเมลให้ถูกต้อง" : "Please enter a valid email address.");
+      return;
+    }
+
+    setIsSubmitting(true);
+    setFormError("");
+
+    try {
+      const res = await fetch("/api/auth/email", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          email: normalizedEmail,
+          name: mode === "register" ? name : undefined,
+        }),
+      });
+
+      if (!res.ok) {
+        const payload = await res.json().catch(() => ({}));
+        throw new Error(payload?.detail || payload?.error || "Login failed");
+      }
+
+      const payload = await res.json();
+      login(payload.email || normalizedEmail, payload.name || (mode === "register" ? name : undefined), payload.plan, payload.billing, payload.token);
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "Login failed";
+      setFormError(
+        lang === "th"
+          ? `เข้าสู่ระบบไม่สำเร็จ: ${message}`
+          : `Login failed: ${message}`,
+      );
+      setIsSubmitting(false);
+      return;
+    }
+
     router.push("/dashboard");
+  };
+
+  const startGoogleLogin = async () => {
+    setIsSubmitting(true);
+    setFormError("");
+    window.location.href = "/api/auth/google";
   };
 
   return (
@@ -53,10 +96,19 @@ function LoginContent() {
               <span>
                 {errorParam === "oauth_failed"
                   ? (lang === "th" ? "การยืนยันตัวตนผ่าน Google ล้มเหลว กรุณาลองใหม่อีกครั้ง" : "Google authentication failed. Please try again.")
+                  : errorParam === "google_not_configured"
+                  ? (lang === "th" ? "ยังไม่ได้ตั้งค่า Google OAuth สำหรับระบบเข้าสู่ระบบ" : "Google OAuth is not configured for sign-in.")
                   : errorParam === "missing_code"
                   ? (lang === "th" ? "ไม่พบรหัสยืนยันตัวตนจาก Google" : "Authorization code from Google was missing.")
                   : (lang === "th" ? "เกิดข้อผิดพลาดในการล็อกอิน กรุณาลองใหม่อีกครั้ง" : "An authentication error occurred. Please try again.")}
               </span>
+            </div>
+          )}
+
+          {formError && (
+            <div className="mt-4 flex items-start gap-2.5 rounded-xl border border-rose-500/20 bg-rose-500/10 px-4 py-3 text-sm text-rose-400">
+              <AlertTriangle className="h-5 w-5 shrink-0 mt-0.5" />
+              <span>{formError}</span>
             </div>
           )}
 
@@ -91,8 +143,14 @@ function LoginContent() {
                     onChange={(e) => setPassword(e.target.value)}
                   />
                 </Field>
-                <Button className="w-full text-white bg-brand hover:bg-brand/90" onClick={submit} size="lg">
-                  {mode === "login" ? t("common.logIn") : t("common.signUp")}
+                <Button className="w-full text-white bg-brand hover:bg-brand/90" onClick={submit} size="lg" disabled={isSubmitting}>
+                  {isSubmitting
+                    ? lang === "th"
+                      ? "กำลังเข้าสู่ระบบ..."
+                      : "Signing in..."
+                    : mode === "login"
+                    ? t("common.logIn")
+                    : t("common.signUp")}
                 </Button>
 
                 <div className="relative flex py-2 items-center">
@@ -107,10 +165,9 @@ function LoginContent() {
 
             {/* Google OAuth Button */}
             <button
-              onClick={() => {
-                window.location.href = "/api/auth/google";
-              }}
+              onClick={startGoogleLogin}
               type="button"
+              disabled={isSubmitting}
               className="w-full h-12 px-6 text-sm font-semibold rounded-xl border border-line bg-elevate hover:bg-line/40 text-ink transition-all active:scale-[0.98] flex items-center justify-center gap-3 shadow-sm"
             >
               <svg className="h-5 w-5" viewBox="0 0 24 24" width="24" height="24" xmlns="http://www.w3.org/2000/svg">

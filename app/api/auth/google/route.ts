@@ -4,7 +4,7 @@ import { getRequestOrigin } from "@/lib/request-origin";
 export async function GET(req: Request) {
   const clientId = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID;
   if (!clientId) {
-    return NextResponse.json({ error: "Google Client ID is not configured" }, { status: 500 });
+    return NextResponse.redirect(`${getRequestOrigin(req, "/login")}?error=google_not_configured`);
   }
 
   const redirectUri = getRequestOrigin(req, "/api/auth/google/callback");

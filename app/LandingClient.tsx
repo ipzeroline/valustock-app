@@ -1197,7 +1197,7 @@ export default function Landing() {
           </div>
           <Link href="/blog">
             <Button variant="outline" className="flex items-center gap-2 font-bold hover:scale-[1.02] active:scale-95 transition text-xs sm:text-sm">
-              {lang === "th" ? "อ่านบทความ SEO ทั้งหมด" : "Explore All Guides"} 
+              {lang === "th" ? "ดูบทความลงทุนทั้งหมด" : "Explore All Guides"} 
               <ArrowRight className="h-4 w-4" />
             </Button>
           </Link>

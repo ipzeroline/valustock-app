@@ -15,7 +15,66 @@ import {
   ArrowRight,
   BarChart3,
   MessageSquare,
+  FileText,
+  Mail,
+  Star,
+  Wallet,
+  Database,
 } from "@/lib/icons";
+
+type DataCacheStatus = {
+  connected?: boolean;
+  configured?: boolean;
+  error?: string;
+  code?: string;
+  collections?: {
+    quoteCache?: number;
+    quoteSnapshots?: number;
+    marketApiEvents?: number;
+    historicalBars?: number;
+    externalAssets?: number;
+    setSecurities?: number;
+  };
+};
+
+const quickNavItems = [
+  {
+    href: "/AdminConsole/users",
+    icon: User,
+    title: "Members",
+    desc: "Plans and accounts",
+  },
+  {
+    href: "/AdminConsole/payments",
+    icon: Wallet,
+    title: "Payments",
+    desc: "Invoices and revenue",
+  },
+  {
+    href: "/AdminConsole/articles",
+    icon: FileText,
+    title: "Content",
+    desc: "Articles and guides",
+  },
+  {
+    href: "/AdminConsole/reviews",
+    icon: Star,
+    title: "Reviews",
+    desc: "Approval queue",
+  },
+  {
+    href: "/AdminConsole/newsletter",
+    icon: Mail,
+    title: "Newsletter",
+    desc: "Email funnel",
+  },
+  {
+    href: "/AdminConsole/staff",
+    icon: Shield,
+    title: "Staff",
+    desc: "Roles and access",
+  },
+];
 
 export default function AdminOverview() {
   const { lang } = useTranslation();
@@ -27,6 +86,7 @@ export default function AdminOverview() {
   const [staffCount, setStaffCount] = useState(0);
   const [newsletterCount, setNewsletterCount] = useState(0);
   const [pendingReviewCount, setPendingReviewCount] = useState(0);
+  const [dataCache, setDataCache] = useState<DataCacheStatus | null>(null);
 
   useEffect(() => {
     fetch("/api/admin/db-status")
@@ -34,6 +94,7 @@ export default function AdminOverview() {
       .then((data) => {
         setDbConnected(data.connected);
         setDbInfo(data);
+        setDataCache(data.dataCache || null);
       })
       .catch((err) => console.error(err));
 
@@ -74,6 +135,11 @@ export default function AdminOverview() {
     .reduce((sum, p) => sum + parseFloat(p.amount || 0), 0);
 
   const pendingPayments = payments.filter((p) => p.status === "pending").length;
+  const dataCacheCollections = dataCache?.collections || {};
+  const mongoRecordCount = Object.values(dataCacheCollections).reduce((sum, value) => sum + Number(value || 0), 0);
+  const dataCacheConfigured = Boolean(dataCache?.configured);
+  const dataCacheConnected = Boolean(dataCache?.connected);
+  const dataCacheStatus = !dataCacheConfigured ? "Not Configured" : dataCacheConnected ? "Active" : "Offline";
 
   return (
     <div className="space-y-6 animate-fade-up">
@@ -142,6 +208,17 @@ export default function AdminOverview() {
           connected={pendingReviewCount === 0}
           isAlert={pendingReviewCount > 0}
         />
+        <MonitorCard
+          title="MongoDB Cache"
+          value={dataCacheStatus}
+          desc={
+            dataCacheConnected
+              ? `${mongoRecordCount.toLocaleString()} cached market records`
+              : dataCache?.error || "Market data cache is unavailable"
+          }
+          connected={dataCacheConnected}
+          isAlert={dataCacheConfigured && !dataCacheConnected}
+        />
       </div>
 
       {/* 3. Server Configuration Diagnostic */}
@@ -172,67 +249,71 @@ export default function AdminOverview() {
         )}
       </Card>
 
+      <Card className={`relative overflow-hidden border ${dataCacheConnected ? "border-brand/30 bg-brand/5" : "border-gold/30 bg-gold/5"} p-6`}>
+        <div className="aurora absolute inset-0 -z-10 opacity-20" />
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+          <div>
+            <h3 className="font-display font-bold text-sm text-ink flex items-center gap-2">
+              <Database className="h-4.5 w-4.5 text-brand shrink-0" />
+              MongoDB Market Data Cache
+            </h3>
+            <p className="mt-2 max-w-4xl text-xs font-semibold leading-relaxed text-muted">
+              {dataCacheConnected
+                ? "MongoDB is connected and storing quote cache, snapshots, historical bars, API logs, external assets, and SET reference data."
+                : dataCacheConfigured
+                ? `MongoDB is configured but unavailable${dataCache?.code ? ` (${dataCache.code})` : ""}: ${dataCache?.error || "connection failed"}`
+                : "MongoDB is not configured. Market data cache and SET sync persistence are disabled."}
+            </p>
+          </div>
+          <span className={`shrink-0 rounded-full border px-3 py-1 text-[11px] font-black ${dataCacheConnected ? "border-brand/30 bg-brand/10 text-brand" : "border-gold/30 bg-gold/10 text-gold"}`}>
+            {dataCacheStatus}
+          </span>
+        </div>
+
+        <div className="mt-5 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+          {[
+            ["Quote Cache", dataCacheCollections.quoteCache],
+            ["Quote Snapshots", dataCacheCollections.quoteSnapshots],
+            ["Historical Bars", dataCacheCollections.historicalBars],
+            ["API Events", dataCacheCollections.marketApiEvents],
+            ["External Assets", dataCacheCollections.externalAssets],
+            ["SET Securities", dataCacheCollections.setSecurities],
+          ].map(([label, value]) => (
+            <div key={String(label)} className="rounded-xl border border-line bg-bg/70 p-3">
+              <div className="text-[10px] font-black uppercase tracking-wide text-muted">{label}</div>
+              <div className="num mt-1 font-display text-xl font-bold text-ink">
+                {Number(value || 0).toLocaleString()}
+              </div>
+            </div>
+          ))}
+        </div>
+      </Card>
+
       {/* 4. Quick Navigation Matrix */}
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-6">
-        <Link href="/AdminConsole/users">
-          <div className="surface rounded-2xl border border-line p-4.5 hover:border-brand/40 transition cursor-pointer flex justify-between items-center group">
-            <div>
-              <h3 className="font-display font-semibold text-xs text-ink group-hover:text-brand transition">👥 จัดการสมาชิก</h3>
-              <p className="text-[10px] text-muted mt-1">อัปเกรดแผน หรือปรับแต่งบัญชี</p>
-            </div>
-            <ArrowRight className="h-4 w-4 text-brand group-hover:translate-x-1 transition-transform" />
-          </div>
-        </Link>
-
-        <Link href="/AdminConsole/payments">
-          <div className="surface rounded-2xl border border-line p-4.5 hover:border-brand/40 transition cursor-pointer flex justify-between items-center group">
-            <div>
-              <h3 className="font-display font-semibold text-xs text-ink group-hover:text-brand transition">💳 ตรวจสอบการชำระเงิน</h3>
-              <p className="text-[10px] text-muted mt-1">อนุมัติบิลและบันทึกรายรับ</p>
-            </div>
-            <ArrowRight className="h-4 w-4 text-brand group-hover:translate-x-1 transition-transform" />
-          </div>
-        </Link>
-
-        <Link href="/AdminConsole/articles">
-          <div className="surface rounded-2xl border border-line p-4.5 hover:border-brand/40 transition cursor-pointer flex justify-between items-center group">
-            <div>
-              <h3 className="font-display font-semibold text-xs text-ink group-hover:text-brand transition">✍️ เขียนบทความและเนื้อหา</h3>
-              <p className="text-[10px] text-muted mt-1">บทวิเคราะห์และคู่มือความรู้</p>
-            </div>
-            <ArrowRight className="h-4 w-4 text-brand group-hover:translate-x-1 transition-transform" />
-          </div>
-        </Link>
-
-        <Link href="/AdminConsole/reviews">
-          <div className="surface rounded-2xl border border-line p-4.5 hover:border-brand/40 transition cursor-pointer flex justify-between items-center group">
-            <div>
-              <h3 className="font-display font-semibold text-xs text-ink group-hover:text-brand transition">⭐ อนุมัติรีวิว</h3>
-              <p className="text-[10px] text-muted mt-1">รีวิวผู้ใช้งานและ SEO schema</p>
-            </div>
-            <ArrowRight className="h-4 w-4 text-brand group-hover:translate-x-1 transition-transform" />
-          </div>
-        </Link>
-
-        <Link href="/AdminConsole/newsletter">
-          <div className="surface rounded-2xl border border-line p-4.5 hover:border-brand/40 transition cursor-pointer flex justify-between items-center group">
-            <div>
-              <h3 className="font-display font-semibold text-xs text-ink group-hover:text-brand transition">📩 Newsletter</h3>
-              <p className="text-[10px] text-muted mt-1">รายชื่ออีเมลจาก funnel</p>
-            </div>
-            <ArrowRight className="h-4 w-4 text-brand group-hover:translate-x-1 transition-transform" />
-          </div>
-        </Link>
-
-        <Link href="/AdminConsole/staff">
-          <div className="surface rounded-2xl border border-line p-4.5 hover:border-brand/40 transition cursor-pointer flex justify-between items-center group">
-            <div>
-              <h3 className="font-display font-semibold text-xs text-ink group-hover:text-brand transition">🛡️ จัดการบทบาทเจ้าหน้าที่</h3>
-              <p className="text-[10px] text-muted mt-1">กำหนดสิทธิ์ทีมงานและ Staff</p>
-            </div>
-            <ArrowRight className="h-4 w-4 text-brand group-hover:translate-x-1 transition-transform" />
-          </div>
-        </Link>
+      <div className="grid min-w-0 gap-4 [grid-template-columns:repeat(auto-fit,minmax(180px,1fr))]">
+        {quickNavItems.map((item) => {
+          const Icon = item.icon;
+          return (
+            <Link key={item.href} href={item.href} className="block min-w-0">
+              <div className="surface group flex min-w-0 items-center justify-between gap-3 rounded-2xl border border-line p-4 transition hover:border-brand/40">
+                <div className="flex min-w-0 flex-1 items-center gap-3">
+                  <span className="grid h-8 w-8 shrink-0 place-items-center rounded-xl bg-brand-soft text-brand">
+                    <Icon className="h-4 w-4" />
+                  </span>
+                  <div className="min-w-0">
+                    <h3 className="truncate whitespace-nowrap font-display text-sm font-semibold leading-none text-ink transition group-hover:text-brand">
+                      {item.title}
+                    </h3>
+                    <p className="mt-1.5 truncate whitespace-nowrap text-[11px] font-semibold leading-none text-muted">
+                      {item.desc}
+                    </p>
+                  </div>
+                </div>
+                <ArrowRight className="h-4 w-4 shrink-0 text-brand transition-transform group-hover:translate-x-0.5" />
+              </div>
+            </Link>
+          );
+        })}
       </div>
     </div>
   );
