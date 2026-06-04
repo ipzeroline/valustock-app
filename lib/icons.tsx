@@ -51,6 +51,7 @@ import {
   AlertTriangle,
   Database,
   MessageSquare,
+  Globe,
 } from "lucide-react";
 
 export {
@@ -105,4 +106,5 @@ export {
   AlertTriangle,
   Database,
   MessageSquare,
+  Globe,
 };

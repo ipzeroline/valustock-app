@@ -9,10 +9,12 @@
     "lint": "tsc --noEmit"
   },
   "dependencies": {
+    "cheerio": "^1.2.0",
     "lucide-react": "^0.460.0",
     "mongodb": "^7.2.0",
     "mysql2": "^3.22.4",
     "next": "^16.2.6",
+    "playwright": "^1.60.0",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
     "recharts": "^2.15.0"

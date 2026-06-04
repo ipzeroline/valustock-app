@@ -18,6 +18,7 @@ import {
   Info,
   Mail,
   MessageSquare,
+  Calendar,
 } from "@/lib/icons";
 
 async function readJsonSafe(res: Response) {
@@ -130,6 +131,7 @@ export default function AdminConsoleLayout({
     { href: "/AdminConsole/articles", label: lang === "th" ? "จัดการเนื้อหา" : "Manage Content", icon: Layers },
     { href: "/AdminConsole/reviews", label: lang === "th" ? "อนุมัติรีวิว" : "Review Approval", icon: MessageSquare },
     { href: "/AdminConsole/newsletter", label: lang === "th" ? "Newsletter" : "Newsletter", icon: Mail },
+    { href: "/AdminConsole/economic-events", label: lang === "th" ? "ปฏิทินเศรษฐกิจ" : "Econ Calendar", icon: Calendar },
     { href: "/AdminConsole/staff", label: lang === "th" ? "จัดการเจ้าหน้าที่" : "Manage Staff", icon: Shield },
   ];
 
