@@ -13,6 +13,8 @@ const COLLECTIONS: Record<CalendarType, string> = {
   ipo: "ipo_events",
 };
 
+const ALL_CALENDARS = Object.keys(COLLECTIONS) as CalendarType[];
+
 function getCollection(calendarType: string): string {
   return COLLECTIONS[calendarType as CalendarType] || "economic_events";
 }
@@ -130,8 +132,27 @@ export async function DELETE(req: Request) {
   try {
     const db = await getMongoDb();
     const { searchParams } = new URL(req.url);
-    const calendarType = (searchParams.get("calendarType") || "economic") as CalendarType;
+    const calendarType = searchParams.get("calendarType") || "economic";
     const olderThan = searchParams.get("olderThan");
+
+    if (calendarType === "all") {
+      const results = [];
+      for (const type of ALL_CALENDARS) {
+        const collectionName = getCollection(type);
+        const collection = db.collection(collectionName);
+        const result = olderThan
+          ? await collection.deleteMany({ fetchedAt: { $lt: parseInt(olderThan, 10) } })
+          : await collection.deleteMany({});
+        results.push({ calendarType: type, collectionName, deleted: result.deletedCount });
+      }
+
+      return NextResponse.json({
+        deleted: results.reduce((sum, result) => sum + result.deleted, 0),
+        calendarType: "all",
+        results,
+      });
+    }
+
     const collectionName = getCollection(calendarType);
     const collection = db.collection(collectionName);
 

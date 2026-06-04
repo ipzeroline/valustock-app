@@ -12,6 +12,14 @@ import {
   type CalendarType, type TimeFilter,
 } from "@/lib/economic-calendar-types";
 
+type FetchResultRow = {
+  calendarType: CalendarType;
+  fetched: number;
+  upserted: number;
+  success?: boolean;
+  error?: string;
+};
+
 // ── Helpers ────────────────────────────────────────────────────────────────
 
 function formatDate(ts: number, lang: string): string {
@@ -51,6 +59,7 @@ export default function AdminCalendarPage() {
   const [loading, setLoading] = useState(true);
   const [fetching, setFetching] = useState(false);
   const [fetchResult, setFetchResult] = useState("");
+  const [fetchDetails, setFetchDetails] = useState<FetchResultRow[]>([]);
   const [error, setError] = useState("");
   const limit = 100;
 
@@ -80,6 +89,7 @@ export default function AdminCalendarPage() {
   const handleFetch = async () => {
     setFetching(true);
     setFetchResult("");
+    setFetchDetails([]);
     setError("");
     try {
       const res = await fetch("/api/admin/economic-events/fetch", {
@@ -94,6 +104,8 @@ export default function AdminCalendarPage() {
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "Fetch failed");
+      const details = (data.results?.length ? data.results : [data]) as FetchResultRow[];
+      setFetchDetails(details);
       setFetchResult(
         lang === "th"
           ? `ดึงข้อมูลสำเร็จ: ${data.fetched} รายการ, อัปเดต ${data.upserted} รายการ`
@@ -108,7 +120,48 @@ export default function AdminCalendarPage() {
     }
   };
 
-  const handleClearAll = async () => {
+  const handleFetchAll = async () => {
+    setFetching(true);
+    setFetchResult("");
+    setFetchDetails([]);
+    setError("");
+    try {
+      const res = await fetch("/api/admin/economic-events/fetch", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          all: true,
+          replace: true,
+          timeFilter: timeFilter || undefined,
+          importance: [1, 2, 3],
+          timeZone: 27,
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Fetch failed");
+      setFetchDetails(data.results || []);
+      setFetchResult(
+        lang === "th"
+          ? `ล้างแล้วดึงใหม่ครบทุกประเภท: ลบ ${data.deleted || 0} รายการ, ดึง ${data.fetched} รายการ, อัปเดต ${data.upserted} รายการ`
+          : `Rebuilt all calendars: deleted ${data.deleted || 0}, fetched ${data.fetched}, upserted ${data.upserted}`
+      );
+      setPage(1);
+      fetchEvents();
+      if (data.errors?.length) {
+        setError(
+          lang === "th"
+            ? `บางประเภทดึงไม่สำเร็จ: ${data.errors.map((item: FetchResultRow) => item.calendarType).join(", ")}`
+            : `Some calendars failed: ${data.errors.map((item: FetchResultRow) => item.calendarType).join(", ")}`
+        );
+      }
+    } catch (err: any) {
+      setError(err.message || "Could not fetch calendar data");
+    } finally {
+      setFetching(false);
+    }
+  };
+
+  const handleClearCurrent = async () => {
     if (!confirm(lang === "th" ? "ต้องการลบข้อมูลทั้งหมดในแท็บนี้?" : "Delete ALL events in this tab?")) return;
     try {
       const res = await fetch(`/api/admin/economic-events?calendarType=${activeTab}`, { method: "DELETE" });
@@ -118,6 +171,27 @@ export default function AdminCalendarPage() {
       setSummary(null);
       setTotal(0);
       setPage(1);
+    } catch (err: any) {
+      setError(err.message || "Could not clear events");
+    }
+  };
+
+  const handleClearAll = async () => {
+    if (!confirm(lang === "th" ? "ต้องการลบข้อมูลทั้งหมดทุกประเภท?" : "Delete ALL events across every calendar type?")) return;
+    try {
+      const res = await fetch("/api/admin/economic-events?calendarType=all", { method: "DELETE" });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Delete failed");
+      setEvents([]);
+      setSummary(null);
+      setTotal(0);
+      setPage(1);
+      setFetchDetails(data.results || []);
+      setFetchResult(
+        lang === "th"
+          ? `ลบข้อมูลครบทุกประเภทแล้ว: ${data.deleted} รายการ`
+          : `Deleted all calendars: ${data.deleted} events`
+      );
     } catch (err: any) {
       setError(err.message || "Could not clear events");
     }
@@ -330,9 +404,13 @@ export default function AdminCalendarPage() {
             <RefreshCw className={`h-4 w-4 ${loading ? "animate-spin" : ""}`} />
             {lang === "th" ? "โหลดใหม่" : "Refresh"}
           </Button>
-          <Button variant="outline" size="sm" onClick={handleClearAll} disabled={total === 0}>
+          <Button variant="outline" size="sm" onClick={handleClearCurrent} disabled={total === 0}>
             <Trash2 className="h-4 w-4" />
-            {lang === "th" ? "ล้างทั้งหมด" : "Clear All"}
+            {lang === "th" ? "ล้างแท็บนี้" : "Clear Current"}
+          </Button>
+          <Button variant="outline" size="sm" onClick={handleClearAll}>
+            <Trash2 className="h-4 w-4" />
+            {lang === "th" ? "ล้างทุกประเภท" : "Clear All"}
           </Button>
         </div>
       </div>
@@ -374,15 +452,47 @@ export default function AdminCalendarPage() {
           </div>
         </div>
 
-        <Button onClick={handleFetch} disabled={fetching} className="w-full sm:w-auto">
-          <Download className={`h-4 w-4 ${fetching ? "animate-bounce" : ""}`} />
-          {fetching
-            ? lang === "th" ? "กำลังดึงข้อมูล..." : "Fetching..."
-            : lang === "th" ? `ดึงข้อมูล${tabLabel(CALENDAR_TYPES.find(t => t.key === activeTab)!)}เลย` : `Fetch ${tabLabel(CALENDAR_TYPES.find(t => t.key === activeTab)!)}`}
-        </Button>
+        <div className="flex flex-col gap-2 sm:flex-row">
+          <Button onClick={handleFetch} disabled={fetching} className="w-full sm:w-auto">
+            <Download className={`h-4 w-4 ${fetching ? "animate-bounce" : ""}`} />
+            {fetching
+              ? lang === "th" ? "กำลังดึงข้อมูล..." : "Fetching..."
+              : lang === "th" ? `ดึง${tabLabel(CALENDAR_TYPES.find(t => t.key === activeTab)!)}`
+                : `Fetch ${tabLabel(CALENDAR_TYPES.find(t => t.key === activeTab)!)}`}
+          </Button>
+          <Button onClick={handleFetchAll} disabled={fetching} variant="outline" className="w-full sm:w-auto">
+            <Download className={`h-4 w-4 ${fetching ? "animate-bounce" : ""}`} />
+            {lang === "th" ? "ล้างแล้วดึงครบทุกประเภท" : "Rebuild All Calendars"}
+          </Button>
+        </div>
 
         {fetchResult && (
           <div className="mt-3 rounded-xl border border-brand/30 bg-brand/10 p-3 text-xs font-bold text-brand">{fetchResult}</div>
+        )}
+
+        {fetchDetails.length > 0 && (
+          <div className="mt-3 grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
+            {fetchDetails.map((item) => {
+              const type = CALENDAR_TYPES.find((ct) => ct.key === item.calendarType);
+              return (
+                <div key={item.calendarType} className="rounded-xl border border-line bg-bg p-3 text-xs">
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="font-bold text-ink">{type ? tabLabel(type) : item.calendarType}</span>
+                    <Badge tone={item.error ? "down" : "up"} className="text-[10px] font-bold">
+                      {item.error ? "Error" : "OK"}
+                    </Badge>
+                  </div>
+                  <div className="mt-2 text-muted">
+                    {item.error
+                      ? item.error
+                      : lang === "th"
+                        ? `ดึง ${item.fetched || 0} / อัปเดต ${item.upserted || 0}`
+                        : `Fetched ${item.fetched || 0} / upserted ${item.upserted || 0}`}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
         )}
       </Card>
 

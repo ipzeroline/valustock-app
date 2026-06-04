@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { fetchCalendarEvents } from "@/lib/economic-calendar";
+import { closeBrowser, fetchCalendarEvents } from "@/lib/economic-calendar";
 import { getMongoDb, ensureMarketDataIndexes } from "@/lib/mongodb";
 import type { CalendarType } from "@/lib/economic-calendar-types";
 
@@ -38,6 +38,7 @@ export async function GET(request: NextRequest) {
 
   const { searchParams } = new URL(request.url);
   const typesParam = searchParams.get("types"); // comma-separated, e.g. "economic,earnings"
+  const replace = searchParams.get("replace") === "1" || searchParams.get("replace") === "true";
   const calendars = typesParam
     ? ALL_CALENDARS.filter((c) => typesParam.split(",").includes(c.type))
     : ALL_CALENDARS;
@@ -47,6 +48,7 @@ export async function GET(request: NextRequest) {
     type: string;
     fetched: number;
     upserted: number;
+    deleted: number;
     error?: string;
     durationMs: number;
   }> = [];
@@ -63,10 +65,20 @@ export async function GET(request: NextRequest) {
         timeZone: 27, // GMT+7
       });
 
+      if (replace && events.length === 0) {
+        throw new Error("Replace mode refused to overwrite existing data with 0 fetched events");
+      }
+
       // Store to MongoDB
       const collection = db.collection(COLLECTIONS[cal.type]);
       const now = Date.now();
+      let deleted = 0;
       let upserted = 0;
+
+      if (replace) {
+        const deleteResult = await collection.deleteMany({});
+        deleted = deleteResult.deletedCount;
+      }
 
       for (const event of events) {
         const { eventId, date, calendarType, ...rest } = event as any;
@@ -82,16 +94,18 @@ export async function GET(request: NextRequest) {
         type: cal.type,
         fetched: events.length,
         upserted,
+        deleted,
         durationMs: Date.now() - calStart,
       });
 
-      console.log(`[calendar-sync] ${cal.type}: ${events.length} fetched, ${upserted} upserted`);
+      console.log(`[calendar-sync] ${cal.type}: ${events.length} fetched, ${upserted} upserted, ${deleted} deleted`);
     } catch (error: any) {
       console.error(`[calendar-sync] ${cal.type} failed: ${error.message}`);
       results.push({
         type: cal.type,
         fetched: 0,
         upserted: 0,
+        deleted: 0,
         error: error.message,
         durationMs: Date.now() - calStart,
       });
@@ -100,15 +114,22 @@ export async function GET(request: NextRequest) {
 
   const totalFetched = results.reduce((sum, r) => sum + r.fetched, 0);
   const totalUpserted = results.reduce((sum, r) => sum + r.upserted, 0);
+  const totalDeleted = results.reduce((sum, r) => sum + r.deleted, 0);
   const totalDuration = Date.now() - startedAt;
 
-  return NextResponse.json({
-    ok: true,
-    calendars: results.length,
-    totalFetched,
-    totalUpserted,
-    totalDurationMs: totalDuration,
-    results,
-    updatedAt: new Date().toISOString(),
-  });
+  try {
+    return NextResponse.json({
+      ok: true,
+      replace,
+      calendars: results.length,
+      totalFetched,
+      totalUpserted,
+      totalDeleted,
+      totalDurationMs: totalDuration,
+      results,
+      updatedAt: new Date().toISOString(),
+    });
+  } finally {
+    await closeBrowser().catch(() => {});
+  }
 }
