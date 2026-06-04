@@ -24,6 +24,7 @@ import {
   Mail,
   MessageSquare,
   FileText,
+  Calendar,
 } from "@/lib/icons";
 import { Button } from "./ui/Button";
 
@@ -251,6 +252,7 @@ const NAV = [
   { href: "/stocks", key: "searchStocks", icon: Search },
   { href: "/compare", key: "compare", icon: Layers },
   { href: "/portfolio", key: "portfolio", icon: Wallet },
+  { href: "/economic-calendar", icon: Calendar, labelTh: "ปฏิทินเศรษฐกิจ", labelEn: "Economic Calendar" },
   { href: "/blog", icon: FileText, labelTh: "บทความ", labelEn: "Blog" },
   { href: "/insights", key: "insights", icon: Sparkles },
   { href: "/reviews", icon: MessageSquare, labelTh: "เขียนรีวิว", labelEn: "Write Review" },

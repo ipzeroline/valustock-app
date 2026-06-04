@@ -8,6 +8,7 @@ import {
   ArrowRight,
   BarChart3,
   Bell,
+  Calendar,
   CheckCircle,
   Clock,
   Layers,
@@ -41,7 +42,7 @@ type MiniSummary = {
     plan: string;
     telegramUser?: { first_name?: string; username?: string; language_code?: string };
   };
-  capabilities: { portfolio: boolean; compare: boolean; alerts: boolean };
+  capabilities: { portfolio: boolean; compare: boolean; alerts: boolean; calendar?: boolean };
   portfolio: {
     totalValue: number;
     totalCost: number;
@@ -94,7 +95,27 @@ type MiniWatchlistStock = {
   verdict: string;
 };
 
-type Tab = "overview" | "portfolio" | "compare" | "watchlist";
+type MiniCalendarEvent = {
+  _id?: string;
+  eventId?: string;
+  date: number;
+  time?: string;
+  country?: string;
+  currency?: string;
+  name?: string;
+  importance?: number;
+  actual?: string | null;
+  forecast?: string | null;
+  previous?: string | null;
+};
+
+type MiniCalendarPayload = {
+  events: MiniCalendarEvent[];
+  generatedAt: string;
+};
+
+type Tab = "overview" | "portfolio" | "compare" | "watchlist" | "calendar";
+type MiniLang = keyof typeof copy;
 
 const copy = {
   th: {
@@ -108,6 +129,12 @@ const copy = {
     portfolio: "พอร์ต",
     compare: "เปรียบเทียบ",
     watchlist: "ติดตาม",
+    calendar: "ปฏิทิน",
+    economicCalendar: "ปฏิทินเศรษฐกิจ",
+    noCalendar: "ยังไม่มีเหตุการณ์สำคัญในสัปดาห์นี้",
+    calendarLocked: "ปฏิทินเศรษฐกิจใช้ได้ใน Premium / Lifetime",
+    highImpact: "แรง",
+    mediumImpact: "กลาง",
     totalValue: "มูลค่าพอร์ต",
     totalCost: "ต้นทุน",
     pnl: "กำไร/ขาดทุน",
@@ -144,6 +171,12 @@ const copy = {
     portfolio: "Portfolio",
     compare: "Compare",
     watchlist: "Watchlist",
+    calendar: "Calendar",
+    economicCalendar: "Economic Calendar",
+    noCalendar: "No major events this week",
+    calendarLocked: "Economic Calendar is available in Premium / Lifetime",
+    highImpact: "High",
+    mediumImpact: "Med",
     totalValue: "Portfolio Value",
     totalCost: "Cost Basis",
     pnl: "P/L",
@@ -201,10 +234,67 @@ function signedPct(value: number) {
   return `${value >= 0 ? "+" : ""}${num(value, 1)}%`;
 }
 
+const MINI_CURRENCY_FLAGS: Record<string, string> = {
+  USD: "🇺🇸",
+  EUR: "🇪🇺",
+  GBP: "🇬🇧",
+  JPY: "🇯🇵",
+  CNY: "🇨🇳",
+  THB: "🇹🇭",
+  AUD: "🇦🇺",
+  CAD: "🇨🇦",
+};
+
+const MINI_COUNTRY_CODES: Array<[RegExp, string]> = [
+  [/belgium|เบลเยียม/i, "BE"],
+  [/italy|อิตาลี/i, "IT"],
+  [/ireland|ไอร์แลนด์/i, "IE"],
+  [/united kingdom|great britain|britain|uk|อังกฤษ|สหราชอาณาจักร/i, "GB"],
+  [/united states|usa|u\.s\.|us|สหรัฐ/i, "US"],
+  [/euro zone|euro area|european union|eurozone|ยุโรป|ยูโรโซน/i, "EU"],
+  [/germany|เยอรมนี|เยอรมัน/i, "DE"],
+  [/france|ฝรั่งเศส/i, "FR"],
+  [/japan|ญี่ปุ่น/i, "JP"],
+  [/china|จีน/i, "CN"],
+  [/thailand|ไทย/i, "TH"],
+];
+
+function miniCodeToFlag(code: string) {
+  if (code === "EU") return "🇪🇺";
+  if (!/^[A-Z]{2}$/.test(code)) return "";
+  return code.split("").map((char) => String.fromCodePoint(127397 + char.charCodeAt(0))).join("");
+}
+
+function miniFlag(country?: string, currency?: string) {
+  const countryText = (country || "").trim();
+  const directCode = countryText.toUpperCase();
+  const matchedCode = MINI_COUNTRY_CODES.find(([pattern]) => pattern.test(countryText))?.[1];
+  return miniCodeToFlag(matchedCode || directCode) || MINI_CURRENCY_FLAGS[(currency || "").toUpperCase()] || "🌐";
+}
+
+function miniDate(ts: number, lang: MiniLang) {
+  return new Date(ts * 1000).toLocaleDateString(lang === "th" ? "th-TH" : "en-US", {
+    weekday: "short",
+    day: "numeric",
+    month: "short",
+  });
+}
+
+function miniEventMeta(event: MiniCalendarEvent) {
+  return [
+    event.actual ? `Act ${event.actual}` : null,
+    event.forecast ? `Fcst ${event.forecast}` : null,
+    event.previous ? `Prev ${event.previous}` : null,
+  ].filter(Boolean).join(" · ");
+}
+
 export default function TelegramMiniAppPage() {
   const [initData, setInitData] = useState("");
   const [summary, setSummary] = useState<MiniSummary | null>(null);
   const [activeTab, setActiveTab] = useState<Tab>("overview");
+  const [languageOverride, setLanguageOverride] = useState<MiniLang | null>(null);
+  const [calendarData, setCalendarData] = useState<MiniCalendarPayload | null>(null);
+  const [calendarLoading, setCalendarLoading] = useState(false);
   const [loading, setLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState("");
   const [message, setMessage] = useState("");
@@ -234,7 +324,30 @@ export default function TelegramMiniAppPage() {
     }
   };
 
+  const loadCalendar = async (nextInitData = initData) => {
+    if (!nextInitData || !summary?.capabilities.calendar) return;
+    setCalendarLoading(true);
+    setMessage("");
+    try {
+      const res = await fetch("/api/telegram-mini/calendar", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ initData: nextInitData, calendarType: "economic", timeFilter: "thisWeek", limit: 8 }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Unable to load calendar");
+      setCalendarData(data);
+    } catch (err) {
+      setMessage(err instanceof Error ? err.message : "Unable to load calendar");
+    } finally {
+      setCalendarLoading(false);
+    }
+  };
+
   useEffect(() => {
+    const savedLang = window.localStorage.getItem("valustock_telegram_lang");
+    if (savedLang === "th" || savedLang === "en") setLanguageOverride(savedLang);
+
     const script = document.createElement("script");
     script.src = "https://telegram.org/js/telegram-web-app.js";
     script.async = true;
@@ -256,6 +369,22 @@ export default function TelegramMiniAppPage() {
     };
   }, []);
 
+  const telegramLang = (summary?.member.telegramUser?.language_code || "").startsWith("th") ? "th" : "en";
+  const lang: MiniLang = languageOverride || telegramLang;
+  const c = copy[lang];
+
+  const setLang = (nextLang: MiniLang) => {
+    setLanguageOverride(nextLang);
+    window.localStorage.setItem("valustock_telegram_lang", nextLang);
+  };
+
+  useEffect(() => {
+    if (activeTab === "calendar" && summary?.capabilities.calendar && initData && !calendarData && !calendarLoading) {
+      loadCalendar();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeTab, summary?.capabilities.calendar, initData]);
+
   const sendAction = async (action: "portfolio_summary" | "watchlist_summary" | "compare_alert", setId?: string) => {
     if (!initData) return;
     setActionLoading(setId || action);
@@ -268,7 +397,7 @@ export default function TelegramMiniAppPage() {
       });
       const data = await res.json();
       if (!res.ok || !data.success) throw new Error(data.error || "Telegram action failed");
-      setMessage((summary?.member.telegramUser?.language_code || "").startsWith("th") ? "ส่งเข้า Telegram แล้ว" : "Sent to Telegram");
+      setMessage(c.sent);
     } catch (err) {
       setMessage(err instanceof Error ? err.message : "Telegram action failed");
     } finally {
@@ -276,8 +405,6 @@ export default function TelegramMiniAppPage() {
     }
   };
 
-  const lang = (summary?.member.telegramUser?.language_code || "").startsWith("th") ? "th" : "en";
-  const c = copy[lang];
   const topPosition = useMemo(() => summary?.portfolio.positions[0] || null, [summary]);
   const focusItems = useMemo(() => {
     if (!summary) return [];
@@ -344,6 +471,21 @@ export default function TelegramMiniAppPage() {
               <RefreshCw className={`h-4.5 w-4.5 ${loading ? "animate-spin" : ""}`} />
             </button>
           </div>
+          <div className="mt-3 grid grid-cols-2 gap-1 rounded-xl border border-line bg-bg p-1">
+            {(["th", "en"] as MiniLang[]).map((item) => (
+              <button
+                key={item}
+                type="button"
+                onClick={() => setLang(item)}
+                className={`h-9 rounded-lg text-xs font-black transition ${
+                  lang === item ? "bg-brand text-bg" : "text-muted hover:text-ink"
+                }`}
+                aria-pressed={lang === item}
+              >
+                {item === "th" ? "ไทย" : "EN"}
+              </button>
+            ))}
+          </div>
         </header>
 
         {!isTelegram && !loading ? (
@@ -384,12 +526,13 @@ export default function TelegramMiniAppPage() {
               <MiniStat label={c.compareCount} value={`${summary.compareSets.length}`} />
             </section>
 
-            <nav className="grid grid-cols-4 gap-1 rounded-2xl border border-line bg-surface p-1">
+            <nav className="grid grid-cols-5 gap-1 rounded-2xl border border-line bg-surface p-1">
               {[
                 { id: "overview" as Tab, label: c.overview, icon: BarChart3 },
                 { id: "portfolio" as Tab, label: c.portfolio, icon: Wallet },
                 { id: "watchlist" as Tab, label: c.watchlist, icon: Star },
                 { id: "compare" as Tab, label: c.compare, icon: Layers },
+                { id: "calendar" as Tab, label: c.calendar, icon: Calendar },
               ].map((item) => {
                 const Icon = item.icon;
                 const active = activeTab === item.id;
@@ -592,6 +735,57 @@ export default function TelegramMiniAppPage() {
                 )}
               </section>
             ) : null}
+
+            {activeTab === "calendar" ? (
+              <section className="space-y-3">
+                {!summary.capabilities.calendar ? (
+                  <div className="rounded-2xl border border-gold/35 bg-gold/10 p-4">
+                    <div className="flex items-center gap-2 font-display text-base font-black text-ink">
+                      <Calendar className="h-5 w-5 text-gold" />
+                      {c.economicCalendar}
+                    </div>
+                    <p className="mt-2 text-sm font-semibold leading-relaxed text-muted">{c.calendarLocked}</p>
+                    <Link href="/pricing" className="mt-3 inline-flex items-center gap-1 text-xs font-black text-gold">
+                      Premium / Lifetime <ArrowRight className="h-3.5 w-3.5" />
+                    </Link>
+                  </div>
+                ) : (
+                  <>
+                    <div className="flex items-center justify-between gap-3 rounded-2xl border border-line bg-surface p-4">
+                      <div>
+                        <div className="font-display text-base font-black text-ink">{c.economicCalendar}</div>
+                        <div className="mt-0.5 text-[11px] font-bold text-muted">
+                          {lang === "th" ? "เหตุการณ์สำคัญสัปดาห์นี้" : "Major events this week"}
+                        </div>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => loadCalendar()}
+                        disabled={calendarLoading}
+                        className="grid h-10 w-10 shrink-0 place-items-center rounded-xl border border-line text-muted transition hover:text-brand disabled:opacity-40"
+                        aria-label="Refresh calendar"
+                      >
+                        <RefreshCw className={`h-4 w-4 ${calendarLoading ? "animate-spin" : ""}`} />
+                      </button>
+                    </div>
+
+                    {calendarLoading ? (
+                      <div className="rounded-2xl border border-line bg-surface p-6 text-center text-sm font-bold text-muted animate-pulse">
+                        {c.loading}
+                      </div>
+                    ) : calendarData?.events.length ? (
+                      <div className="space-y-2">
+                        {calendarData.events.map((event, index) => (
+                          <MiniCalendarRow key={event.eventId || event._id || index} event={event} lang={lang} highLabel={c.highImpact} mediumLabel={c.mediumImpact} />
+                        ))}
+                      </div>
+                    ) : (
+                      <EmptyState text={c.noCalendar} />
+                    )}
+                  </>
+                )}
+              </section>
+            ) : null}
           </>
         ) : null}
       </div>
@@ -624,6 +818,62 @@ function AssetRow({
           {up ? "+" : ""}{num(change, 1)}%
         </div>
       </div>
+    </div>
+  );
+}
+
+function MiniCalendarRow({
+  event,
+  lang,
+  highLabel,
+  mediumLabel,
+}: {
+  event: MiniCalendarEvent;
+  lang: MiniLang;
+  highLabel: string;
+  mediumLabel: string;
+}) {
+  const impact = Math.max(0, Math.min(event.importance || 0, 3));
+  const flag = miniFlag(event.country, event.currency);
+  const meta = miniEventMeta(event);
+  return (
+    <div className="rounded-2xl border border-line bg-surface/70 p-3">
+      <div className="flex items-center gap-2">
+        <span className="grid h-9 w-9 shrink-0 place-items-center rounded-xl border border-line bg-bg text-lg">
+          {flag}
+        </span>
+        <div className="min-w-0 flex-1">
+          <div className="flex items-center gap-2">
+            <span className="font-display text-xs font-black text-ink">{miniDate(event.date, lang)}</span>
+            <span className="font-mono text-[10px] font-bold text-muted">{event.time || "-"}</span>
+            {event.currency ? <span className="rounded-full border border-line bg-elevate px-1.5 py-0.5 font-mono text-[9px] font-black text-muted">{event.currency}</span> : null}
+          </div>
+          <div className="mt-1 truncate font-display text-sm font-black text-ink">{event.name || "-"}</div>
+        </div>
+        <div className="shrink-0 text-right">
+          <div className={`text-[10px] font-black ${impact === 3 ? "text-up" : impact === 2 ? "text-gold" : "text-muted"}`}>
+            {impact === 3 ? highLabel : impact === 2 ? mediumLabel : "Low"}
+          </div>
+          <div className="mt-1 flex h-6 items-end justify-end gap-0.5">
+            {[1, 2, 3].map((level) => (
+              <span
+                key={level}
+                className={`w-1.5 rounded-full ${
+                  level <= impact
+                    ? impact === 3
+                      ? "bg-up"
+                      : impact === 2
+                        ? "bg-gold"
+                        : "bg-muted"
+                    : "bg-line"
+                }`}
+                style={{ height: `${level * 5 + 4}px` }}
+              />
+            ))}
+          </div>
+        </div>
+      </div>
+      {meta ? <div className="mt-2 truncate text-[11px] font-semibold text-muted">{meta}</div> : null}
     </div>
   );
 }

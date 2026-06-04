@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { getDbConnectionStatus, initDatabase, query } from "@/lib/db";
 import { getPlanForEmail } from "@/lib/entitlements";
+import { planAllows } from "@/lib/plans";
 import { getStock } from "@/lib/stocks";
 import { applyLatestQuote, getLatestQuote } from "@/lib/market-quotes";
 import { computeValuation, defaultDCFParams } from "@/lib/valuation";
@@ -209,6 +210,7 @@ export async function POST(req: Request) {
       portfolio: plan.limits.portfolio,
       compare: plan.limits.compare,
       alerts: plan.limits.alerts,
+      calendar: planAllows(plan.id, "premium"),
     },
     portfolio,
     watchlist,
