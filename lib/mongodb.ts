@@ -38,6 +38,19 @@ export async function getMongoDb(): Promise<Db> {
 
 let indexesPromise: Promise<void> | null = null;
 
+async function ensureDateTtlIndex(db: Db, collectionName: string, fieldName: string) {
+  const collection = db.collection(collectionName);
+  const indexes = await collection.indexes();
+  const ttlKey = { [fieldName]: 1 };
+  const existingIndex = indexes.find((index) => JSON.stringify(index.key) === JSON.stringify(ttlKey));
+
+  if (existingIndex?.name && existingIndex.expireAfterSeconds !== 0) {
+    await collection.dropIndex(existingIndex.name);
+  }
+
+  await collection.createIndex(ttlKey, { expireAfterSeconds: 0 });
+}
+
 export async function ensureMarketDataIndexes() {
   if (!isMongoConfigured()) return;
   if (!indexesPromise) {
@@ -46,15 +59,16 @@ export async function ensureMarketDataIndexes() {
         await Promise.all([
           db.collection("quote_cache").createIndex({ symbol: 1 }, { unique: true }),
           db.collection("quote_cache").createIndex({ expiresAt: 1 }),
+          ensureDateTtlIndex(db, "quote_cache", "staleUntil"),
           db.collection("quote_snapshots").createIndex({ symbol: 1, fetchedAt: -1 }),
           db.collection("quote_snapshots").createIndex({ fetchedAt: 1 }, { expireAfterSeconds: 60 * 60 * 24 * 90 }),
           db.collection("historical_bars").createIndex({ symbol: 1, range: 1, provider: 1 }, { unique: true }),
-          db.collection("historical_bars").createIndex({ expiresAt: 1 }),
+          ensureDateTtlIndex(db, "historical_bars", "expiresAt"),
           db.collection("external_assets").createIndex({ symbol: 1 }, { unique: true }),
           db.collection("external_assets").createIndex({ updatedAt: -1 }),
-          db.collection("external_assets").createIndex({ expiresAt: 1 }),
+          ensureDateTtlIndex(db, "external_assets", "expiresAt"),
           db.collection("market_intelligence_cache").createIndex({ symbol: 1 }, { unique: true }),
-          db.collection("market_intelligence_cache").createIndex({ expiresAt: 1 }),
+          ensureDateTtlIndex(db, "market_intelligence_cache", "expiresAt"),
           db.collection("set_securities").createIndex({ symbol: 1 }, { unique: true }),
           db.collection("set_securities").createIndex({ market: 1, securityType: 1 }),
           db.collection("set_sync_events").createIndex({ createdAt: 1 }, { expireAfterSeconds: 60 * 60 * 24 * 90 }),

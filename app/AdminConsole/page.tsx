@@ -34,6 +34,26 @@ type DataCacheStatus = {
     historicalBars?: number;
     externalAssets?: number;
     setSecurities?: number;
+    marketIntelligence?: number;
+  };
+  latest?: {
+    quoteCache?: { symbol?: string; source?: string; fetchedAt?: string | null; expiresAt?: string | null; staleUntil?: string | null } | null;
+    quoteSnapshot?: { symbol?: string; source?: string; fetchedAt?: string | null } | null;
+    historicalBars?: { symbol?: string; range?: string; provider?: string; fetchedAt?: string | null; expiresAt?: string | null } | null;
+    externalAsset?: { symbol?: string; source?: string; updatedAt?: string | null; expiresAt?: string | null } | null;
+    marketIntelligence?: { symbol?: string; fetchedAt?: string | null; expiresAt?: string | null } | null;
+    marketApiEvent?: { provider?: string; symbol?: string; ok?: boolean; source?: string; createdAt?: string | null } | null;
+    setSecurity?: { symbol?: string; market?: string; updatedAt?: string | null } | null;
+    setSyncEvent?: { type?: string; ok?: boolean; count?: number; createdAt?: string | null } | null;
+  };
+  cachePolicy?: {
+    quoteCache?: { refresh?: string; freshForSeconds?: number; staleForSeconds?: number; deleteAfter?: string };
+    quoteSnapshots?: { refresh?: string; deleteAfterDays?: number };
+    historicalBars?: { refresh?: string; freshForSeconds?: number; deleteAfter?: string };
+    externalAssets?: { refresh?: string; freshForSeconds?: number; deleteAfter?: string };
+    marketIntelligence?: { refresh?: string; freshForSeconds?: number; deleteAfter?: string };
+    marketApiEvents?: { refresh?: string; deleteAfterDays?: number };
+    setSecurities?: { refresh?: string; deleteAfter?: string };
   };
 };
 
@@ -75,6 +95,24 @@ const quickNavItems = [
     desc: "Roles and access",
   },
 ];
+
+function formatCacheTime(value?: string | null, lang: "th" | "en" = "en") {
+  if (!value) return lang === "th" ? "ยังไม่มีข้อมูล" : "No data yet";
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return lang === "th" ? "ข้อมูลเวลาไม่ถูกต้อง" : "Invalid timestamp";
+  return new Intl.DateTimeFormat(lang === "th" ? "th-TH" : "en-US", {
+    dateStyle: "medium",
+    timeStyle: "medium",
+    timeZone: "Asia/Bangkok",
+  }).format(date);
+}
+
+function secondsLabel(seconds?: number, lang: "th" | "en" = "en") {
+  if (!seconds) return "";
+  if (seconds < 60) return lang === "th" ? `${seconds} วินาที` : `${seconds}s`;
+  if (seconds < 3600) return lang === "th" ? `${Math.round(seconds / 60)} นาที` : `${Math.round(seconds / 60)} min`;
+  return lang === "th" ? `${Math.round(seconds / 3600)} ชั่วโมง` : `${Math.round(seconds / 3600)} hr`;
+}
 
 export default function AdminOverview() {
   const { lang } = useTranslation();
@@ -140,6 +178,8 @@ export default function AdminOverview() {
   const dataCacheConfigured = Boolean(dataCache?.configured);
   const dataCacheConnected = Boolean(dataCache?.connected);
   const dataCacheStatus = !dataCacheConfigured ? "Not Configured" : dataCacheConnected ? "Active" : "Offline";
+  const latest = dataCache?.latest || {};
+  const cachePolicy = dataCache?.cachePolicy || {};
 
   return (
     <div className="space-y-6 animate-fade-up">
@@ -278,6 +318,7 @@ export default function AdminOverview() {
             ["API Events", dataCacheCollections.marketApiEvents],
             ["External Assets", dataCacheCollections.externalAssets],
             ["SET Securities", dataCacheCollections.setSecurities],
+            ["Market Intelligence", dataCacheCollections.marketIntelligence],
           ].map(([label, value]) => (
             <div key={String(label)} className="rounded-xl border border-line bg-bg/70 p-3">
               <div className="text-[10px] font-black uppercase tracking-wide text-muted">{label}</div>
@@ -287,6 +328,126 @@ export default function AdminOverview() {
             </div>
           ))}
         </div>
+
+        {dataCacheConnected && (
+          <div className="mt-5 space-y-4 border-t border-line/60 pt-5">
+            <div>
+              <h4 className="text-xs font-black uppercase tracking-wide text-ink">
+                {lang === "th" ? "เวลา Cache ล่าสุด" : "Latest Cache Activity"}
+              </h4>
+              <p className="mt-1 text-[11px] font-semibold leading-relaxed text-muted">
+                {lang === "th"
+                  ? "เวลาทั้งหมดแสดงตามเวลาไทย ระบบจะเขียน cache เมื่อมี request ที่ต้องดึงข้อมูลสด หรือเมื่อ cron sync ทำงาน"
+                  : "All times are shown in Bangkok time. Cache is written on live data requests or scheduled sync jobs."}
+              </p>
+            </div>
+
+            <div className="grid gap-3 lg:grid-cols-2">
+              <CacheDetail
+                title="Quote Cache"
+                primary={`${latest.quoteCache?.symbol || "-"}${latest.quoteCache?.source ? ` · ${latest.quoteCache.source}` : ""}`}
+                rows={[
+                  [lang === "th" ? "บันทึกล่าสุด" : "Fetched", formatCacheTime(latest.quoteCache?.fetchedAt, lang)],
+                  [lang === "th" ? "สดถึง" : "Fresh until", formatCacheTime(latest.quoteCache?.expiresAt, lang)],
+                  [lang === "th" ? "ใช้แบบ stale ได้ถึง" : "Stale until", formatCacheTime(latest.quoteCache?.staleUntil, lang)],
+                ]}
+              />
+              <CacheDetail
+                title="Quote Snapshot"
+                primary={`${latest.quoteSnapshot?.symbol || "-"}${latest.quoteSnapshot?.source ? ` · ${latest.quoteSnapshot.source}` : ""}`}
+                rows={[[lang === "th" ? "snapshot ล่าสุด" : "Latest snapshot", formatCacheTime(latest.quoteSnapshot?.fetchedAt, lang)]]}
+              />
+              <CacheDetail
+                title="Historical Bars"
+                primary={`${latest.historicalBars?.symbol || "-"}${latest.historicalBars?.range ? ` · ${latest.historicalBars.range}` : ""}`}
+                rows={[
+                  [lang === "th" ? "บันทึกล่าสุด" : "Fetched", formatCacheTime(latest.historicalBars?.fetchedAt, lang)],
+                  [lang === "th" ? "หมดอายุ" : "Expires", formatCacheTime(latest.historicalBars?.expiresAt, lang)],
+                ]}
+              />
+              <CacheDetail
+                title="External Assets"
+                primary={`${latest.externalAsset?.symbol || "-"}${latest.externalAsset?.source ? ` · ${latest.externalAsset.source}` : ""}`}
+                rows={[
+                  [lang === "th" ? "อัปเดตล่าสุด" : "Updated", formatCacheTime(latest.externalAsset?.updatedAt, lang)],
+                  [lang === "th" ? "หมดอายุ" : "Expires", formatCacheTime(latest.externalAsset?.expiresAt, lang)],
+                ]}
+              />
+              <CacheDetail
+                title="Market Intelligence"
+                primary={latest.marketIntelligence?.symbol || "-"}
+                rows={[
+                  [lang === "th" ? "บันทึกล่าสุด" : "Fetched", formatCacheTime(latest.marketIntelligence?.fetchedAt, lang)],
+                  [lang === "th" ? "หมดอายุ" : "Expires", formatCacheTime(latest.marketIntelligence?.expiresAt, lang)],
+                ]}
+              />
+              <CacheDetail
+                title="SET Reference"
+                primary={`${latest.setSecurity?.symbol || "-"}${latest.setSecurity?.market ? ` · ${latest.setSecurity.market}` : ""}`}
+                rows={[
+                  [lang === "th" ? "หลักทรัพย์อัปเดตล่าสุด" : "Latest security update", formatCacheTime(latest.setSecurity?.updatedAt, lang)],
+                  [lang === "th" ? "sync ล่าสุด" : "Latest sync", formatCacheTime(latest.setSyncEvent?.createdAt, lang)],
+                ]}
+              />
+            </div>
+
+            <div className="rounded-xl border border-line bg-bg/70 p-4">
+              <h4 className="text-xs font-black uppercase tracking-wide text-ink">
+                {lang === "th" ? "Cache เมื่อไหร่ และลบเมื่อไหร่" : "When Cache Is Written And Deleted"}
+              </h4>
+              <div className="mt-3 grid gap-3 lg:grid-cols-2">
+                {[
+                  [
+                    "Quote Cache",
+                    lang === "th"
+                      ? `ดึงสดเมื่อ quote เกิน ${secondsLabel(cachePolicy.quoteCache?.freshForSeconds, lang)} แล้วมีคนเปิดดูหุ้น; ใช้ stale ได้ถึง ${secondsLabel(cachePolicy.quoteCache?.staleForSeconds, lang)}; ลบด้วย MongoDB TTL หลัง staleUntil`
+                      : `Refreshes on quote requests after ${secondsLabel(cachePolicy.quoteCache?.freshForSeconds, lang)}; stale allowed until ${secondsLabel(cachePolicy.quoteCache?.staleForSeconds, lang)}; deleted by MongoDB TTL after staleUntil.`,
+                  ],
+                  [
+                    "Quote Snapshots",
+                    lang === "th"
+                      ? `เพิ่มทุกครั้งที่มี quote สดใหม่ และลบอัตโนมัติหลัง ${cachePolicy.quoteSnapshots?.deleteAfterDays || 90} วัน`
+                      : `Inserted whenever a fresh quote is saved and automatically deleted after ${cachePolicy.quoteSnapshots?.deleteAfterDays || 90} days.`,
+                  ],
+                  [
+                    "Historical Bars",
+                    lang === "th"
+                      ? `ดึงใหม่เมื่อข้อมูลกราฟเกิน ${secondsLabel(cachePolicy.historicalBars?.freshForSeconds, lang)} แล้วมี request และลบด้วย TTL หลัง expiresAt`
+                      : `Refreshes on chart/history requests after ${secondsLabel(cachePolicy.historicalBars?.freshForSeconds, lang)} and is deleted by TTL after expiresAt.`,
+                  ],
+                  [
+                    "External Assets",
+                    lang === "th"
+                      ? `เก็บเมื่อ resolve symbol ภายนอก สำรอง ${secondsLabel(cachePolicy.externalAssets?.freshForSeconds, lang)} และลบด้วย TTL หลัง expiresAt`
+                      : `Saved when an external symbol is resolved, kept for ${secondsLabel(cachePolicy.externalAssets?.freshForSeconds, lang)}, then deleted by TTL.`,
+                  ],
+                  [
+                    "Market Intelligence",
+                    lang === "th"
+                      ? `ดึงใหม่เมื่อ intelligence เกิน ${secondsLabel(cachePolicy.marketIntelligence?.freshForSeconds, lang)} แล้วมี request และลบด้วย TTL หลัง expiresAt`
+                      : `Refreshes on intelligence requests after ${secondsLabel(cachePolicy.marketIntelligence?.freshForSeconds, lang)} and is deleted by TTL after expiresAt.`,
+                  ],
+                  [
+                    "API Events / SET Reference",
+                    lang === "th"
+                      ? `API logs ลบหลัง ${cachePolicy.marketApiEvents?.deleteAfterDays || 30} วัน; SET reference อัปเดตทับเมื่อ cron sync ทำงานและไม่มี TTL อัตโนมัติ`
+                      : `API logs are deleted after ${cachePolicy.marketApiEvents?.deleteAfterDays || 30} days; SET reference is updated by cron and has no automatic TTL.`,
+                  ],
+                ].map(([label, detail]) => (
+                  <div key={label} className="rounded-lg border border-line/70 bg-surface/50 p-3">
+                    <div className="text-[11px] font-black text-ink">{label}</div>
+                    <p className="mt-1 text-[11px] font-semibold leading-relaxed text-muted">{detail}</p>
+                  </div>
+                ))}
+              </div>
+              <p className="mt-3 text-[11px] font-semibold leading-relaxed text-muted">
+                {lang === "th"
+                  ? "หมายเหตุ: MongoDB TTL monitor ลบข้อมูลแบบอัตโนมัติหลังหมดอายุ แต่อาจช้ากว่าเวลาที่กำหนดเล็กน้อย ไม่ใช่ realtime ตรงวินาที"
+                  : "Note: MongoDB TTL monitor deletes expired documents automatically, but not exactly at the expiration second."}
+              </p>
+            </div>
+          </div>
+        )}
       </Card>
 
       {/* 4. Quick Navigation Matrix */}
@@ -314,6 +475,35 @@ export default function AdminOverview() {
             </Link>
           );
         })}
+      </div>
+    </div>
+  );
+}
+
+function CacheDetail({
+  title,
+  primary,
+  rows,
+}: {
+  title: string;
+  primary: string;
+  rows: Array<[string, string]>;
+}) {
+  return (
+    <div className="rounded-xl border border-line bg-bg/70 p-3">
+      <div className="flex items-start justify-between gap-3">
+        <div>
+          <div className="text-[10px] font-black uppercase tracking-wide text-muted">{title}</div>
+          <div className="mt-1 text-sm font-bold text-ink">{primary}</div>
+        </div>
+      </div>
+      <div className="mt-3 space-y-2">
+        {rows.map(([label, value]) => (
+          <div key={label} className="flex items-center justify-between gap-3 text-[11px]">
+            <span className="font-semibold text-muted">{label}</span>
+            <span className="text-right font-bold text-ink">{value}</span>
+          </div>
+        ))}
       </div>
     </div>
   );
