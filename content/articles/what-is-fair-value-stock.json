@@ -1,0 +1,100 @@
+{
+  "slug": "what-is-fair-value-stock",
+  "symbol": "FAIR VALUE",
+  "titleTh": "Fair Value คืออะไร? วิธีดูราคาเหมาะสมของหุ้นก่อนซื้อ",
+  "titleEn": "What Is Fair Value in Stocks? A Beginner Valuation Guide",
+  "descriptionTh": "อธิบาย Fair Value คืออะไร วิธีคำนวณราคาเหมาะสมหุ้นด้วย DCF, multiples และ margin of safety สำหรับนักลงทุนไทย",
+  "descriptionEn": "A beginner guide to stock fair value using DCF, valuation multiples and margin of safety.",
+  "category": "Value Investing Guide",
+  "published": "2026-06-03",
+  "modified": "2026-06-03",
+  "readTime": "9 min",
+  "verdictTh": "Fair Value คือมูลค่าประมาณการของหุ้นจากพื้นฐานธุรกิจ ไม่ใช่ราคาที่ตลาดต้องวิ่งไปถึงทันที",
+  "verdictEn": "Fair value is an estimated business value, not a guaranteed price target.",
+  "keywords": [
+    "Fair Value คืออะไร",
+    "ราคาเหมาะสมหุ้น",
+    "วิธีประเมินมูลค่าหุ้น"
+  ],
+  "metrics": [
+    {
+      "label": "Search intent",
+      "value": "High",
+      "note": "คำค้นที่เกิดก่อนสมัครและก่อนตัดสินใจลงทุน"
+    },
+    {
+      "label": "Best action",
+      "value": "Screen + compare",
+      "note": "ใช้ screener, DCF และ watchlist เพื่อกรองต่อ"
+    },
+    {
+      "label": "Risk control",
+      "value": "Allocation",
+      "note": "กำหนดสัดส่วนและอย่าตัดสินจาก yield หรือราคาอย่างเดียว"
+    },
+    {
+      "label": "Conversion path",
+      "value": "Free -> Premium",
+      "note": "สมัครฟรีก่อน แล้วอัปเกรดเมื่อใช้เครื่องมือเชิงลึก"
+    }
+  ],
+  "sectionsTh": [
+    {
+      "heading": "สรุปสำหรับนักลงทุนไทย",
+      "body": [
+        "Fair Value คือมูลค่าประมาณการของหุ้นจากพื้นฐานธุรกิจ ไม่ใช่ราคาที่ตลาดต้องวิ่งไปถึงทันที",
+        "คำค้นกลุ่มนี้มักเกิดตอนนักลงทุนกำลังจะตัดสินใจจริง จึงควรอ่านด้วยกรอบวิเคราะห์ ไม่ใช่รีบซื้อจากรายชื่อหุ้นหรือกระแสในโซเชียล"
+      ]
+    },
+    {
+      "heading": "เช็กลิสต์ที่ควรทำก่อนลงทุน",
+      "body": [
+        "ใช้หลายวิธีประเมินและเทียบกัน เผื่อ margin of safety เพราะทุกสมมติฐานมีโอกาสผิด",
+        "หลังได้รายชื่อหุ้นหรือกองทุนที่น่าสนใจ ให้ใช้เครื่องมือประเมินมูลค่า เปรียบเทียบคู่แข่ง และสร้าง watchlist เพื่อรอจังหวะที่ valuation มีส่วนเผื่อความปลอดภัย"
+      ]
+    },
+    {
+      "heading": "วิธีใช้ ValuStock ต่อจากบทความนี้",
+      "body": [
+        "เริ่มจากสมัครสมาชิกฟรีเพื่อบันทึกหุ้นใน watchlist ใช้ screener กรองหุ้นตาม P/E, dividend yield, ROE และ margin of safety จากนั้นค่อยใช้ Premium เมื่ออยากได้ DCF, portfolio alerts และการเปรียบเทียบหุ้นเชิงลึก",
+        "เป้าหมายไม่ใช่เดาหุ้นที่จะขึ้นพรุ่งนี้ แต่คือสร้างระบบตัดสินใจที่ลดความผิดพลาดก่อนซื้อหุ้นจริง"
+      ]
+    }
+  ],
+  "sectionsEn": [
+    {
+      "heading": "Bottom line",
+      "body": [
+        "Fair value is an estimated business value, not a guaranteed price target.",
+        "These searches usually happen right before a real investment decision, so investors should use a structured checklist instead of chasing headlines."
+      ]
+    },
+    {
+      "heading": "Practical workflow",
+      "body": [
+        "Screen candidates, compare peers, estimate fair value, build a watchlist and wait for a margin of safety.",
+        "The objective is to improve decision quality before buying, not to predict tomorrow's price movement."
+      ]
+    }
+  ],
+  "faq": [
+    {
+      "q": "Fair Value คืออะไร",
+      "a": "Fair Value คือมูลค่าประมาณการของหุ้นจากพื้นฐานธุรกิจ ไม่ใช่ราคาที่ตลาดต้องวิ่งไปถึงทันที"
+    },
+    {
+      "q": "ควรเริ่มจากอะไร",
+      "a": "เริ่มจากกำหนดเป้าหมาย ความเสี่ยงที่รับได้ และใช้ screener เพื่อคัดหุ้นหรือ ETF ที่เข้าเกณฑ์ก่อนวิเคราะห์รายตัว"
+    },
+    {
+      "q": "บทความนี้เป็นคำแนะนำซื้อขายไหม",
+      "a": "ไม่ใช่ เป็นข้อมูลเพื่อการศึกษาและช่วยวางกรอบวิเคราะห์ นักลงทุนควรตรวจข้อมูลล่าสุดก่อนตัดสินใจ"
+    }
+  ],
+  "sources": [
+    {
+      "label": "ValuStock methodology",
+      "url": "https://valustock.com/methodology"
+    }
+  ]
+}

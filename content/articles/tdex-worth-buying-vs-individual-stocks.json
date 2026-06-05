@@ -1,0 +1,141 @@
+{
+  "slug": "tdex-worth-buying-vs-individual-stocks",
+  "symbol": "TDEX",
+  "titleTh": "TDEX น่าซื้อไหม? เปรียบเทียบซื้อ ETF SET50 กับหุ้นรายตัว",
+  "titleEn": "Is TDEX Worth Buying? SET50 ETF Versus Individual Stocks",
+  "descriptionTh": "วิเคราะห์ TDEX น่าซื้อไหม เปรียบเทียบ ETF SET50 กับซื้อหุ้นรายตัว ดู expense ratio ปันผล ผลตอบแทน และเหมาะกับนักลงทุนแบบไหน 2569",
+  "descriptionEn": "A Thai investor guide comparing TDEX, the SET50 ETF, with individual stock picking across fees, dividends, diversification and long-term portfolio fit.",
+  "category": "Thai ETF Analysis",
+  "published": "2026-06-05",
+  "modified": "2026-06-05",
+  "readTime": "11 min",
+  "verdictTh": "TDEX เป็นจุดเริ่มต้นที่ดีสำหรับนักลงทุนส่วนใหญ่ เพราะให้การกระจายความเสี่ยงใน SET50 ค่าธรรมเนียมต่ำ และเหมาะกับ DCA ระยะยาว แต่ถ้าคุณเลือกหุ้นรายตัวได้ดีอย่างสม่ำเสมอ หุ้นรายตัวอาจให้ dividend yield หรือผลตอบแทนสูงกว่า",
+  "verdictEn": "TDEX can be a strong starting point for diversified Thai equity exposure, but skilled stock pickers may prefer individual stocks for higher yield or outperformance potential.",
+  "keywords": [
+    "TDEX น่าซื้อไหม",
+    "TDEX vs หุ้นรายตัว",
+    "ETF SET50 ดีไหม",
+    "ซื้อ TDEX ดีไหม",
+    "TDEX 2569"
+  ],
+  "metrics": [
+    {
+      "label": "Benchmark",
+      "value": "SET50",
+      "note": "ถือหุ้นขนาดใหญ่ของตลาดหุ้นไทย"
+    },
+    {
+      "label": "Expense ratio",
+      "value": "~0.40%",
+      "note": "ควรตรวจตัวเลขล่าสุดจาก factsheet"
+    },
+    {
+      "label": "Dividend yield",
+      "value": "~3-4%",
+      "note": "ขึ้นกับผลประกอบการและนโยบายกองทุน"
+    },
+    {
+      "label": "Best use",
+      "value": "Core position",
+      "note": "เหมาะเป็นแกนพอร์ตหุ้นไทยสำหรับ DCA"
+    }
+  ],
+  "sectionsTh": [
+    {
+      "heading": "TDEX คืออะไร",
+      "body": [
+        "TDEX หรือ ThaiDEX SET50 ETF คือ ETF ที่ติดตามดัชนี SET50 ซึ่งประกอบด้วยหุ้นขนาดใหญ่และมีสภาพคล่องสูงของตลาดหุ้นไทย บริหารโดย One Asset Management และจดทะเบียนในตลาดหลักทรัพย์ตั้งแต่ปี 2550",
+        "การซื้อ TDEX หนึ่งหน่วยทำให้นักลงทุนได้ exposure หุ้นใหญ่ใน SET50 เช่น PTT, ADVANC, CPALL, AOT, KBANK, BDMS และหุ้นขนาดใหญ่อื่น ๆ โดยไม่ต้องจัดพอร์ตเองหรือคอยปรับน้ำหนักหุ้นทุกตัวด้วยตัวเอง"
+      ]
+    },
+    {
+      "heading": "ข้อดีของการซื้อ TDEX แทนหุ้นรายตัว",
+      "body": [
+        "ข้อดีแรกคือกระจายความเสี่ยงทันทีในคำสั่งเดียว นักลงทุนไม่ต้องเลือกว่าหุ้นใหญ่ตัวไหนจะชนะตลาด เพราะกองทุนถือหุ้นตามดัชนี SET50 เหมาะกับคนไม่มีเวลาวิเคราะห์หุ้นรายตัวหรือยังไม่มั่นใจว่าจะเลือกบริษัทไหนดี",
+        "ข้อดีที่สองคือ expense ratio ต่ำกว่ากองทุนหุ้นไทยเชิงรุกจำนวนมาก หากถือยาว 5-10 ปี ความต่างของค่าธรรมเนียมรายปีสามารถสะสมเป็นผลตอบแทนส่วนเพิ่มได้มาก โดยเฉพาะเมื่อใช้เป็น core position ระยะยาว",
+        "ข้อดีอีกอย่างคือไม่ต้องอ่านงบการเงินทุกบริษัท ไม่ต้องติดตามข่าวรายตัวละเอียด และไม่ต้อง rebalance เอง เมื่อองค์ประกอบ SET50 เปลี่ยน กองทุนจะปรับพอร์ตตามดัชนีให้อัตโนมัติ"
+      ]
+    },
+    {
+      "heading": "ข้อเสียของ TDEX เมื่อเทียบกับหุ้นรายตัว",
+      "body": [
+        "TDEX ถือหุ้นทั้งดีและไม่ดีตามดัชนี ผลตอบแทนจึงถูกเฉลี่ยด้วยหุ้นที่อ่อนแอ หากนักลงทุนมีทักษะเลือกหุ้นและเลือกถูกตัวอย่างสม่ำเสมอ การซื้อหุ้นรายตัวอาจให้ผลตอบแทนสูงกว่า",
+        "อีกข้อจำกัดคือ SET50 ถ่วงน้ำหนักตามมูลค่าตลาด หุ้นขนาดใหญ่มากบางตัว เช่น DELTA, PTT หรือ ADVANC อาจมีน้ำหนักสูง ทำให้ผลตอบแทนของ TDEX ผูกกับหุ้นไม่กี่ตัวมากกว่าที่มือใหม่คิด",
+        "สำหรับสายปันผล TDEX มักให้ dividend yield ปานกลางราว 3-4% ในหลายช่วง ขณะที่หุ้นปันผลรายตัว เช่น TISCO, BBL หรือ KBANK อาจให้ yield สูงกว่า แต่ก็แลกกับความเสี่ยงรายตัวและการวิเคราะห์ที่มากขึ้น"
+      ]
+    },
+    {
+      "heading": "เปรียบเทียบ TDEX กับหุ้นรายตัว",
+      "body": [
+        "TDEX เด่นด้านการกระจายความเสี่ยง ความง่าย และต้นทุนที่คาดการณ์ได้ เหมาะกับมือใหม่ คนไม่มีเวลา และนักลงทุนที่ต้องการถือยาวโดยไม่ต้อง monitor ตลาดทุกวัน ส่วนหุ้นรายตัวเด่นด้านความยืดหยุ่นและโอกาส outperform ตลาดหากเลือกหุ้นได้ดี",
+        "ค่าธรรมเนียมของ TDEX เป็น expense ratio รายปี ส่วนหุ้นรายตัวไม่มีค่าธรรมเนียมกองทุนแต่มี commission ซื้อขาย นักลงทุนจึงควรเทียบทั้งต้นทุน เงินปันผล โอกาสชนะตลาด และเวลาที่ต้องใช้ติดตามพอร์ต ไม่ใช่ดูแค่ค่าใช้จ่ายบรรทัดเดียว"
+      ]
+    },
+    {
+      "heading": "TDEX เหมาะกับนักลงทุนแบบไหน",
+      "body": [
+        "TDEX เหมาะกับมือใหม่ที่ยังไม่รู้จะเลือกหุ้นอะไร คนไม่มีเวลาวิเคราะห์หุ้นรายตัว นักลงทุนระยะยาวที่ต้องการ DCA สม่ำเสมอ และคนที่อยากมี core position หุ้นไทยก่อนเสริม satellite ด้วยหุ้นรายตัวที่เชื่อมั่น",
+        "TDEX อาจไม่เหมาะกับคนที่ต้องการปันผลสูงกว่า 5% ขึ้นไป นักลงทุน VI ที่มั่นใจว่าสามารถเลือกหุ้นได้ดีกว่าตลาดอย่างต่อเนื่อง หรือคนที่ต้องการควบคุมพอร์ตเต็มที่และไม่ต้องการถือหุ้นบางตัวใน SET50"
+      ]
+    },
+    {
+      "heading": "TDEX เหมาะกับ DCA อย่างไร",
+      "body": [
+        "วิธีใช้งานที่เรียบง่ายคือซื้อ TDEX เป็นจำนวนเงินเท่าเดิมทุกเดือน เช่น 3,000 บาทต่อเดือน แล้วถือยาว 5-10 ปีขึ้นไป วิธีนี้ช่วยลดความเสี่ยงการจับจังหวะผิด เพราะเมื่อตลาดลงจะซื้อได้จำนวนหน่วยมากขึ้น และเมื่อตลาดฟื้นต้นทุนเฉลี่ยอาจดีกว่าการเข้าซื้อก้อนเดียวผิดจังหวะ",
+        "สำหรับหลายพอร์ต วิธีที่สมเหตุสมผลคือใช้ TDEX เป็น core ประมาณ 60-70% ของส่วนหุ้นไทย แล้วเสริมด้วยหุ้นรายตัวหรือ ETF เฉพาะกลุ่มเป็น satellite เฉพาะเมื่อมี thesis ชัดเจนและรับความเสี่ยงเพิ่มได้"
+      ]
+    }
+  ],
+  "sectionsEn": [
+    {
+      "heading": "Quick answer",
+      "body": [
+        "TDEX is an ETF that tracks the SET50 Index, giving investors diversified exposure to large Thai stocks through one listed product.",
+        "It can be a practical core holding for long-term DCA, especially for investors who do not want to select and monitor individual stocks."
+      ]
+    },
+    {
+      "heading": "ETF versus stock picking",
+      "body": [
+        "TDEX offers simplicity, diversification and automatic rebalancing, but it also forces investors to hold the index winners and laggards together.",
+        "Individual stocks may deliver higher dividends or outperformance, but require financial analysis, valuation discipline and ongoing monitoring."
+      ]
+    }
+  ],
+  "faq": [
+    {
+      "q": "TDEX กับ TMBAM EASTSPRING SET INDEX ต่างกันไหม",
+      "a": "ต่างกันที่ดัชนีอ้างอิงและโครงสร้างผลิตภัณฑ์ TDEX ติดตาม SET50 ส่วนกองทุน SET Index ติดตามตลาดกว้างกว่า นักลงทุนควรดู factsheet ล่าสุดก่อนเปรียบเทียบ"
+    },
+    {
+      "q": "ซื้อขาย TDEX มีค่า commission ไหม",
+      "a": "มีค่า commission เหมือนซื้อขายหุ้นหรือ ETF ปกติ ขึ้นอยู่กับโบรกเกอร์ที่ใช้ และควรดู bid-ask spread ประกอบด้วย"
+    },
+    {
+      "q": "TDEX ปันผลสม่ำเสมอไหม",
+      "a": "ปันผลขึ้นอยู่กับผลกำไรของกองทุนและนโยบายจ่ายปันผล ไม่รับประกันทุกปี นักลงทุนควรตรวจประวัติปันผลจาก factsheet ล่าสุด"
+    },
+    {
+      "q": "ราคา TDEX ตกได้ไหม",
+      "a": "ตกได้ เพราะราคา TDEX สะท้อนการเคลื่อนไหวของ SET50 หากตลาดหุ้นไทยปรับลง TDEX ก็ปรับลงตามได้ นักลงทุนควรกำหนดระยะเวลาลงทุนและสัดส่วนพอร์ตให้เหมาะสม"
+    }
+  ],
+  "sources": [
+    {
+      "label": "SET factsheet: TDEX",
+      "url": "https://www.set.or.th/en/market/product/etf/quote/TDEX/factsheet"
+    },
+    {
+      "label": "One Asset Management",
+      "url": "https://www.one-asset.com"
+    },
+    {
+      "label": "ValuStock stock screener",
+      "url": "https://valustock.com/screeners"
+    },
+    {
+      "label": "ValuStock valuation tools",
+      "url": "https://valustock.com/stock-valuation"
+    }
+  ]
+}

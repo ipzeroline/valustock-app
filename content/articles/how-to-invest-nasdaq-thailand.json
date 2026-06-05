@@ -1,0 +1,110 @@
+{
+  "slug": "how-to-invest-nasdaq-thailand",
+  "symbol": "NASDAQ",
+  "titleTh": "สมัครเล่น Nasdaq ยังไง? คู่มือลงทุนหุ้นเทคสหรัฐสำหรับมือใหม่",
+  "titleEn": "How to Invest in Nasdaq: A Beginner Guide for Thai Investors",
+  "descriptionTh": "อธิบายวิธีสมัครลงทุน Nasdaq สำหรับมือใหม่ ความต่างระหว่าง Nasdaq Composite กับ Nasdaq-100 วิธีซื้อผ่าน ETF กองทุน หุ้นรายตัว และความเสี่ยงหุ้นเทค",
+  "descriptionEn": "A bilingual guide to Nasdaq investing, explaining Nasdaq Composite, Nasdaq-100, ETFs, individual stocks, account setup and technology-stock risks.",
+  "category": "US Index Investing Guide",
+  "published": "2026-06-03",
+  "modified": "2026-06-03",
+  "readTime": "12 min",
+  "verdictTh": "การลงทุน Nasdaq เหมาะกับคนที่ต้องการ exposure หุ้นเติบโตและเทคโนโลยีสหรัฐ แต่ต้องรู้ก่อนว่า Nasdaq ไม่ใช่สิ่งเดียวกันทั้งหมด มีทั้งตลาดหุ้น ดัชนี Nasdaq Composite และดัชนี Nasdaq-100 ซึ่งมีความเข้มข้นและความเสี่ยงต่างกัน",
+  "verdictEn": "Nasdaq investing can offer exposure to innovative U.S. growth companies, but beginners must distinguish the Nasdaq exchange, Nasdaq Composite and Nasdaq-100 before choosing a fund or stock.",
+  "keywords": [
+    "สมัครเล่น nasdaq ยังไง",
+    "ลงทุน Nasdaq",
+    "หุ้น Nasdaq มือใหม่",
+    "Nasdaq Composite",
+    "Nasdaq ETF"
+  ],
+  "metrics": [
+    {
+      "label": "Meaning",
+      "value": "Exchange + indexes",
+      "note": "Nasdaq can refer to a market or an index family"
+    },
+    {
+      "label": "Common route",
+      "value": "ETF / Fund",
+      "note": "Broad Nasdaq exposure is usually via funds"
+    },
+    {
+      "label": "Style risk",
+      "value": "Growth bias",
+      "note": "Often sensitive to rates and tech valuations"
+    },
+    {
+      "label": "Beginner focus",
+      "value": "Allocation",
+      "note": "Set position size before chasing returns"
+    }
+  ],
+  "sectionsTh": [
+    {
+      "heading": "สรุปคำตอบ: สมัครเล่น Nasdaq ยังไง",
+      "body": [
+        "ถ้าพูดว่าอยากเล่น Nasdaq ต้องถามก่อนว่าหมายถึงอะไร: ซื้อหุ้นที่จดทะเบียนในตลาด Nasdaq, ลงทุน Nasdaq Composite หรือซื้อกองทุนที่ track Nasdaq-100 เพราะแต่ละแบบต่างกันมาก",
+        "สำหรับมือใหม่ เส้นทางที่ง่ายกว่าคือเปิดบัญชีกองทุนหรือบัญชีหุ้นต่างประเทศ แล้วซื้อ ETF หรือกองทุนที่ระบุชัดว่าลงทุนใน Nasdaq-100 หรือหุ้นเทคสหรัฐ ไม่ควรกดซื้อเพราะชื่อ Nasdaq โดยไม่อ่าน factsheet"
+      ]
+    },
+    {
+      "heading": "Nasdaq Composite กับ Nasdaq-100 ต่างกันอย่างไร",
+      "body": [
+        "Nasdaq Composite เป็นดัชนีกว้างของหุ้นจำนวนมากที่จดทะเบียนใน Nasdaq ส่วน Nasdaq-100 เป็นดัชนีของบริษัทขนาดใหญ่ที่ไม่ใช่กลุ่มการเงิน 100 บริษัทในตลาด Nasdaq จึงมีการกระจุกตัวในหุ้นเทคและ growth มากกว่า",
+        "ถ้าต้องการ broad market สหรัฐ S&P 500 อาจกระจายกว่าบางช่วง แต่ถ้าต้องการน้ำหนักเทคสูง Nasdaq-100 อาจตอบโจทย์กว่า ทั้งนี้ผลตอบแทนที่มีโอกาสสูงขึ้นมักมาพร้อม drawdown ที่แรงขึ้น"
+      ]
+    },
+    {
+      "heading": "ขั้นตอนเริ่มต้น",
+      "body": [
+        "เลือกว่าจะลงทุนผ่านกองทุนไทย ETF ต่างประเทศ หรือหุ้นรายตัว จากนั้นเปิดบัญชี ยืนยันตัวตน ฝากเงิน ตรวจค่าธรรมเนียม แลกเงินถ้าจำเป็น และเลือกผลิตภัณฑ์ที่ตรงกับดัชนีเป้าหมาย",
+        "ก่อนซื้อควรดู top holdings, sector weight, expense ratio, tracking index, currency policy และ concentration risk เพราะกองทุน Nasdaq หลายตัวพึ่งพาหุ้นใหญ่ไม่กี่ตัวสูงมาก"
+      ]
+    }
+  ],
+  "sectionsEn": [
+    {
+      "heading": "Quick answer",
+      "body": [
+        "Nasdaq can mean the stock exchange, the Nasdaq Composite or the Nasdaq-100. Beginners should identify which exposure they want before buying.",
+        "Most retail investors gain Nasdaq exposure through ETFs or mutual funds rather than buying every constituent stock individually."
+      ]
+    },
+    {
+      "heading": "Risk framework",
+      "body": [
+        "Nasdaq-heavy portfolios often have growth and technology concentration. They can perform strongly in bull markets but can fall sharply when rates rise or valuations compress.",
+        "Position sizing, monthly investing and rebalancing are important safeguards for long-term investors."
+      ]
+    }
+  ],
+  "faq": [
+    {
+      "q": "Nasdaq คือหุ้นหรือดัชนี",
+      "a": "Nasdaq อาจหมายถึงตลาดหุ้นหรือดัชนี เช่น Nasdaq Composite และ Nasdaq-100 จึงต้องดูว่ากองทุน track อะไร"
+    },
+    {
+      "q": "มือใหม่ควรซื้อหุ้น Nasdaq รายตัวไหม",
+      "a": "ถ้ายังวิเคราะห์งบไม่เป็น ETF หรือกองทุนดัชนีมักกระจายความเสี่ยงกว่า"
+    },
+    {
+      "q": "Nasdaq เสี่ยงกว่า S&P 500 ไหม",
+      "a": "โดยทั่วไป Nasdaq-100 กระจุกในหุ้นเติบโตและเทคมากกว่า จึงอาจผันผวนกว่า S&P 500"
+    }
+  ],
+  "sources": [
+    {
+      "label": "Nasdaq-100 official overview",
+      "url": "https://www.nasdaq.com/solutions/global-indexes/nasdaq-100"
+    },
+    {
+      "label": "FINRA investing basics",
+      "url": "https://www.finra.org/investors/investing/investing-basics"
+    },
+    {
+      "label": "FINRA: Exchange-Traded Funds and Products",
+      "url": "https://www.finra.org/investors/investing/investment-products/exchange-traded-funds-and-products"
+    }
+  ]
+}

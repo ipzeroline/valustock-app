@@ -1,0 +1,110 @@
+{
+  "slug": "how-to-buy-nasdaq-100-etf",
+  "symbol": "Nasdaq-100",
+  "titleTh": "ซื้อหุ้น Nasdaq 100 ยังไง? วิธีลงทุน Nasdaq-100 ผ่าน ETF และกองทุน",
+  "titleEn": "How to Buy the Nasdaq-100: ETF and Index Fund Guide",
+  "descriptionTh": "คู่มือซื้อ Nasdaq 100 สำหรับมือใหม่ อธิบายว่า Nasdaq-100 เป็นดัชนี ไม่ใช่หุ้น วิธีเลือก ETF/gองทุน ดู top holdings ค่าธรรมเนียม ความเสี่ยง และแผน DCA",
+  "descriptionEn": "A practical bilingual guide to buying Nasdaq-100 exposure through ETFs or index funds, including fees, holdings, concentration risk and DCA planning.",
+  "category": "ETF Investing Guide",
+  "published": "2026-06-03",
+  "modified": "2026-06-03",
+  "readTime": "12 min",
+  "verdictTh": "Nasdaq-100 ซื้อโดยตรงไม่ได้ในฐานะดัชนี แต่นักลงทุนสามารถซื้อ exposure ผ่าน ETF หรือกองทุนที่ track Nasdaq-100 ได้ เหมาะกับคนที่รับความผันผวนของหุ้นเทคและ growth ได้สูงกว่าค่าเฉลี่ย",
+  "verdictEn": "You do not buy the Nasdaq-100 index directly; you buy exposure through ETFs or index funds. It can fit growth-oriented investors who can tolerate concentration and volatility.",
+  "keywords": [
+    "ซื้อหุ้น nasdaq 100 ยังไง",
+    "Nasdaq 100 ETF",
+    "ซื้อ QQQ ยังไง",
+    "กองทุน Nasdaq 100",
+    "ลงทุนหุ้นเทคสหรัฐ"
+  ],
+  "metrics": [
+    {
+      "label": "Index",
+      "value": "100 companies",
+      "note": "Large non-financial Nasdaq-listed companies"
+    },
+    {
+      "label": "Access",
+      "value": "ETF / Fund",
+      "note": "Common retail access route"
+    },
+    {
+      "label": "Concentration",
+      "value": "High",
+      "note": "Top holdings can dominate performance"
+    },
+    {
+      "label": "Best use",
+      "value": "Growth sleeve",
+      "note": "Often used as part of a diversified portfolio"
+    }
+  ],
+  "sectionsTh": [
+    {
+      "heading": "สรุปคำตอบ: ซื้อหุ้น Nasdaq 100 ยังไง",
+      "body": [
+        "Nasdaq-100 เป็นดัชนีของบริษัทขนาดใหญ่ที่ไม่ใช่กลุ่มการเงินในตลาด Nasdaq นักลงทุนจึงไม่ได้ซื้อดัชนีโดยตรง แต่ซื้อ ETF หรือกองทุนที่มีนโยบาย track Nasdaq-100",
+        "ตัวอย่างขั้นตอนคือเปิดบัญชีหุ้นต่างประเทศหรือบัญชีกองทุน เลือก ETF/gองทุนที่ระบุ Nasdaq-100 เป็น benchmark ตรวจค่าธรรมเนียมและความเสี่ยงค่าเงิน แล้วซื้อด้วยเงินก้อนหรือทยอยลงทุนแบบ DCA"
+      ]
+    },
+    {
+      "heading": "เลือกผลิตภัณฑ์ Nasdaq-100 อย่างไร",
+      "body": [
+        "ดูชื่ออย่างเดียวไม่พอ ต้องอ่าน factsheet ว่ากองทุนถืออะไร benchmark คืออะไร มี leverage หรือ inverse หรือไม่ เพราะ ETF บางประเภทไม่ได้เหมาะกับการถือยาวสำหรับมือใหม่",
+        "กองทุนปกติที่ track index แบบไม่ใช้ leverage มักเหมาะกับการสะสมระยะยาวมากกว่า leveraged ETF ซึ่งออกแบบเพื่อการถือสั้นและมี path dependency สูง"
+      ]
+    },
+    {
+      "heading": "ความเสี่ยงเฉพาะของ Nasdaq-100",
+      "body": [
+        "Nasdaq-100 มีน้ำหนักหุ้น mega-cap technology และ growth สูง ผลตอบแทนจึงอาจดีมากในช่วงที่ตลาดให้ premium กับเทคโนโลยี แต่ drawdown ก็อาจแรงเมื่อดอกเบี้ยสูง valuation ถูกบีบ หรือกำไรหุ้นใหญ่ผิดคาด",
+        "นักลงทุนควรกำหนดสัดส่วน เช่น 10-30% ของพอร์ตหุ้นโลกตามระดับความเสี่ยง ไม่ควรให้ Nasdaq-100 เป็นทั้งพอร์ตถ้าไม่พร้อมรับความผันผวนสูง"
+      ]
+    }
+  ],
+  "sectionsEn": [
+    {
+      "heading": "Quick answer",
+      "body": [
+        "The Nasdaq-100 is an index, so investors usually buy an ETF or index fund that tracks it.",
+        "Open a brokerage or fund account, compare products, check fees and currency treatment, then buy according to a planned allocation."
+      ]
+    },
+    {
+      "heading": "What to avoid",
+      "body": [
+        "Avoid buying leveraged or inverse Nasdaq products unless you fully understand daily reset mechanics and short-term trading risk.",
+        "For long-term investing, simple, low-cost, unleveraged index exposure is usually easier to manage."
+      ]
+    }
+  ],
+  "faq": [
+    {
+      "q": "Nasdaq-100 ซื้อโดยตรงได้ไหม",
+      "a": "ไม่ได้ในฐานะดัชนี ต้องซื้อผ่าน ETF หรือกองทุนที่ track Nasdaq-100"
+    },
+    {
+      "q": "Nasdaq-100 เหมาะถือยาวไหม",
+      "a": "เหมาะได้ถ้ารับความผันผวนและ concentration risk ได้ และควรเป็นส่วนหนึ่งของพอร์ตที่กระจายแล้ว"
+    },
+    {
+      "q": "ควรซื้อ Nasdaq-100 แบบ DCA ไหม",
+      "a": "DCA ช่วยลดความเสี่ยงจับจังหวะผิด โดยเฉพาะสินทรัพย์ที่ผันผวนสูงอย่าง Nasdaq-100"
+    }
+  ],
+  "sources": [
+    {
+      "label": "Nasdaq-100 official overview",
+      "url": "https://www.nasdaq.com/solutions/global-indexes/nasdaq-100"
+    },
+    {
+      "label": "SEC ETF investor bulletin",
+      "url": "https://www.sec.gov/files/etfs.pdf"
+    },
+    {
+      "label": "FINRA: Exchange-Traded Funds and Products",
+      "url": "https://www.finra.org/investors/investing/investment-products/exchange-traded-funds-and-products"
+    }
+  ]
+}

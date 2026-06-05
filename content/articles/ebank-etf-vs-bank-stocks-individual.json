@@ -1,0 +1,147 @@
+{
+  "slug": "ebank-etf-vs-bank-stocks-individual",
+  "symbol": "EBANK",
+  "titleTh": "ETF หมวดธนาคาร EBANK ดีกว่าซื้อหุ้นธนาคารรายตัวไหม?",
+  "titleEn": "Is EBANK ETF Better Than Buying Individual Thai Bank Stocks?",
+  "descriptionTh": "วิเคราะห์ EBANK ETF หมวดธนาคารดีกว่าซื้อ KBANK BBL SCB TISCO รายตัวไหม ดู dividend yield expense ratio ความเสี่ยง และเหมาะกับนักลงทุนแบบไหน 2569",
+  "descriptionEn": "A Thai investor guide comparing EBANK, the SET Banking Sector ETF, with individual Thai bank stocks such as KBANK, BBL, SCB and TISCO.",
+  "category": "Thai ETF Analysis",
+  "published": "2026-06-05",
+  "modified": "2026-06-05",
+  "readTime": "11 min",
+  "verdictTh": "EBANK เหมาะกับนักลงทุนที่ต้องการ exposure กลุ่มธนาคารในคลิกเดียวและไม่อยากเลือกรายตัว แต่ควรใช้เป็น satellite position มากกว่า core ทั้งพอร์ต เพราะยังเป็น sector ETF ที่กระจุกตัวในธนาคารไทย",
+  "verdictEn": "EBANK is useful for broad Thai bank exposure without stock picking, but it should usually be treated as a sector satellite rather than a whole-portfolio core.",
+  "keywords": [
+    "EBANK ETF ดีไหม",
+    "ETF หมวดธนาคาร",
+    "EBANK vs หุ้นธนาคาร",
+    "ซื้อ EBANK ดีไหม",
+    "KTAM SET Banking ETF",
+    "หุ้นธนาคารไทย 2569"
+  ],
+  "metrics": [
+    {
+      "label": "Product",
+      "value": "Sector ETF",
+      "note": "ติดตาม SET Banking Sector Index"
+    },
+    {
+      "label": "Main benefit",
+      "value": "Diversification",
+      "note": "ได้หุ้นธนาคารหลายตัวในคำสั่งเดียว"
+    },
+    {
+      "label": "Key cost",
+      "value": "~0.35-0.50%",
+      "note": "ตรวจค่าล่าสุดจาก factsheet ก่อนลงทุน"
+    },
+    {
+      "label": "Main risk",
+      "value": "Bank concentration",
+      "note": "ยังผูกกับวัฏจักรธนาคารไทยทั้งหมวด"
+    }
+  ],
+  "sectionsTh": [
+    {
+      "heading": "EBANK คืออะไร",
+      "body": [
+        "EBANK หรือ KTAM SET Banking ETF Tracker คือ ETF ที่ติดตาม SET Banking Sector Index ซึ่งเป็นดัชนีหมวดธุรกิจธนาคารของตลาดหลักทรัพย์ไทย บริหารโดย บลจ. กรุงไทย และจดทะเบียนซื้อขายในตลาดหลักทรัพย์ตั้งแต่ปี 2555",
+        "เมื่อซื้อ EBANK นักลงทุนจะได้ exposure หุ้นธนาคารพาณิชย์ไทยหลายตัวในดัชนี เช่น KBANK กสิกรไทย, BBL ธนาคารกรุงเทพ, SCB ไทยพาณิชย์, KTB กรุงไทย, TISCO ทิสโก้, KKP เกียรตินาคินภัทร และ TTB ทีทีบี โดยน้ำหนักลงทุนเปลี่ยนตามดัชนีอ้างอิงและการปรับพอร์ตของกองทุน"
+      ]
+    },
+    {
+      "heading": "ข้อดีของ EBANK: ซื้อธนาคารหลายตัวในคลิกเดียว",
+      "body": [
+        "ข้อดีแรกคือการกระจายความเสี่ยงรายตัว หากถือหุ้นธนาคารเพียงตัวเดียว เช่น KBANK หรือ BBL นักลงทุนจะรับความเสี่ยงเฉพาะบริษัทมากกว่า ทั้งเรื่อง NPL, credit cost, การตั้งสำรอง หรือเหตุการณ์เฉพาะธนาคารนั้น ๆ EBANK ลดความเสี่ยงรายตัวด้วยการถือหลายธนาคารพร้อมกัน",
+        "ข้อดีที่สองคือความง่าย นักลงทุนไม่ต้องตัดสินใจว่า KBANK หรือ BBL ดีกว่า SCB หรือ KTB ในรอบนี้ เพราะกองทุนถือหุ้นตามดัชนีหมวดธนาคาร และมีการ rebalance อัตโนมัติเมื่อน้ำหนักหุ้นในดัชนีเปลี่ยนจากราคาและองค์ประกอบดัชนี",
+        "สำหรับคนที่ต้องการปันผลจากกลุ่มธนาคาร EBANK ทำให้รับกระแสเงินสดจากธนาคารหลายตัวรวมกัน ซึ่งอาจสม่ำเสมอกว่าการพึ่งธนาคารเพียงตัวเดียว แม้ dividend yield อาจไม่สูงเท่าการเลือกหุ้นปันผลเด่นรายตัว"
+      ]
+    },
+    {
+      "heading": "ข้อเสียของ EBANK ที่ต้องรู้ก่อนลงทุน",
+      "body": [
+        "ความเสี่ยงสำคัญที่สุดคือ EBANK กระจุกตัวในกลุ่มธนาคารเท่านั้น ต่างจาก TDEX ที่กระจายข้ามหลายอุตสาหกรรม ถ้าหนี้เสียภาคประชาชนสูงขึ้น เศรษฐกิจไทยชะลอ หรือดอกเบี้ยนโยบายลดเร็วจนกระทบ net interest margin หุ้นธนาคารทั้งหมวดอาจลงพร้อมกัน และราคา EBANK ก็จะปรับลงตาม",
+        "อีกประเด็นคือ expense ratio แม้ ETF มักมีค่าธรรมเนียมต่ำกว่ากองทุนเชิงรุก แต่ถ้านักลงทุนเลือกซื้อหุ้นธนาคารรายตัว 2-3 ตัวแล้วถือยาว ก็จะไม่มีค่าใช้จ่ายกองทุนรายปี มีเพียงค่าคอมมิชชันซื้อขายตามโบรกเกอร์",
+        "สภาพคล่องก็ต้องระวัง EBANK อาจมี volume และ bid-ask spread ด้อยกว่า TDEX หรือหุ้นธนาคาร big cap บางตัว นักลงทุนจึงควรใช้ limit order และตรวจราคา bid/ask ก่อนส่งคำสั่งซื้อขาย"
+      ]
+    },
+    {
+      "heading": "เปรียบเทียบ EBANK กับหุ้นธนาคารรายตัว",
+      "body": [
+        "EBANK เหนือกว่าด้านความง่ายและการกระจายความเสี่ยงรายตัว เพราะซื้อครั้งเดียวได้ทั้งหมวดธนาคาร ไม่ต้องวิเคราะห์แต่ละธนาคารแยกกัน และลดความเสี่ยงจากการถือหุ้นเพียง 1-2 ตัวมากเกินไป",
+        "ข้อแลกเปลี่ยนคือ EBANK มี expense ratio รายปี dividend yield เป็นค่าเฉลี่ยของทั้งหมวด และผลตอบแทนโดยรวมจะใกล้ดัชนีหมวดมากกว่า ไม่ได้มีโอกาส outperform จากการเลือกหุ้นถูกตัว",
+        "หุ้นธนาคารรายตัวเหมาะกับนักลงทุนที่วิเคราะห์ความต่างระหว่างธนาคารได้ เช่น เข้าใจว่าทำไม TISCO เด่นเรื่องปันผล BBL เด่นฐานลูกค้าองค์กร หรือ KBANK มี valuation ต่ำแต่เสี่ยง credit cycle มากกว่า การเลือกถูกตัวอาจให้ dividend yield หรือ upside สูงกว่า EBANK แต่ก็รับความเสี่ยงรายตัวสูงกว่า"
+      ]
+    },
+    {
+      "heading": "ควรเลือก EBANK หรือหุ้นธนาคารรายตัว",
+      "body": [
+        "เลือก EBANK ถ้าคุณเชื่อมั่นกลุ่มธนาคารในระยะยาวแต่ไม่อยากตัดสินใจเลือกรายตัว ต้องการจัดพอร์ตง่าย ๆ หรืออยากใช้ ETF หลายหมวดผสมกัน เช่น TDEX เป็น core และ EBANK เป็น satellite สำหรับเพิ่มน้ำหนักธนาคาร",
+        "เลือกหุ้นธนาคารรายตัวถ้าคุณวิเคราะห์ P/BV, ROE, NPL, credit cost, dividend yield และ payout ratio ของแต่ละธนาคารได้แล้ว และต้องการควบคุมพอร์ตเต็มที่โดยไม่จ่าย expense ratio รายปี"
+      ]
+    },
+    {
+      "heading": "มุมมองสำหรับนักลงทุนแต่ละแบบ",
+      "body": [
+        "สำหรับมือใหม่ EBANK เป็นทางลัดที่ดี เพราะซื้อทีเดียวได้หุ้นธนาคารหลายตัว ง่ายกว่าการอ่านงบและเปรียบเทียบธนาคารทีละแห่ง แต่ควรตระหนักว่านี่คือ sector ETF ที่กระจุกอยู่ในกลุ่มเดียว จึงควรใช้เป็น satellite ไม่ใช่ core ทั้งพอร์ต",
+        "สำหรับนักลงทุนสาย dividend ถ้าเป้าหมายคือปันผลสูงและสม่ำเสมอ ควรเปรียบเทียบ dividend yield ของ EBANK กับหุ้นธนาคารรายตัวที่ปันผลสูง เช่น BBL หรือ TISCO ก่อนตัดสินใจ เพราะการถือรายตัวอาจให้ yield สูงกว่าแต่เสี่ยงเฉพาะบริษัทมากกว่า",
+        "สำหรับนักลงทุน VI ถ้าวิเคราะห์ได้ว่าธนาคารตัวใดมี valuation ต่ำที่สุดเมื่อเทียบ P/BV, ROE, credit cost และคุณภาพสินทรัพย์ การถือหุ้นรายตัวอาจมีโอกาสสร้างผลตอบแทนสูงกว่า EBANK ที่ถือทุกตัวเฉลี่ยกัน"
+      ]
+    },
+    {
+      "heading": "ข้อควรระวังของหุ้นธนาคารไทยในปี 2568-2569",
+      "body": [
+        "ทั้ง EBANK และหุ้นธนาคารรายตัวเผชิญปัจจัยเสี่ยงคล้ายกัน ได้แก่ NPL สินเชื่อรายย่อยโดยเฉพาะบ้านและรถ ดอกเบี้ยนโยบายที่อาจลดลงและกระทบ NIM การแข่งขันจาก digital bank และ non-bank รวมถึงการเติบโตสินเชื่อที่ชะลอตามเศรษฐกิจไทย",
+        "สิ่งสำคัญที่สุดคืออย่าใส่พอร์ตทั้งหมดในกลุ่มธนาคารเพียงกลุ่มเดียว ไม่ว่าจะเลือก EBANK หรือหุ้นรายตัว เพราะนั่นคือการขาดการกระจายความเสี่ยงข้ามอุตสาหกรรม นักลงทุนควรกำหนดสัดส่วนและติดตามภาพรวมกลุ่มธนาคารอย่างสม่ำเสมอ"
+      ]
+    }
+  ],
+  "sectionsEn": [
+    {
+      "heading": "Quick answer",
+      "body": [
+        "EBANK gives investors diversified exposure to Thai commercial banks through a single ETF that tracks the SET Banking Sector Index.",
+        "It is simpler than picking individual banks, but it remains concentrated in one sector and can fall when the whole Thai banking cycle weakens."
+      ]
+    },
+    {
+      "heading": "ETF versus individual bank stocks",
+      "body": [
+        "EBANK suits investors who want broad bank exposure without deciding between KBANK, BBL, SCB, KTB, TISCO, KKP or TTB.",
+        "Individual bank stocks suit investors who can compare valuation, ROE, credit quality, payout and dividend yield, and who are willing to accept company-specific risk."
+      ]
+    }
+  ],
+  "faq": [
+    {
+      "q": "EBANK จ่ายปันผลเท่าไหร่ต่อปี",
+      "a": "ขึ้นอยู่กับเงินปันผลที่กองทุนได้รับจากหุ้นธนาคารในพอร์ตและนโยบายกองทุน นักลงทุนควรตรวจสอบประวัติปันผลล่าสุดจาก factsheet ของ SET หรือ KTAM"
+    },
+    {
+      "q": "EBANK ซื้อผ่านอะไรได้บ้าง",
+      "a": "ซื้อขายได้ผ่านโบรกเกอร์หุ้นไทยทั่วไปที่รองรับการซื้อขาย ETF ในตลาดหลักทรัพย์ เช่น บัญชีหุ้นผ่านแอปหรือระบบส่งคำสั่งของโบรกเกอร์"
+    },
+    {
+      "q": "EBANK กับ TISCO อะไรดีกว่าสำหรับสายปันผล",
+      "a": "TISCO อาจให้ dividend yield สูงกว่าในบางช่วงเพราะเป็นหุ้นธนาคารรายตัวที่เด่นด้านปันผล แต่ EBANK กระจายความเสี่ยงมากกว่า คำตอบขึ้นกับว่าคุณยอมรับความเสี่ยงรายตัวได้แค่ไหน"
+    },
+    {
+      "q": "Expense ratio ของ EBANK เท่าไหร่",
+      "a": "ค่าธรรมเนียมกองทุนอาจเปลี่ยนได้ ควรตรวจสอบตัวเลขล่าสุดจาก factsheet ของ KTAM หรือ SET ก่อนลงทุน และนำไปเทียบกับต้นทุนการถือหุ้นธนาคารรายตัว"
+    }
+  ],
+  "sources": [
+    {
+      "label": "SET factsheet: EBANK",
+      "url": "https://www.set.or.th/en/market/product/etf/quote/EBANK/factsheet"
+    },
+    {
+      "label": "KTAM fund information",
+      "url": "https://www.ktam.co.th"
+    },
+    {
+      "label": "ValuStock compare stocks",
+      "url": "https://valustock.com/compare"
+    }
+  ]
+}

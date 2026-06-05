@@ -1,0 +1,155 @@
+{
+  "slug": "defensive-vs-cyclical-stocks-thailand",
+  "symbol": "DEFENSIVE",
+  "titleTh": "หุ้น Defensive คืออะไร? และต่างจากหุ้น Cyclical ยังไง",
+  "titleEn": "What Are Defensive Stocks? Defensive Versus Cyclical Stocks in Thailand",
+  "descriptionTh": "อธิบายหุ้น Defensive คืออะไร ต่างจากหุ้น Cyclical ยังไง พร้อมตัวอย่างหุ้นไทย Defensive ที่น่าสนใจช่วง SET ผันผวน 2569",
+  "descriptionEn": "A Thai investor guide explaining defensive stocks, cyclical stocks, examples in the Thai market and how to mix both styles in a portfolio.",
+  "category": "Portfolio Strategy",
+  "published": "2026-06-05",
+  "modified": "2026-06-05",
+  "readTime": "10 min",
+  "verdictTh": "หุ้น Defensive เหมาะกับช่วงตลาดผันผวนหรือเศรษฐกิจชะลอ เพราะรายได้และกำไรผันผวนน้อยกว่าตลาด แต่ไม่ได้แปลว่าปลอดภัยเสมอ นักลงทุนยังต้องดู valuation และควรผสมกับหุ้น Cyclical ตามวัฏจักรเศรษฐกิจ",
+  "verdictEn": "Defensive stocks can reduce portfolio volatility during uncertain markets, but they are not risk-free and should still be evaluated through valuation and portfolio allocation.",
+  "keywords": [
+    "หุ้น Defensive คืออะไร",
+    "หุ้น Cyclical vs Defensive",
+    "หุ้น Defensive ไทย",
+    "หุ้น Defensive 2569",
+    "หุ้นป้องกันความเสี่ยง",
+    "หุ้นผันผวนน้อย"
+  ],
+  "metrics": [
+    {
+      "label": "Defensive trait",
+      "value": "Stable cash flow",
+      "note": "รายได้ไม่ผันผวนมากตามเศรษฐกิจ"
+    },
+    {
+      "label": "Typical beta",
+      "value": "< 1",
+      "note": "มักเคลื่อนไหวน้อยกว่าตลาด"
+    },
+    {
+      "label": "Cyclical trait",
+      "value": "Economic leverage",
+      "note": "กำไรขึ้นลงตามวัฏจักรเศรษฐกิจ"
+    },
+    {
+      "label": "Portfolio use",
+      "value": "Balance",
+      "note": "ผสม Defensive และ Cyclical ตามสภาพตลาด"
+    }
+  ],
+  "sectionsTh": [
+    {
+      "heading": "หุ้น Defensive คืออะไร",
+      "body": [
+        "หุ้น Defensive คือหุ้นของบริษัทที่รายได้และกำไรไม่ผันผวนมากตามภาวะเศรษฐกิจ ไม่ว่าเศรษฐกิจจะดีหรือแย่ คนยังต้องใช้สินค้าและบริการของบริษัทเหล่านี้อยู่",
+        "ลักษณะสำคัญคือสินค้าและบริการจำเป็นในชีวิตประจำวันหรือแทนได้ยาก รายได้สม่ำเสมอ ไม่ขึ้นลงตามวัฏจักรเศรษฐกิจมากนัก มักมีปันผลสม่ำเสมอเพราะกระแสเงินสดคาดการณ์ได้ และราคาหุ้นมักปรับลงน้อยกว่าตลาดในช่วงเศรษฐกิจถดถอย"
+      ]
+    },
+    {
+      "heading": "หุ้น Cyclical คืออะไร",
+      "body": [
+        "หุ้น Cyclical คือหุ้นของบริษัทที่รายได้และกำไรผันผวนตามวัฏจักรเศรษฐกิจอย่างชัดเจน เมื่อเศรษฐกิจดี ธุรกิจเหล่านี้โตเร็ว แต่เมื่อเศรษฐกิจแย่ กำไรอาจหดหนักกว่าค่าเฉลี่ย",
+        "ลักษณะสำคัญคือรายได้ขึ้นอยู่กับกำลังซื้อผู้บริโภค ราคาสินค้าโภคภัณฑ์ หรือการลงทุนภาคธุรกิจ กำไรผันผวนสูง ทำให้ P/E ratio เปลี่ยนแปลงมาก ช่วง boom ราคาหุ้นมักขึ้นแรง แต่ช่วง bust ก็ลงแรงเช่นกัน"
+      ]
+    },
+    {
+      "heading": "เปรียบเทียบ Defensive กับ Cyclical",
+      "body": [
+        "หุ้น Defensive มีรายได้สม่ำเสมอกว่า ปันผลคาดการณ์ได้มากกว่า และมักลงน้อยกว่าตลาดในช่วงขาลง แต่ในตลาดขาขึ้นมักขึ้นช้ากว่าหุ้นเสี่ยงหรือหุ้นวัฏจักร",
+        "หุ้น Cyclical มีรายได้ผันผวนตามเศรษฐกิจ ปันผลอาจไม่สม่ำเสมอ และ beta มักสูงกว่า 1 หมายความว่าราคาหุ้นเคลื่อนไหวแรงกว่าตลาด เหมาะกับนักลงทุนที่รับความเสี่ยงได้และมองว่าเศรษฐกิจกำลังเข้าสู่ขาขึ้น",
+        "Defensive จึงเหมาะกับตลาดผันผวนและนักลงทุนอนุรักษ์นิยม ส่วน Cyclical เหมาะกับช่วงเศรษฐกิจฟื้นหรือขยายตัวที่กำไรบริษัทมีโอกาสโตแรง"
+      ]
+    },
+    {
+      "heading": "ตัวอย่างหุ้น Defensive ในตลาดหุ้นไทย",
+      "body": [
+        "กลุ่มสาธารณูปโภค เช่น RATCH, EGCO และ GULF มีรายได้บางส่วนจากสัญญาระยะยาวหรือโครงการที่คาดการณ์กระแสเงินสดได้ จึงมักถูกมองว่ามีลักษณะ defensive มากกว่าหุ้นวัฏจักรทั่วไป",
+        "กลุ่มสุขภาพ เช่น BDMS, BCH และ BH มีแรงหนุนจากความต้องการรักษาพยาบาลที่จำเป็น ไม่ว่าเศรษฐกิจจะดีหรือแย่ คนยังต้องรักษาโรค แต่ valuation ของหุ้นโรงพยาบาลมักไม่ถูก จึงต้องดูราคาประกอบเสมอ",
+        "กลุ่มสื่อสาร เช่น ADVANC และ INTUCH มี recurring revenue จากค่าบริการมือถือและอินเทอร์เน็ต ส่วนกลุ่มค้าปลีกสินค้าจำเป็น เช่น CPALL และ HMPRO มีรายได้จากสินค้าและบริการที่ผู้บริโภคใช้ต่อเนื่อง"
+      ]
+    },
+    {
+      "heading": "ตัวอย่างหุ้น Cyclical ในตลาดหุ้นไทย",
+      "body": [
+        "กลุ่มพลังงานและโรงกลั่น เช่น PTTEP และ TOP มีกำไรผูกกับราคาน้ำมัน crack spread และวัฏจักร commodity จึงผันผวนกว่าหุ้น defensive โดยธรรมชาติ",
+        "กลุ่มวัสดุก่อสร้างและปิโตรเคมี เช่น SCC และ IVL ผูกกับการก่อสร้าง อสังหาริมทรัพย์ และ margin สินค้าโภคภัณฑ์ ส่วนกลุ่มท่องเที่ยวและโรงแรม เช่น MINT และ AOT ผูกกับจำนวนนักท่องเที่ยว เที่ยวบิน และกำลังซื้อด้านท่องเที่ยว",
+        "กลุ่มธนาคารมีลักษณะกึ่ง cyclical กึ่ง defensive ในช่วงเศรษฐกิจดี สินเชื่อโตและ NPL ต่ำ แต่เมื่อเศรษฐกิจแย่ NPL สูงขึ้น credit cost เร่ง และกำไรอาจถูกกดดัน"
+      ]
+    },
+    {
+      "heading": "เมื่อไหร่ควรเพิ่มหุ้น Defensive ในพอร์ต",
+      "body": [
+        "สัญญาณที่ทำให้นักลงทุนอาจ rotate เข้า defensive คือดอกเบี้ยขาขึ้น เศรษฐกิจไทยชะลอตัว ตลาดหุ้น overvalued ความไม่แน่นอนทางการเมืองหรือภูมิรัฐศาสตร์สูง และสัญญาณเตือนภาวะถดถอย เช่น yield curve inversion",
+        "ในช่วงเหล่านี้ หุ้น cyclical และหุ้นเติบโตที่มีหนี้สูงมักถูกกดดันมากกว่า ขณะที่หุ้นที่มีกระแสเงินสดสม่ำเสมอและความต้องการสินค้าไม่ตกตามเศรษฐกิจมากนักอาจช่วยลดความผันผวนของพอร์ตได้"
+      ]
+    },
+    {
+      "heading": "ข้อเสียของหุ้น Defensive ที่ต้องรู้",
+      "body": [
+        "หุ้น Defensive ไม่ใช่หุ้นที่ไม่มีความเสี่ยง ข้อเสียแรกคือมักขึ้นช้ากว่าตลาดในช่วง bull market หากตลาดขึ้น 30% หุ้น defensive อาจขึ้นน้อยกว่า ทำให้นักลงทุนเสียโอกาสบางส่วน",
+        "ข้อเสียที่สองคือหุ้น defensive อาจแพงเกินได้ ในช่วงที่นักลงทุนหนีความเสี่ยง เงินมักไหลเข้าหุ้นกลุ่มนี้จน P/E สูงเกินสมเหตุสมผล และข้อเสียที่สามคือ defensive ไม่ได้แปลว่าไม่ลง หากตลาดตก 40% หุ้น defensive อาจยังลง 20-25% ได้",
+        "ดังนั้น valuation ยังสำคัญเสมอ อย่าซื้อหุ้นเพียงเพราะชื่อกลุ่มดูปลอดภัย ต้องตรวจทั้งราคา กำไร กระแสเงินสด ปันผล และความเสี่ยงเฉพาะบริษัท"
+      ]
+    },
+    {
+      "heading": "กลยุทธ์ผสม Defensive และ Cyclical ในพอร์ตเดียว",
+      "body": [
+        "นักลงทุนระยะยาวส่วนใหญ่ไม่จำเป็นต้องเลือกเพียงฝั่งเดียว แต่สามารถปรับสัดส่วนตามสภาพตลาด เช่น ตลาดปกติหรือขาขึ้นอาจใช้ Defensive 40% และ Cyclical/Growth 60%",
+        "ถ้าตลาดผันผวนหรือไม่แน่ใจ อาจขยับเป็น Defensive 60%, Cyclical 30% และเงินสด 10% ส่วนในช่วงเศรษฐกิจถดถอยชัดเจน นักลงทุนบางคนอาจเพิ่ม Defensive เป็น 70-80% และถือเงินสด 20-30%",
+        "ตัวเลขเหล่านี้เป็นกรอบคิด ไม่ใช่สูตรตายตัว สัดส่วนจริงควรขึ้นกับอายุ เงินสดสำรอง เป้าหมายผลตอบแทน และความสามารถรับ drawdown ของแต่ละคน"
+      ]
+    }
+  ],
+  "sectionsEn": [
+    {
+      "heading": "Quick answer",
+      "body": [
+        "Defensive stocks are companies whose revenue and earnings tend to hold up across economic cycles because their products or services remain necessary.",
+        "Cyclical stocks are more sensitive to economic growth, consumer spending, commodity prices or investment cycles, so they can outperform in booms and underperform in downturns."
+      ]
+    },
+    {
+      "heading": "Portfolio use",
+      "body": [
+        "Defensive stocks can help stabilize a portfolio during uncertain markets, but they can still fall and may become expensive when investors crowd into safety.",
+        "A balanced long-term portfolio often mixes defensive, cyclical, growth and cash exposure rather than relying on one style in every market environment."
+      ]
+    }
+  ],
+  "faq": [
+    {
+      "q": "หุ้น Defensive ปันผลดีไหม",
+      "a": "โดยทั่วไปหุ้น defensive หลายตัวมีปันผลค่อนข้างสม่ำเสมอ เพราะกระแสเงินสดคาดการณ์ได้ แต่ปันผลไม่ได้รับประกันและต้องดู payout ratio กับ free cash flow ประกอบ"
+    },
+    {
+      "q": "หุ้น Defensive Beta < 1 หมายความว่าอะไร",
+      "a": "Beta วัดความผันผวนเทียบกับตลาด Beta 0.6 หมายความว่าถ้าตลาดลง 10% หุ้นนั้นมักเคลื่อนไหวน้อยกว่าตลาด เช่น อาจลงราว 6% ในเชิงสถิติ แต่ไม่ใช่กฎตายตัว"
+    },
+    {
+      "q": "ช่วงปี 2569 ควรถือ Defensive หรือ Cyclical",
+      "a": "ขึ้นกับมุมมองเศรษฐกิจและความเสี่ยงที่รับได้ ถ้าไม่แน่ใจ การถือทั้งสองฝั่งในสัดส่วนที่สมดุลมักเหมาะกว่าการเดิมพันข้างเดียว"
+    },
+    {
+      "q": "หุ้นธนาคารเป็น Defensive หรือ Cyclical",
+      "a": "หุ้นธนาคารมักเป็นกึ่ง cyclical กึ่ง defensive เพราะมีฐานธุรกิจจำเป็น แต่กำไรยังผูกกับสินเชื่อ NPL credit cost ดอกเบี้ย และภาวะเศรษฐกิจ"
+    }
+  ],
+  "sources": [
+    {
+      "label": "ValuStock stock screener",
+      "url": "https://valustock.com/screeners"
+    },
+    {
+      "label": "ValuStock portfolio tools",
+      "url": "https://valustock.com/portfolio"
+    },
+    {
+      "label": "ValuStock valuation methodology",
+      "url": "https://valustock.com/methodology"
+    }
+  ]
+}

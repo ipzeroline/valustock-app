@@ -1,0 +1,110 @@
+{
+  "slug": "how-to-open-etf-investment-account",
+  "symbol": "ETF",
+  "titleTh": "สมัครกองทุน ETF ยังไง? วิธีเปิดบัญชี ซื้อ ETF และเลือกกองทุนให้เหมาะกับมือใหม่",
+  "titleEn": "How to Open an ETF Investment Account: Beginner ETF Guide",
+  "descriptionTh": "สอนสมัครกองทุน ETF สำหรับมือใหม่ เปิดบัญชี เลือก ETF ดู expense ratio สภาพคล่อง tracking error ภาษี ค่าเงิน และความต่าง ETF กับกองทุนรวม",
+  "descriptionEn": "A bilingual guide to opening an ETF investment account, choosing ETFs, comparing fees, liquidity, tracking error, taxes, currency risk and mutual funds.",
+  "category": "ETF Investing Guide",
+  "published": "2026-06-03",
+  "modified": "2026-06-03",
+  "readTime": "12 min",
+  "verdictTh": "ETF เป็นเครื่องมือที่ดีสำหรับเริ่มลงทุนแบบกระจายความเสี่ยง แต่การสมัครควรเริ่มจากเป้าหมายการลงทุน ไม่ใช่เริ่มจากชื่อ ETF ยอดนิยม เพราะ ETF แต่ละตัวมีดัชนี ค่าธรรมเนียม สภาพคล่อง และความเสี่ยงไม่เหมือนกัน",
+  "verdictEn": "ETFs are useful building blocks for diversified portfolios, but account setup should follow an investment plan rather than chasing popular tickers.",
+  "keywords": [
+    "สมัครกองทุน etf ยังไง",
+    "เปิดบัญชี ETF",
+    "ซื้อ ETF ยังไง",
+    "ETF มือใหม่",
+    "ลงทุน ETF"
+  ],
+  "metrics": [
+    {
+      "label": "Product",
+      "value": "Exchange-traded fund",
+      "note": "Trades on an exchange like a stock"
+    },
+    {
+      "label": "Main benefit",
+      "value": "Diversification",
+      "note": "One fund can hold many securities"
+    },
+    {
+      "label": "Key checks",
+      "value": "Fee + liquidity",
+      "note": "Expense ratio, spread and trading volume"
+    },
+    {
+      "label": "Main risk",
+      "value": "Underlying assets",
+      "note": "ETF risk depends on what it owns"
+    }
+  ],
+  "sectionsTh": [
+    {
+      "heading": "สรุปคำตอบ: สมัครกองทุน ETF ยังไง",
+      "body": [
+        "ETF คือกองทุนที่ซื้อขายในตลาดหลักทรัพย์ได้คล้ายหุ้น ขั้นตอนสมัครคือเลือกโบรกเกอร์หรือแพลตฟอร์มที่รองรับ ETF เปิดบัญชี ยืนยันตัวตน ทำแบบประเมินความเสี่ยง ฝากเงิน แล้วส่งคำสั่งซื้อ ETF ที่ต้องการ",
+        "ถ้าเป็น ETF ต่างประเทศ ต้องดูเรื่องบัญชีหุ้นต่างประเทศ การแลกเงิน ค่าธรรมเนียมโอนเงิน ภาษีเงินปันผล และเวลาซื้อขายตามตลาดปลายทาง ถ้าเป็น ETF ไทย ขั้นตอนมักง่ายกว่าแต่ตัวเลือกอาจจำกัดกว่า"
+      ]
+    },
+    {
+      "heading": "ETF กับกองทุนรวมต่างกันอย่างไร",
+      "body": [
+        "ETF ซื้อขายระหว่างวันตามราคาตลาด จึงมี bid-ask spread และความเสี่ยงซื้อแพงกว่ามูลค่าสินทรัพย์สุทธิได้ ส่วนกองทุนรวมทั่วไปซื้อขายตาม NAV สิ้นวัน แต่บางกองทุนอาจมีค่าธรรมเนียมบริหารสูงกว่า",
+        "SEC อธิบายว่า ETF เป็น investment company ที่หุ้น ETF ซื้อขายใน secondary market และมีโครงสร้าง creation/redemption ผ่าน authorized participants ซึ่งทำให้ ETF แตกต่างจาก mutual fund แบบดั้งเดิม"
+      ]
+    },
+    {
+      "heading": "วิธีเลือก ETF แบบมืออาชีพ",
+      "body": [
+        "ดู benchmark ก่อนเสมอว่า ETF ลงทุนตามดัชนีอะไร แล้วตรวจ expense ratio, tracking error, สภาพคล่อง, bid-ask spread, fund size, issuer, holdings, sector concentration และนโยบายปันผล",
+        "ถ้าเป็น ETF thematic หรือ leveraged ETF ต้องระวังเป็นพิเศษ เพราะอาจผันผวนสูงและไม่เหมาะกับการถือยาว มือใหม่มักเริ่มจาก broad market ETF เช่น หุ้นโลก หุ้นสหรัฐ หรือ bond ETF ที่เข้าใจง่ายกว่า"
+      ]
+    }
+  ],
+  "sectionsEn": [
+    {
+      "heading": "Quick answer",
+      "body": [
+        "To invest in ETFs, open a brokerage or fund platform account, complete KYC and risk assessment, fund the account and place an order for the ETF you selected.",
+        "The right ETF depends on your goal, time horizon, risk tolerance, fees, liquidity and tax situation."
+      ]
+    },
+    {
+      "heading": "ETF checklist",
+      "body": [
+        "Review the underlying index, expense ratio, tracking error, bid-ask spread, trading volume, fund size, holdings, sector exposure and distribution policy.",
+        "Avoid complex products such as leveraged, inverse or highly thematic ETFs unless you understand their structure and risks."
+      ]
+    }
+  ],
+  "faq": [
+    {
+      "q": "ETF สมัครที่ไหน",
+      "a": "สมัครผ่านโบรกเกอร์หรือแพลตฟอร์มกองทุนที่รองรับ ETF ไทยหรือต่างประเทศตามที่ต้องการลงทุน"
+    },
+    {
+      "q": "ETF เหมาะกับมือใหม่ไหม",
+      "a": "เหมาะถ้าเลือก ETF ที่กระจายความเสี่ยง ค่าธรรมเนียมต่ำ และเข้าใจสินทรัพย์อ้างอิง"
+    },
+    {
+      "q": "ซื้อ ETF ต้องดูอะไรเป็นอันดับแรก",
+      "a": "ดู benchmark และสินทรัพย์ที่กองทุนถือก่อน จากนั้นค่อยดูค่าธรรมเนียม สภาพคล่อง spread และภาษี"
+    }
+  ],
+  "sources": [
+    {
+      "label": "SEC guide: Mutual Funds and ETFs",
+      "url": "https://www.sec.gov/about/reports-publications/investor-publications/introduction-mutual-funds"
+    },
+    {
+      "label": "SEC ETF investor bulletin",
+      "url": "https://www.sec.gov/files/etfs.pdf"
+    },
+    {
+      "label": "FINRA: Exchange-Traded Funds and Products",
+      "url": "https://www.finra.org/investors/investing/investment-products/exchange-traded-funds-and-products"
+    }
+  ]
+}

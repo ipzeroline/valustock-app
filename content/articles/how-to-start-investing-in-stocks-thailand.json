@@ -1,0 +1,100 @@
+{
+  "slug": "how-to-start-investing-in-stocks-thailand",
+  "symbol": "BEGINNER",
+  "titleTh": "เริ่มลงทุนหุ้นยังไง? คู่มือมือใหม่จากศูนย์ถึงซื้อหุ้นตัวแรก",
+  "titleEn": "How to Start Investing in Stocks: A Thai Beginner Guide",
+  "descriptionTh": "คู่มือเริ่มลงทุนหุ้นสำหรับมือใหม่ เปิดบัญชี เลือกหุ้นตัวแรก จัดพอร์ต DCA และใช้ ValuStock ก่อนซื้อจริง",
+  "descriptionEn": "A beginner guide to opening an account, choosing a first stock, building a portfolio and using valuation tools.",
+  "category": "Beginner Investing Guide",
+  "published": "2026-06-03",
+  "modified": "2026-06-03",
+  "readTime": "9 min",
+  "verdictTh": "มือใหม่ควรเริ่มจากเงินเย็น ความเข้าใจธุรกิจ และสัดส่วนเล็ก ๆ ก่อน ไม่ควรเริ่มจากการทุ่มซื้อหุ้นตามกระแส",
+  "verdictEn": "Beginners should start with long-term capital, understandable businesses and small position sizes.",
+  "keywords": [
+    "เริ่มลงทุนหุ้นยังไง",
+    "หุ้นสำหรับมือใหม่",
+    "หุ้นตัวแรกควรซื้ออะไร"
+  ],
+  "metrics": [
+    {
+      "label": "Search intent",
+      "value": "High",
+      "note": "คำค้นที่เกิดก่อนสมัครและก่อนตัดสินใจลงทุน"
+    },
+    {
+      "label": "Best action",
+      "value": "Screen + compare",
+      "note": "ใช้ screener, DCF และ watchlist เพื่อกรองต่อ"
+    },
+    {
+      "label": "Risk control",
+      "value": "Allocation",
+      "note": "กำหนดสัดส่วนและอย่าตัดสินจาก yield หรือราคาอย่างเดียว"
+    },
+    {
+      "label": "Conversion path",
+      "value": "Free -> Premium",
+      "note": "สมัครฟรีก่อน แล้วอัปเกรดเมื่อใช้เครื่องมือเชิงลึก"
+    }
+  ],
+  "sectionsTh": [
+    {
+      "heading": "สรุปสำหรับนักลงทุนไทย",
+      "body": [
+        "มือใหม่ควรเริ่มจากเงินเย็น ความเข้าใจธุรกิจ และสัดส่วนเล็ก ๆ ก่อน ไม่ควรเริ่มจากการทุ่มซื้อหุ้นตามกระแส",
+        "คำค้นกลุ่มนี้มักเกิดตอนนักลงทุนกำลังจะตัดสินใจจริง จึงควรอ่านด้วยกรอบวิเคราะห์ ไม่ใช่รีบซื้อจากรายชื่อหุ้นหรือกระแสในโซเชียล"
+      ]
+    },
+    {
+      "heading": "เช็กลิสต์ที่ควรทำก่อนลงทุน",
+      "body": [
+        "เปิดบัญชีและทำแบบประเมินความเสี่ยง เริ่มจาก ETF หรือหุ้นใหญ่ที่เข้าใจง่าย และฝึกอ่านงบ",
+        "หลังได้รายชื่อหุ้นหรือกองทุนที่น่าสนใจ ให้ใช้เครื่องมือประเมินมูลค่า เปรียบเทียบคู่แข่ง และสร้าง watchlist เพื่อรอจังหวะที่ valuation มีส่วนเผื่อความปลอดภัย"
+      ]
+    },
+    {
+      "heading": "วิธีใช้ ValuStock ต่อจากบทความนี้",
+      "body": [
+        "เริ่มจากสมัครสมาชิกฟรีเพื่อบันทึกหุ้นใน watchlist ใช้ screener กรองหุ้นตาม P/E, dividend yield, ROE และ margin of safety จากนั้นค่อยใช้ Premium เมื่ออยากได้ DCF, portfolio alerts และการเปรียบเทียบหุ้นเชิงลึก",
+        "เป้าหมายไม่ใช่เดาหุ้นที่จะขึ้นพรุ่งนี้ แต่คือสร้างระบบตัดสินใจที่ลดความผิดพลาดก่อนซื้อหุ้นจริง"
+      ]
+    }
+  ],
+  "sectionsEn": [
+    {
+      "heading": "Bottom line",
+      "body": [
+        "Beginners should start with long-term capital, understandable businesses and small position sizes.",
+        "These searches usually happen right before a real investment decision, so investors should use a structured checklist instead of chasing headlines."
+      ]
+    },
+    {
+      "heading": "Practical workflow",
+      "body": [
+        "Screen candidates, compare peers, estimate fair value, build a watchlist and wait for a margin of safety.",
+        "The objective is to improve decision quality before buying, not to predict tomorrow's price movement."
+      ]
+    }
+  ],
+  "faq": [
+    {
+      "q": "เริ่มลงทุนหุ้นยังไง",
+      "a": "มือใหม่ควรเริ่มจากเงินเย็น ความเข้าใจธุรกิจ และสัดส่วนเล็ก ๆ ก่อน ไม่ควรเริ่มจากการทุ่มซื้อหุ้นตามกระแส"
+    },
+    {
+      "q": "ควรเริ่มจากอะไร",
+      "a": "เริ่มจากกำหนดเป้าหมาย ความเสี่ยงที่รับได้ และใช้ screener เพื่อคัดหุ้นหรือ ETF ที่เข้าเกณฑ์ก่อนวิเคราะห์รายตัว"
+    },
+    {
+      "q": "บทความนี้เป็นคำแนะนำซื้อขายไหม",
+      "a": "ไม่ใช่ เป็นข้อมูลเพื่อการศึกษาและช่วยวางกรอบวิเคราะห์ นักลงทุนควรตรวจข้อมูลล่าสุดก่อนตัดสินใจ"
+    }
+  ],
+  "sources": [
+    {
+      "label": "ValuStock methodology",
+      "url": "https://valustock.com/methodology"
+    }
+  ]
+}
