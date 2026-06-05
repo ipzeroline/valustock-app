@@ -431,16 +431,16 @@ export default function StockDetail() {
 
       {/* 2. ADVICE BANNERS FOR GLOBAL INVESTMENT */}
       {isUS && (
-        <Card className="border-gold/30 bg-gold/5 p-4.5">
-          <div className="flex gap-3">
+        <Card className="border-gold/30 bg-gold/5 px-5 py-5 sm:px-6">
+          <div className="flex items-start gap-4">
             <span className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-gold/15 text-gold">
               <Sparkles className="h-4.5 w-4.5" />
             </span>
-            <div className="space-y-1">
-              <h4 className="text-sm font-bold text-ink">
+            <div className="min-w-0 space-y-2 pr-1 sm:pr-2">
+              <h4 className="text-sm font-bold leading-snug text-ink">
                 {lang === "th" ? "💡 คำแนะนำภาษีสินทรัพย์ต่างประเทศและสภาวะอัตราแลกเปลี่ยน (FX):" : "💡 Global Taxation & FX Risk Management Notes:"}
               </h4>
-              <p className="text-xs text-muted leading-relaxed">
+              <p className="max-w-5xl text-xs leading-6 text-muted">
                 {lang === "th" 
                   ? "เนื่องจากเป็นหุ้นสหรัฐฯ ปันผลจะถูกหัก ณ ที่จ่าย 30% โดยปกติ แต่หากผู้ใช้ยื่นแบบฟอร์ม W-8BEN กับโบรกเกอร์ จะได้รับสิทธิ์ลดภาษีเหลือ 15% ตามอนุสัญญาภาษีซ้อน นอกจากนี้ ควรระวังกำไรจากอัตราแลกเปลี่ยน (FX Gain) หากแลกเงินบาทกลับมาในไทยปีภาษีเดียวกัน"
                   : "As a US security, cash dividends are subject to a default 30% withholding tax. Submitting a W-8BEN form to your broker generally reduces this withholding tax rate to 15% under the US-Thailand Tax Treaty. Also, note personal income tax rules when repatriating foreign funds."}
@@ -451,16 +451,16 @@ export default function StockDetail() {
       )}
 
       {isFund && (
-        <Card className="border-brand/30 bg-brand/5 p-4.5">
-          <div className="flex gap-3">
+        <Card className="border-brand/30 bg-brand/5 px-5 py-5 sm:px-6">
+          <div className="flex items-start gap-4">
             <span className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-brand/15 text-brand">
               <Shield className="h-4.5 w-4.5" />
             </span>
-            <div className="space-y-1">
-              <h4 className="text-sm font-bold text-ink">
+            <div className="min-w-0 space-y-2 pr-1 sm:pr-2">
+              <h4 className="text-sm font-bold leading-snug text-ink">
                 {lang === "th" ? "💡 ข้อมูลสำคัญสำหรับผู้ลงทุนในกองทุนรวม:" : "💡 Essential Mutual Fund Investment Parameters:"}
               </h4>
-              <p className="text-xs text-muted leading-relaxed">
+              <p className="max-w-5xl text-xs leading-6 text-muted">
                 {lang === "th"
                   ? "กองทุนนี้อ้างอิงราคาเป็น Net Asset Value (NAV) ซึ่งจะปรับปรุงวันละครั้งหลังเวลาปิดตลาดต่างประเทศ (เวลา T+1 ของไทย) มีการหักค่าใช้จ่ายบริหารจัดการโดยตรงในราคาหน่วยลงทุนเรียบร้อยแล้ว"
                   : "This fund's price reflects its Net Asset Value (NAV), updated once daily following foreign market closes (T+1 in Thailand). Management fees are deducted directly from the NAV calculation."}
