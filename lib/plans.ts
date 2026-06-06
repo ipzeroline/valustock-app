@@ -13,6 +13,8 @@ export const PLANS: Plan[] = [
       "กราฟเส้นราคาย้อนหลังพื้นฐาน",
       "บันทึกรายการโปรดได้ 3 ตัว",
       "ทดลองหน้า Portfolio/Watchlist แบบพื้นฐาน",
+      "🧪 พอร์ตจำลอง ฿100,000",
+      "📊 ValueSignal พื้นฐาน (MOS)",
     ],
     limits: {
       maxStocks: 5,
@@ -51,6 +53,8 @@ export const PLANS: Plan[] = [
       "Market Pulse ดูตัวขึ้น/ลง/ผันผวนล่าสุด",
       "Watchlist และ Portfolio Tracker ไม่จำกัด",
       "Telegram Mini App สำหรับดู Overview, Portfolio และ Watchlist แบบย่อ",
+      "🧪 พอร์ตจำลอง ฿1,000,000",
+      "📊 ValueSignal™ 5 ระดับ + Score",
     ],
     limits: {
       maxStocks: "unlimited",
@@ -89,6 +93,8 @@ export const PLANS: Plan[] = [
       "แดชบอร์ดตรวจสอบความเสถียรของข้อมูล",
       "ส่งออกข้อมูลทางการเงินเป็นไฟล์ CSV",
       "Backtest และ Alert Center สำหรับพอร์ต",
+      "🧪 พอร์ตจำลองไม่จำกัด + ValueSignal ในพอร์ต",
+      "📊 ValueSignal API + Factor Breakdown",
     ],
     limits: {
       maxStocks: "unlimited",
@@ -125,6 +131,8 @@ export const PLANS: Plan[] = [
       "Priority warmup สำหรับหุ้นยอดนิยม",
       "Priority support สำหรับตั้งค่าพอร์ตและข้อมูล",
       "เหมาะกับนักลงทุนที่ใช้ต่อเนื่องเกิน 10 เดือน",
+      "🧪 พอร์ตจำลองไม่จำกัด + ValueSignal ในพอร์ต",
+      "📊 ValueSignal API + Factor Breakdown",
     ],
     limits: {
       maxStocks: "unlimited",

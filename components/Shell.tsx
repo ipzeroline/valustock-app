@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState } from "react";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { useStore, useCurrentPlan } from "@/lib/store";
 import { useTranslation } from "@/lib/translations";
 import {
@@ -25,6 +25,7 @@ import {
   MessageSquare,
   FileText,
   Calendar,
+  Target,
 } from "@/lib/icons";
 import { Button } from "./ui/Button";
 
@@ -252,6 +253,7 @@ const NAV = [
   { href: "/stocks", key: "searchStocks", icon: Search },
   { href: "/compare", key: "compare", icon: Layers },
   { href: "/portfolio", key: "portfolio", icon: Wallet },
+  { href: "/virtual-portfolio", icon: Target, labelTh: "พอร์ตจำลอง", labelEn: "Paper Trade" },
   { href: "/economic-calendar", icon: Calendar, labelTh: "ปฏิทินเศรษฐกิจ", labelEn: "Economic Calendar" },
   { href: "/blog", icon: FileText, labelTh: "บทความ", labelEn: "Blog" },
   { href: "/insights", key: "insights", icon: Sparkles },
@@ -351,6 +353,7 @@ function AppMobileNav({ pathname }: { pathname: string }) {
 
 function AppTopbar() {
   const { user, logout } = useStore();
+  const router = useRouter();
   const { t } = useTranslation();
   return (
     <div className="sticky top-0 z-30 flex h-16 items-center justify-between border-b border-line bg-bg/80 px-3 backdrop-blur-xl sm:px-5 lg:px-8">
@@ -375,7 +378,10 @@ function AppTopbar() {
               </span>
             </Link>
             <button
-              onClick={logout}
+              onClick={() => {
+                logout();
+                router.push("/login");
+              }}
               aria-label={t("common.logOut")}
               title={t("common.logOut")}
               className="grid h-10 w-10 place-items-center rounded-xl border border-line text-muted hover:text-down"

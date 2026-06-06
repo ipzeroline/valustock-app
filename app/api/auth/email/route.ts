@@ -31,24 +31,40 @@ export async function POST(req: Request) {
   const body = await req.json().catch(() => ({}));
   const email = normalizeEmail(body.email);
   const name = String(body.name || email.split("@")[0] || "นักลงทุน").trim().slice(0, 255);
+  const plan = typeof body.plan === "string" ? body.plan : undefined;
+  const billing = typeof body.billing === "string" ? body.billing : undefined;
+  const validPlans = ["free", "pro", "premium", "lifetime"];
+  const validBillings = ["monthly", "yearly", "lifetime"];
+  const resolvedPlan = plan && validPlans.includes(plan) ? plan : "free";
+  const resolvedBilling = billing && validBillings.includes(billing) ? billing : "monthly";
 
   if (!isValidEmail(email)) {
     return NextResponse.json({ error: "Valid email is required" }, { status: 400 });
   }
 
   try {
-    await query(
-      `INSERT INTO users (email, name, plan, billing)
-       VALUES (?, ?, 'free', 'monthly')
-       ON DUPLICATE KEY UPDATE name = VALUES(name)`,
-      [email, name || "นักลงทุน"]
-    );
+    // In development, allow setting plan directly (bypasses Stripe for testing)
+    if (plan || billing) {
+      await query(
+        `INSERT INTO users (email, name, plan, billing)
+         VALUES (?, ?, ?, ?)
+         ON DUPLICATE KEY UPDATE name = VALUES(name), plan = VALUES(plan), billing = VALUES(billing)`,
+        [email, name || "นักลงทุน", resolvedPlan, resolvedBilling]
+      );
+    } else {
+      await query(
+        `INSERT INTO users (email, name, plan, billing)
+         VALUES (?, ?, 'free', 'monthly')
+         ON DUPLICATE KEY UPDATE name = VALUES(name)`,
+        [email, name || "นักลงทุน"]
+      );
+    }
 
     const rows = await query<{ email: string; name: string; plan: string; billing: string }[]>(
       "SELECT email, name, plan, billing FROM users WHERE email = ? LIMIT 1",
       [email]
     );
-    const user = rows[0] || { email, name: name || "นักลงทุน", plan: "free", billing: "monthly" };
+    const user = rows[0] || { email, name: name || "นักลงทุน", plan: resolvedPlan, billing: resolvedBilling };
     const sessionId = await createSingleActiveSession("member", email);
     const token = signToken({ email, name: user.name, sessionId });
 

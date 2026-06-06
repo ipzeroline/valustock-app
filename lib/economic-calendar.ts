@@ -15,9 +15,19 @@ export { CALENDAR_TYPES, TIME_FILTERS, COUNTRY_IDS, TIMEZONE_IDS } from "./econo
 
 // ── Constants ───────────────────────────────────────────────────────────────
 
-const BASE_URL = "https://th.investing.com";
+const BASE_URL_TH = "https://th.investing.com";
+const BASE_URL_EN = "https://www.investing.com";
 const NAVIGATION_TIMEOUT = 45_000;
 const DATA_WAIT_TIMEOUT = 30_000;
+
+// dividends and stock_split are blocked by Cloudflare on th.investing.com
+// so we use the English site for those
+function getBaseUrl(calendarType: CalendarType): string {
+  if (calendarType === "dividends" || calendarType === "stock_split") {
+    return BASE_URL_EN;
+  }
+  return BASE_URL_TH;
+}
 
 // ── Browser management ──────────────────────────────────────────────────────
 
@@ -54,7 +64,7 @@ const CALENDAR_PATHS: Record<CalendarType, string> = {
 };
 
 function buildUrl(calendarType: CalendarType, timeFilter?: TimeFilter): string {
-  const url = new URL(CALENDAR_PATHS[calendarType], BASE_URL);
+  const url = new URL(CALENDAR_PATHS[calendarType], getBaseUrl(calendarType));
   if (timeFilter) url.searchParams.set("currentTab", timeFilter);
   return url.toString();
 }
@@ -400,10 +410,12 @@ export async function fetchCalendarEvents(
     // All non-economic calendar pages need an established Cloudflare session first.
     // Visiting the economic calendar page passes the Cloudflare challenge and sets
     // cookies that allow subsequent page visits.
+    // For dividends/stock_split, use the English economic calendar (same domain).
     if (calendarType !== "economic") {
-      console.log("[calendar] Establishing session via economic calendar...");
+      const baseForSession = getBaseUrl(calendarType);
+      console.log("[calendar] Establishing Cloudflare session via " + baseForSession + "/economic-calendar/ ...");
       try {
-        await page.goto(BASE_URL + "/economic-calendar/", {
+        await page.goto(baseForSession + "/economic-calendar/", {
           waitUntil: "domcontentloaded",
           timeout: 30000,
         });
@@ -432,6 +444,18 @@ export async function fetchCalendarEvents(
     }
 
     await page.waitForTimeout(3000);
+
+    // Debug: Log page tables info for troubleshooting scrapers
+    const tableInfo = await page.evaluate(() => {
+      const tables = document.querySelectorAll("table");
+      return Array.from(tables).map((t, i) => ({
+        index: i,
+        rows: t.querySelectorAll("tr").length,
+        cols: t.querySelectorAll("tr")[0]?.querySelectorAll("th,td").length || 0,
+        hasIdRows: t.querySelectorAll("tr[id]").length,
+      }));
+    });
+    console.log("[calendar] Page tables:", JSON.stringify(tableInfo));
 
     const script = SCRIPTS[calendarType];
     const rawEvents = (await page.evaluate(script)) as any[];

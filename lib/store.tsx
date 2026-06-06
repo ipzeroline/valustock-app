@@ -264,6 +264,25 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
       return { ...d, user: null, authToken: null };
     });
 
+    // Clear all locally stored user data for security
+    try {
+      if (typeof window !== "undefined") {
+        // Clear valustock-specific localStorage keys
+        const keysToRemove: string[] = [];
+        for (let i = 0; i < localStorage.length; i++) {
+          const key = localStorage.key(i);
+          if (key && (key.startsWith("valustock_") || key === "watchlist" || key === "theme")) {
+            keysToRemove.push(key);
+          }
+        }
+        keysToRemove.forEach((k) => localStorage.removeItem(k));
+        // Clear all sessionStorage
+        sessionStorage.clear();
+      }
+    } catch {
+      /* browser storage may be unavailable */
+    }
+
     setTimeout(() => {
       if (!tokenForLogout) return;
       fetch("/api/auth/logout", {
@@ -313,6 +332,8 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
           body: JSON.stringify({
             email: nextUserForSync.email.trim().toLowerCase(),
             name: nextUserForSync.name,
+            plan: nextUserForSync.plan,
+            billing: nextUserForSync.billing,
           }),
         }).catch(() => {
           /* local membership remains available while offline */

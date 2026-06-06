@@ -24,6 +24,8 @@ export const PLAN_TRANS = {
         "กราฟเส้นราคาย้อนหลัง",
         "บันทึกรายการโปรดได้ 3 ตัว",
         "ทดลองดู Portfolio/Watchlist พื้นฐาน",
+        "🧪 พอร์ตจำลอง ฿100,000",
+        "📊 ValueSignal พื้นฐาน (MOS)",
       ]
     },
     pro: {
@@ -45,6 +47,8 @@ export const PLAN_TRANS = {
         "รายการโปรดไม่จำกัด",
         "Portfolio Tracker ไม่จำกัด",
         "Telegram Mini App แบบ Overview",
+        "🧪 พอร์ตจำลอง ฿1,000,000",
+        "📊 ValueSignal™ 5 ระดับ + Score",
       ]
     },
     premium: {
@@ -67,6 +71,8 @@ export const PLAN_TRANS = {
         "Backtest และ Alert Center ในพอร์ต",
         "สมมติฐาน/Scenario การประเมินขั้นสูง",
         "สนับสนุนแบบเร่งด่วน",
+        "🧪 พอร์ตจำลองไม่จำกัด + ValueSignal",
+        "📊 ValueSignal API + Factor Breakdown",
       ]
     },
     lifetime: {
@@ -85,6 +91,8 @@ export const PLAN_TRANS = {
         "บันทึกจุดราคาย้อนหลังสำหรับวิเคราะห์แนวโน้ม",
         "Priority warmup สำหรับหุ้นยอดนิยม",
         "เหมาะกับคนใช้ต่อเนื่องเกิน 10 เดือน",
+        "🧪 พอร์ตจำลองไม่จำกัด + ValueSignal",
+        "📊 ValueSignal API + Factor Breakdown",
       ]
     }
   },
@@ -99,6 +107,8 @@ export const PLAN_TRANS = {
         "Historical line price charts",
         "Track up to 3 watchlist items",
         "Basic portfolio/watchlist preview",
+        "🧪 Virtual Portfolio ฿100K",
+        "📊 Basic ValueSignal (MOS)",
       ]
     },
     pro: {
@@ -120,6 +130,8 @@ export const PLAN_TRANS = {
         "Unlimited synced watchlist tracking",
         "Unlimited Portfolio Tracker",
         "Telegram Mini App overview",
+        "🧪 Virtual Portfolio ฿1M",
+        "📊 ValueSignal™ 5-level + Score",
       ]
     },
     premium: {
@@ -142,6 +154,8 @@ export const PLAN_TRANS = {
         "Portfolio backtest and Alert Center",
         "Advanced valuation scenario workflows",
         "Institutional priority support",
+        "🧪 Unlimited Virtual Portfolio + ValueSignal",
+        "📊 ValueSignal API + Factor Breakdown",
       ]
     },
     lifetime: {
@@ -160,6 +174,8 @@ export const PLAN_TRANS = {
         "Priority warmup for popular assets",
         "Telegram Mini App and chat replies",
         "Best if you use it beyond 10 months",
+        "🧪 Unlimited Virtual Portfolio + ValueSignal",
+        "📊 ValueSignal API + Factor Breakdown",
       ]
     }
   }

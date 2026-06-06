@@ -55,6 +55,12 @@ export default function PricingPage() {
       router.push("/dashboard");
       return;
     }
+    // Dev mode: set paid plan directly without Stripe checkout
+    if (process.env.NODE_ENV !== "production") {
+      setPlan(id, id === "lifetime" ? "lifetime" : billing);
+      router.push("/dashboard");
+      return;
+    }
     setCheckoutEmail(user?.email || checkoutEmail);
     setCheckoutError("");
     setCheckout(id);
@@ -813,6 +819,45 @@ export default function PricingPage() {
                 pro="❌"
                 proStyle="muted"
                 premium={lang === "th" ? "CSV Export + Backtest + Bull/Bear/Base" : "CSV export + backtest + bull/bear/base"}
+                premiumStyle="gold"
+              />
+
+              {/* Category Header 6 */}
+              <tr className="bg-elevate/25">
+                <td colSpan={5} className="px-5 py-2 font-display font-extrabold text-[10px] uppercase text-muted tracking-wider">
+                  🧪 {lang === "th" ? "ValueSignal™ และพอร์ตจำลอง (Paper Trading)" : "ValueSignal™ & Virtual Portfolio"}
+                </td>
+              </tr>
+              <MatrixRow
+                label={lang === "th" ? "26. ValueSignal™ สัญญาณซื้อ-ขาย" : "26. ValueSignal™ Buy/Sell Signal"}
+                free={lang === "th" ? "สัญญาณพื้นฐาน (MOS)" : "Basic signal (MOS only)"}
+                pro={lang === "th" ? "สัญญาณครบ 5 ระดับ + Score" : "Full 5-level signal + Score"}
+                proStyle="brand"
+                premium={lang === "th" ? "สัญญาณครบ + API + Factor Breakdown" : "Full signal + API + Factor Breakdown"}
+                premiumStyle="gold"
+              />
+              <MatrixRow
+                label={lang === "th" ? "27. ValueSignal API Endpoint" : "27. ValueSignal API Endpoint"}
+                free="❌"
+                pro="❌"
+                proStyle="muted"
+                premium={lang === "th" ? "GET /api/valuation/signal" : "GET /api/valuation/signal"}
+                premiumStyle="gold"
+              />
+              <MatrixRow
+                label={lang === "th" ? "28. พอร์ตจำลอง (Paper Trading)" : "28. Virtual Portfolio (Paper Trade)"}
+                free={lang === "th" ? "เงินเสมือน ฿100,000" : "฿100K virtual cash"}
+                pro={lang === "th" ? "เงินเสมือน ฿1,000,000" : "฿1M virtual cash"}
+                proStyle="brand"
+                premium={lang === "th" ? "ไม่จำกัด + สัญญาณ ValueSignal ในพอร์ต" : "Unlimited + ValueSignal in holdings"}
+                premiumStyle="gold"
+              />
+              <MatrixRow
+                label={lang === "th" ? "29. ราคาสดในพอร์ตจำลอง (Massive)" : "29. Live Prices in Virtual Portfolio"}
+                free="✅"
+                pro="✅"
+                proStyle="brand"
+                premium="✅"
                 premiumStyle="gold"
               />
             </tbody>

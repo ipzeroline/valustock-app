@@ -740,7 +740,7 @@ export default function AccountPage() {
         className="w-full text-down hover:bg-down/5 hover:border-down"
         onClick={() => {
           logout();
-          router.push("/");
+          router.push("/login");
         }}
       >
         <LogOut className="h-4 w-4" /> {t("common.logOut")}

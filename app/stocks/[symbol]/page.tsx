@@ -13,6 +13,8 @@ import {
   enterpriseValue,
   marketCap,
 } from "@/lib/valuation";
+import { computeValueSignal } from "@/lib/value-signal";
+import { ValueSignalBadge } from "@/components/ValueSignalBadge";
 import { useStore, useCurrentPlan } from "@/lib/store";
 import { baht, num, pct, moneyMB, dollar, nav } from "@/lib/format";
 import { Card, CardHeader, Badge } from "@/components/ui/Card";
@@ -259,6 +261,7 @@ export default function StockDetail() {
     : (lang === "th" ? "ล้านบาท" : "THB Millions");
 
   const val = computeValuation(stock, defaultDCFParams(stock));
+  const valueSignal = computeValueSignal(stock, stock.price);
   const r = val.ratios;
   const change = stock.prevClose > 0 ? ((stock.price - stock.prevClose) / stock.prevClose) * 100 : 0;
   const up = change >= 0;
@@ -716,6 +719,9 @@ export default function StockDetail() {
                 <Badge tone={verdictTone[val.verdict]} className="text-xs">
                   {t(`verdict.${val.verdict}`)}
                 </Badge>
+                <div className="mt-2 flex justify-center">
+                  <ValueSignalBadge signal={valueSignal} size="sm" showScore />
+                </div>
                 <div className="mt-3 text-xs text-muted">{t("stockDetail.fairValue")} ({unit})</div>
                 <div className="num font-display text-3xl font-extrabold text-gold mt-1">
                   {formatPrice(val.fairValue)}
