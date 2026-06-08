@@ -3,6 +3,7 @@ import { getDbConnectionStatus, query } from "@/lib/db";
 import { signToken } from "@/lib/auth";
 import { createSingleActiveSession } from "@/lib/sessions";
 import { normalizeMemberEmail } from "@/lib/member-identity";
+import { sendTelegramMessage } from "@/lib/telegram";
 
 function normalizeEmail(value: unknown) {
   return typeof value === "string" ? normalizeMemberEmail(value) : "";
@@ -43,6 +44,12 @@ export async function POST(req: Request) {
   }
 
   try {
+    const existingUser = await query<any[]>(
+      "SELECT email FROM users WHERE email = ? LIMIT 1",
+      [email]
+    );
+    const isNewUser = existingUser.length === 0;
+
     // In development, allow setting plan directly (bypasses Stripe for testing)
     if (plan || billing) {
       await query(
@@ -58,6 +65,14 @@ export async function POST(req: Request) {
          ON DUPLICATE KEY UPDATE name = VALUES(name)`,
         [email, name || "นักลงทุน"]
       );
+    }
+
+    if (isNewUser) {
+      sendTelegramMessage({
+        text: `🆕 <b>สมัครสมาชิกใหม่ (Email/Dev)</b>\n\n👤 ชื่อ: ${name || "นักลงทุน"}\n✉️ อีเมล: ${email}\n📅 เวลา: ${new Date().toLocaleString("th-TH", { timeZone: "Asia/Bangkok" })} น.`,
+      }).catch((err) => {
+        console.error("Failed to send signup Telegram notification:", err);
+      });
     }
 
     const rows = await query<{ email: string; name: string; plan: string; billing: string }[]>(

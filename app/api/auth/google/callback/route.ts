@@ -4,6 +4,7 @@ import { signToken } from "@/lib/auth";
 import { createSingleActiveSession } from "@/lib/sessions";
 import { normalizeMemberEmail } from "@/lib/member-identity";
 import { getRequestOrigin } from "@/lib/request-origin";
+import { sendTelegramMessage } from "@/lib/telegram";
 
 function getCookieValue(req: Request, name: string) {
   const cookieHeader = req.headers.get("cookie") || "";
@@ -85,7 +86,14 @@ export async function GET(req: Request) {
       throw new Error("Data service is offline. User login was not saved.");
     }
 
+    let isNewUser = false;
     try {
+      const existingUser = await query<any[]>(
+        "SELECT email FROM users WHERE email = ? LIMIT 1",
+        [email]
+      );
+      isNewUser = existingUser.length === 0;
+
       await query(
         `INSERT INTO users (email, name, plan, billing)
          VALUES (?, ?, 'free', 'monthly')
@@ -95,6 +103,14 @@ export async function GET(req: Request) {
     } catch (dbErr: any) {
       console.error("User upsert failure:", dbErr.message);
       throw new Error("User upsert failed");
+    }
+
+    if (isNewUser) {
+      sendTelegramMessage({
+        text: `🆕 <b>สมัครสมาชิกใหม่ (Google)</b>\n\n👤 ชื่อ: ${name}\n✉️ อีเมล: ${email}\n📅 เวลา: ${new Date().toLocaleString("th-TH", { timeZone: "Asia/Bangkok" })} น.`,
+      }).catch((err) => {
+        console.error("Failed to send signup Telegram notification:", err);
+      });
     }
 
     // 4. Create a single active member session. New login replaces older devices.

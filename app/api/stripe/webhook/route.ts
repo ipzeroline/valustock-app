@@ -4,6 +4,7 @@ import {
   syncStripeCheckoutSession,
   verifyStripeWebhookSignature,
 } from "@/lib/stripe";
+import { sendTelegramMessage } from "@/lib/telegram";
 
 export async function POST(req: Request) {
   const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
@@ -25,7 +26,13 @@ export async function POST(req: Request) {
       const sessionId = event.data?.object?.id;
       if (sessionId) {
         const session = await retrieveCheckoutSession(sessionId);
-        await syncStripeCheckoutSession(session);
+        const result = await syncStripeCheckoutSession(session);
+
+        sendTelegramMessage({
+          text: `💰 <b>ผู้ใช้สมัครแพ็กเกจพรีเมียม (Stripe)</b>\n\n👤 ชื่อ: ${result.name}\n✉️ อีเมล: ${result.email}\n🏷️ แพ็กเกจ: ${result.plan.toUpperCase()} (${result.billing})\n💵 ยอดเงิน: ฿${result.amount.toLocaleString()}\n🔢 Ref: <code>${result.transactionRef}</code>\n📅 เวลา: ${new Date().toLocaleString("th-TH", { timeZone: "Asia/Bangkok" })} น.`,
+        }).catch((err) => {
+          console.error("Failed to send Stripe Telegram notification:", err);
+        });
       }
     }
 
