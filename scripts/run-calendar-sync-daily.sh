@@ -12,9 +12,14 @@ set -euo pipefail
 
 # ── Config ──────────────────────────────────────────────────────────────────
 
+# Ensure standard paths are included for cron execution
+PATH="/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin:${PATH:-}"
+export PATH
+
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 APP_DIR="$(cd "${SCRIPT_DIR}/.." && pwd)"
 
+# Load environment variables (trying .env.production, .env.local, then .env)
 if [ -f "${APP_DIR}/.env.production" ]; then
   set -a
   # shellcheck disable=SC1091
@@ -24,6 +29,11 @@ elif [ -f "${APP_DIR}/.env.local" ]; then
   set -a
   # shellcheck disable=SC1091
   source "${APP_DIR}/.env.local"
+  set +a
+elif [ -f "${APP_DIR}/.env" ]; then
+  set -a
+  # shellcheck disable=SC1091
+  source "${APP_DIR}/.env"
   set +a
 fi
 

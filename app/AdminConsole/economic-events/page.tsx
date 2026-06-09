@@ -399,16 +399,24 @@ export default function AdminCalendarPage() {
               : "Fetch data from investing.com into MongoDB — 6 calendar types supported."}
           </p>
         </div>
-        <div className="flex gap-2">
-          <Button variant="outline" size="sm" onClick={fetchEvents} disabled={loading}>
+        <div className="flex flex-wrap gap-2">
+          <Button variant="primary" size="sm" onClick={handleFetch} disabled={fetching || loading}>
+            <Download className={`h-4 w-4 ${fetching ? "animate-bounce" : ""}`} />
+            {fetching
+              ? lang === "th" ? "กำลังดึง..." : "Fetching..."
+              : lang === "th"
+                ? `ดึงข้อมูล${tabLabel(CALENDAR_TYPES.find(t => t.key === activeTab)!)}`
+                : `Fetch ${tabLabel(CALENDAR_TYPES.find(t => t.key === activeTab)!)}`}
+          </Button>
+          <Button variant="outline" size="sm" onClick={fetchEvents} disabled={loading || fetching}>
             <RefreshCw className={`h-4 w-4 ${loading ? "animate-spin" : ""}`} />
             {lang === "th" ? "โหลดใหม่" : "Refresh"}
           </Button>
-          <Button variant="outline" size="sm" onClick={handleClearCurrent} disabled={total === 0}>
+          <Button variant="outline" size="sm" onClick={handleClearCurrent} disabled={total === 0 || fetching}>
             <Trash2 className="h-4 w-4" />
             {lang === "th" ? "ล้างแท็บนี้" : "Clear Current"}
           </Button>
-          <Button variant="outline" size="sm" onClick={handleClearAll}>
+          <Button variant="outline" size="sm" onClick={handleClearAll} disabled={fetching}>
             <Trash2 className="h-4 w-4" />
             {lang === "th" ? "ล้างทุกประเภท" : "Clear All"}
           </Button>
@@ -546,8 +554,26 @@ export default function AdminCalendarPage() {
           {loading ? (
             <div className="py-20 text-center text-xs text-muted animate-pulse">Loading...</div>
           ) : events.length === 0 ? (
-            <div className="py-20 text-center text-xs text-muted">
-              {lang === "th" ? "ยังไม่มีข้อมูล กด 'ดึงข้อมูล' เพื่อ scrape จาก investing.com" : "No data yet. Click 'Fetch' to scrape from investing.com."}
+            <div className="py-20 flex flex-col items-center justify-center gap-4 text-center text-xs text-muted">
+              <Calendar className="h-10 w-10 text-muted/40" />
+              <div className="max-w-xs leading-relaxed">
+                {lang === "th"
+                  ? "ยังไม่มีข้อมูลในระบบสำหรับหมวดหมู่นี้"
+                  : "No data in the database for this category."}
+              </div>
+              <Button
+                variant="primary"
+                size="sm"
+                onClick={handleFetch}
+                disabled={fetching}
+              >
+                <Download className={`h-4 w-4 ${fetching ? "animate-bounce" : ""}`} />
+                {fetching
+                  ? lang === "th" ? "กำลังดึงข้อมูล..." : "Fetching..."
+                  : lang === "th"
+                    ? `ดึงข้อมูล${tabLabel(CALENDAR_TYPES.find(t => t.key === activeTab)!)} ทันที`
+                    : `Fetch ${tabLabel(CALENDAR_TYPES.find(t => t.key === activeTab)!)} Now`}
+              </Button>
             </div>
           ) : renderTable()}
         </div>
