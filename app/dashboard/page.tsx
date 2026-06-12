@@ -200,7 +200,7 @@ export default function Dashboard() {
     try {
       const params = new URLSearchParams({
         calendarType: "economic",
-        timeFilter: "thisWeek",
+        timeFilter: "today",
         minImportance: "2",
         limit: "8",
       });
@@ -423,12 +423,12 @@ export default function Dashboard() {
                 {lang === "th" ? "Economic Radar" : "Economic Radar"}
               </div>
               <h2 className="mt-3 font-display text-lg font-black text-ink">
-                {lang === "th" ? "ปฏิทินเศรษฐกิจที่อาจกระทบพอร์ต" : "Economic Events That May Move Your Portfolio"}
+                {lang === "th" ? "ปฏิทินเศรษฐกิจวันนี้ที่อาจกระทบพอร์ต" : "Today's Economic Events That May Move Your Portfolio"}
               </h2>
               <p className="mt-1 max-w-2xl text-xs font-semibold leading-relaxed text-muted">
                 {lang === "th"
-                  ? "สรุปเหตุการณ์ระดับกลางขึ้นไปในสัปดาห์นี้ เพื่อช่วยวางจังหวะก่อนตัวเลขเศรษฐกิจสำคัญออก"
-                  : "Medium and high-impact events this week, summarized before key macro releases hit the market."}
+                  ? "สรุปเหตุการณ์ระดับกลางขึ้นไปของวันนี้ เพื่อช่วยวางจังหวะก่อนตัวเลขเศรษฐกิจสำคัญออก"
+                  : "Medium and high-impact events for today, summarized before key macro releases hit the market."}
               </p>
             </div>
             <div className="grid grid-cols-2 gap-2 sm:flex sm:flex-wrap sm:justify-end">
@@ -472,12 +472,12 @@ export default function Dashboard() {
               <div className="mt-3 rounded-xl border border-line bg-elevate/40 p-3 text-[11px] font-semibold leading-relaxed text-muted">
                 <div className="flex items-center gap-2 font-black text-ink">
                   <Globe className="h-4 w-4 text-brand" />
-                  {lang === "th" ? "โฟกัสสัปดาห์นี้" : "This Week Focus"}
+                  {lang === "th" ? "โฟกัสวันนี้" : "Today Focus"}
                 </div>
                 <p className="mt-1">
                   {lang === "th"
-                    ? "จับตา USD, EUR, GBP, JPY และตัวเลขแรงงาน/เงินเฟ้อ เพราะมักกระทบดอกเบี้ย ค่าเงิน และสินทรัพย์เสี่ยง"
-                    : "Watch USD, EUR, GBP, JPY plus labor and inflation data because they often affect rates, FX, and risk assets."}
+                    ? "จับตา USD, EUR, GBP, JPY และตัวเลขแรงงาน/เงินเฟ้อของวันนี้ เพราะมักกระทบดอกเบี้ย ค่าเงิน และสินทรัพย์เสี่ยง"
+                    : "Watch today's USD, EUR, GBP, JPY plus labor and inflation data because they often affect rates, FX, and risk assets."}
                 </p>
               </div>
             </div>
@@ -501,7 +501,7 @@ export default function Dashboard() {
                 <div className="p-8 text-center">
                   <Zap className="mx-auto h-8 w-8 text-muted" />
                   <div className="mt-2 text-sm font-bold text-muted">
-                    {lang === "th" ? "ยังไม่มีเหตุการณ์ระดับกลางขึ้นไปในสัปดาห์นี้" : "No medium/high-impact events this week."}
+                    {lang === "th" ? "ยังไม่มีเหตุการณ์ระดับกลางขึ้นไปในวันนี้" : "No medium/high-impact events today."}
                   </div>
                   <Link href="/economic-calendar" className="mt-3 inline-flex text-xs font-black text-brand hover:underline">
                     {lang === "th" ? "ดูทุกประเภทในปฏิทินเต็ม" : "View all calendar types"}
