@@ -264,6 +264,13 @@ const NAV = [
 ];
 
 const MOBILE_NAV_HREFS = ["/dashboard", "/stocks", "/blog", "/portfolio", "/account"];
+const MOBILE_NAV_LABELS: Record<string, { th: string; en: string }> = {
+  "/dashboard": { th: "ภาพรวม", en: "Home" },
+  "/stocks": { th: "ค้นหา", en: "Search" },
+  "/blog": { th: "บทความ", en: "Blog" },
+  "/portfolio": { th: "พอร์ต", en: "Portfolio" },
+  "/account": { th: "บัญชี", en: "Account" },
+};
 
 function AppSidebar({ pathname }: { pathname: string }) {
   const plan = useCurrentPlan();
@@ -329,21 +336,24 @@ function AppMobileNav({ pathname }: { pathname: string }) {
     (item): item is (typeof NAV)[number] => Boolean(item),
   );
   return (
-    <nav className="fixed bottom-0 left-0 right-0 z-40 grid grid-cols-5 border-t border-line bg-surface/95 backdrop-blur-xl xl:hidden">
+    <nav className="fixed bottom-0 left-0 right-0 z-40 grid grid-cols-5 border-t border-line bg-surface/95 pb-[env(safe-area-inset-bottom)] backdrop-blur-xl xl:hidden">
       {items.map((item) => {
         const active =
           pathname === item.href || pathname.startsWith(item.href + "/");
         const Icon = item.icon;
+        const mobileLabel = MOBILE_NAV_LABELS[item.href];
         return (
           <Link
             key={item.href}
             href={item.href}
-            className={`flex flex-col items-center gap-1 py-2.5 text-xs ${
+            className={`flex min-h-[64px] min-w-0 flex-col items-center justify-center gap-1 px-1 py-2 text-[11px] font-semibold leading-tight ${
               active ? "text-brand" : "text-muted"
             }`}
           >
-            <Icon className="h-5 w-5" />
-            {"key" in item ? t(`common.${item.key}`) : lang === "th" ? item.labelTh : item.labelEn}
+            <Icon className="h-5 w-5 shrink-0" />
+            <span className="block max-w-full truncate text-center">
+              {mobileLabel ? (lang === "th" ? mobileLabel.th : mobileLabel.en) : "key" in item ? t(`common.${item.key}`) : lang === "th" ? item.labelTh : item.labelEn}
+            </span>
           </Link>
         );
       })}
@@ -351,50 +361,93 @@ function AppMobileNav({ pathname }: { pathname: string }) {
   );
 }
 
-function AppTopbar() {
+function AppTopbar({ pathname }: { pathname: string }) {
   const { user, logout } = useStore();
   const router = useRouter();
-  const { t } = useTranslation();
+  const { t, lang } = useTranslation();
+  const plan = useCurrentPlan();
+  const [menuOpen, setMenuOpen] = useState(false);
+  const pricingLabel = plan.id === "lifetime" ? (lang === "th" ? "สถานะสมาชิก" : "Membership") : t("common.pricing");
   return (
-    <div className="sticky top-0 z-30 flex h-16 items-center justify-between border-b border-line bg-bg/80 px-3 backdrop-blur-xl sm:px-5 lg:px-8">
-      <div className="shrink-0 xl:hidden">
-        <Logo />
-      </div>
-      <div className="hidden xl:block" />
-      <div className="flex shrink-0 items-center gap-1.5 sm:gap-2.5">
-        <LangToggle />
-        <ThemeToggle />
-        {user ? (
-          <div className="flex items-center gap-1.5 sm:gap-2.5">
-            <Link
-              href="/account"
-              className="flex items-center gap-2 rounded-xl border border-line px-2 py-2 sm:gap-2.5 sm:px-3"
-            >
-              <span className="grid h-7 w-7 place-items-center rounded-lg bg-brand-soft text-xs font-bold text-brand">
-                {user.name.slice(0, 1).toUpperCase()}
-              </span>
-              <span className="hidden text-sm font-medium sm:block">
-                {user.name}
-              </span>
+    <div className="sticky top-0 z-30 border-b border-line bg-bg/80 backdrop-blur-xl">
+      <div className="flex h-16 items-center justify-between px-3 sm:px-5 lg:px-8">
+        <div className="flex min-w-0 items-center gap-2 xl:hidden">
+          <button
+            onClick={() => setMenuOpen((value) => !value)}
+            aria-label={lang === "th" ? "เปิดเมนูหลัก" : "Open main menu"}
+            title={lang === "th" ? "เมนูหลัก" : "Main menu"}
+            className="grid h-10 w-10 shrink-0 place-items-center rounded-xl border border-line text-muted transition hover:bg-elevate hover:text-ink"
+          >
+            {menuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
+          </button>
+          <Logo />
+        </div>
+        <div className="hidden xl:block" />
+        <div className="flex shrink-0 items-center gap-1.5 sm:gap-2.5">
+          <LangToggle />
+          <ThemeToggle />
+          {user ? (
+            <div className="flex items-center gap-1.5 sm:gap-2.5">
+              <Link
+                href="/account"
+                className="flex items-center gap-2 rounded-xl border border-line px-2 py-2 sm:gap-2.5 sm:px-3"
+              >
+                <span className="grid h-7 w-7 place-items-center rounded-lg bg-brand-soft text-xs font-bold text-brand">
+                  {user.name.slice(0, 1).toUpperCase()}
+                </span>
+                <span className="hidden text-sm font-medium sm:block">
+                  {user.name}
+                </span>
+              </Link>
+              <button
+                onClick={() => {
+                  logout();
+                  router.push("/login");
+                }}
+                aria-label={t("common.logOut")}
+                title={t("common.logOut")}
+                className="grid h-10 w-10 place-items-center rounded-xl border border-line text-muted hover:text-down"
+              >
+                <LogOut className="h-4 w-4" />
+              </button>
+            </div>
+          ) : (
+            <Link href="/login">
+              <Button size="sm">{t("common.logIn")}</Button>
             </Link>
-            <button
-              onClick={() => {
-                logout();
-                router.push("/login");
-              }}
-              aria-label={t("common.logOut")}
-              title={t("common.logOut")}
-              className="grid h-10 w-10 place-items-center rounded-xl border border-line text-muted hover:text-down"
-            >
-              <LogOut className="h-4 w-4" />
-            </button>
-          </div>
-        ) : (
-          <Link href="/login">
-            <Button size="sm">{t("common.logIn")}</Button>
-          </Link>
-        )}
+          )}
+        </div>
       </div>
+      {menuOpen && (
+        <div className="max-h-[calc(100dvh-4rem)] overflow-y-auto border-t border-line bg-surface/98 px-3 py-3 shadow-card xl:hidden">
+          <nav className="grid gap-1 sm:grid-cols-2">
+            {NAV.map((item) => {
+              const active = pathname === item.href || pathname.startsWith(item.href + "/");
+              const Icon = item.icon;
+              const label = item.href === "/pricing"
+                ? pricingLabel
+                : "key" in item
+                  ? t(`common.${item.key}`)
+                  : lang === "th"
+                    ? item.labelTh
+                    : item.labelEn;
+              return (
+                <Link
+                  key={item.href}
+                  href={item.href}
+                  onClick={() => setMenuOpen(false)}
+                  className={`flex min-w-0 items-center gap-3 rounded-xl px-3 py-3 text-sm font-semibold transition ${
+                    active ? "bg-brand-soft text-brand" : "text-muted hover:bg-elevate hover:text-ink"
+                  }`}
+                >
+                  <Icon className="h-[18px] w-[18px] shrink-0" />
+                  <span className="min-w-0 [overflow-wrap:anywhere]">{label}</span>
+                </Link>
+              );
+            })}
+          </nav>
+        </div>
+      )}
     </div>
   );
 }
@@ -430,7 +483,7 @@ export function Shell({ children }: { children: React.ReactNode }) {
     <div className="flex min-h-screen">
       <AppSidebar pathname={activePathname} />
       <div className="flex min-w-0 flex-1 flex-col">
-        <AppTopbar />
+        <AppTopbar pathname={activePathname} />
         <main className="min-w-0 max-w-full flex-1 overflow-x-hidden px-3 pb-24 pt-5 sm:px-5 sm:pt-6 xl:px-8 xl:pb-10">
           {children}
         </main>

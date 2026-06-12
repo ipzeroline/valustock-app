@@ -222,20 +222,20 @@ export default function AccountPage() {
   const currentLocalPlan = PLAN_TRANS[lang || "th"][plan.id];
 
   return (
-    <div className="mx-auto max-w-3xl space-y-6 animate-fade-up">
+    <div className="mx-auto max-w-4xl space-y-4 animate-fade-up sm:space-y-6">
       <h1 className="font-display text-2xl font-bold md:text-3xl">{t("account.title")}</h1>
 
       {/* profile */}
       <Card>
         <CardHeader title={t("account.profileSection")} icon={<User className="h-4 w-4" />} />
-        <div className="flex items-center gap-4 p-5">
-          <span className="grid h-14 w-14 place-items-center rounded-2xl bg-brand-soft font-display text-xl font-bold text-brand">
+        <div className="flex min-w-0 items-start gap-3 p-4 sm:items-center sm:gap-4 sm:p-5">
+          <span className="grid h-12 w-12 shrink-0 place-items-center rounded-2xl bg-brand-soft font-display text-lg font-bold text-brand sm:h-14 sm:w-14 sm:text-xl">
             {user.name.slice(0, 1).toUpperCase()}
           </span>
-          <div>
-            <div className="font-display text-lg font-semibold">{user.name}</div>
-            <div className="text-sm text-muted">{user.email}</div>
-            <div className="num mt-0.5 text-xs text-muted">
+          <div className="min-w-0 flex-1">
+            <div className="font-display text-base font-semibold leading-snug [overflow-wrap:anywhere] sm:text-lg">{user.name}</div>
+            <div className="text-sm leading-relaxed text-muted [overflow-wrap:anywhere]">{user.email}</div>
+            <div className="num mt-1 text-xs leading-relaxed text-muted">
               {lang === "th" ? "สมาชิกตั้งแต่ " : "Member since "}
               {new Date(user.joinedAt).toLocaleDateString(lang === "th" ? "th-TH" : "en-US", {
                 year: "numeric",
@@ -254,17 +254,17 @@ export default function AccountPage() {
           icon={<Crown className="h-4 w-4" />}
           right={<Badge tone="gold">{currentLocalPlan.name}</Badge>}
         />
-        <div className="p-5">
-          <div className="flex items-center justify-between rounded-xl border border-line bg-elevate px-4 py-3.5">
-            <div>
+        <div className="p-4 sm:p-5">
+          <div className="flex flex-col gap-3 rounded-xl border border-line bg-elevate px-4 py-3.5 sm:flex-row sm:items-center sm:justify-between">
+            <div className="min-w-0">
               <div className="font-display font-semibold">{lang === "th" ? `แพ็กเกจ ${currentLocalPlan.name}` : `${currentLocalPlan.name} Tier`}</div>
-              <div className="text-xs text-muted">
+              <div className="mt-1 text-xs leading-relaxed text-muted">
                 {(user.email.toLowerCase().trim() === "zeroline@live.com" || user.email.toLowerCase().trim() === "tayasit.pea@gmail.com")
                   ? (lang === "th" ? "สิทธิ์พิเศษระดับผู้บริหารสูงสุดของระบบ" : "Exclusive permanent enterprise subscription tier")
                   : currentLocalPlan.tagline}
               </div>
             </div>
-            <div className="text-right">
+            <div className="shrink-0 text-left sm:text-right">
               {user.email.toLowerCase().trim() === "zeroline@live.com" || user.email.toLowerCase().trim() === "tayasit.pea@gmail.com" ? (
                 <>
                   <div className="num font-display text-lg font-bold text-gold">
@@ -294,20 +294,20 @@ export default function AccountPage() {
           </div>
 
           {/* current plan features */}
-          <ul className="mt-4 grid gap-2 sm:grid-cols-2">
+          <ul className="mt-4 grid gap-2.5 sm:grid-cols-2">
             {currentLocalPlan.features.map((f) => (
-              <li key={f} className="flex items-start gap-2 text-sm">
+              <li key={f} className="flex min-w-0 items-start gap-2 text-sm leading-relaxed">
                 <Check className="mt-0.5 h-4 w-4 shrink-0 text-brand" />
-                <span className="text-ink/90">{f}</span>
+                <span className="min-w-0 text-ink/90 [overflow-wrap:anywhere]">{f}</span>
               </li>
             ))}
           </ul>
 
           {/* billing toggle for paid plans */}
           {showLocalPlanControls && plan.id !== "free" && !isLifetimePlan && (
-            <div className="mt-5 flex items-center justify-between rounded-xl border border-line px-4 py-3">
+            <div className="mt-5 flex flex-col gap-3 rounded-xl border border-line px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
               <span className="text-sm">{t("account.billingLabel")}</span>
-              <div className="inline-flex items-center gap-1 rounded-full border border-line p-1">
+              <div className="grid grid-cols-2 items-center gap-1 rounded-full border border-line p-1 sm:inline-flex">
                 <button
                   onClick={() => setPlan(plan.id, "monthly")}
                   className={`rounded-full px-3 py-1 text-xs font-semibold transition ${
@@ -328,16 +328,16 @@ export default function AccountPage() {
             </div>
           )}
           {isLifetimePlan && (
-            <div className="mt-5 flex items-center justify-between rounded-xl border border-gold/25 bg-gold/5 px-4 py-3">
+            <div className="mt-5 flex flex-col gap-2 rounded-xl border border-gold/25 bg-gold/5 px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
               <span className="text-sm font-semibold text-ink">{t("account.billingLabel")}</span>
               <Badge tone="gold">{lang === "th" ? "จ่ายครั้งเดียว ตลอดชีพ" : "One-time Lifetime"}</Badge>
             </div>
           )}
 
-          <div className="mt-5 flex flex-wrap gap-3">
+          <div className="mt-5 grid gap-3 sm:flex sm:flex-wrap">
             {plan.id !== "premium" && plan.id !== "lifetime" && (
               <Link href="/pricing">
-                <Button variant="gold" size="sm">
+                <Button variant="gold" size="sm" className="w-full sm:w-auto">
                   <Crown className="h-4 w-4" /> {t("common.upgrade")}
                 </Button>
               </Link>
@@ -346,6 +346,7 @@ export default function AccountPage() {
               <Button
                 variant="outline"
                 size="sm"
+                className="w-full sm:w-auto"
                 onClick={() => setPlan("free", "monthly")}
               >
                 {lang === "th" ? "ลดเป็นแพ็กเกจฟรี" : "Downgrade to Free Tier"}
@@ -363,7 +364,7 @@ export default function AccountPage() {
             subtitle={lang === "th" ? "เดโม: ทดลองสลับสิทธิ์เพื่อดูฟีเจอร์ที่ปลดล็อก" : "Demo Mode: swap roles instantly to verify locked capabilities."}
             icon={<Shield className="h-4 w-4" />}
           />
-          <div className="grid gap-3 p-5 sm:grid-cols-2 lg:grid-cols-4">
+          <div className="grid gap-3 p-4 sm:grid-cols-2 sm:p-5 lg:grid-cols-4">
             {PLANS.map((p) => {
               const tr = PLAN_TRANS[lang || "th"][p.id];
               const nextBilling = p.id === "lifetime" ? "lifetime" : user.billing === "yearly" ? "yearly" : "monthly";
@@ -396,8 +397,8 @@ export default function AccountPage() {
       <Card>
         <CardHeader title={lang === "th" ? "การตั้งค่าความพึงพอใจ" : "User Preferences"} />
         <div className="divide-y divide-line">
-          <div className="flex items-center justify-between p-5">
-            <div className="flex items-center gap-3">
+          <div className="flex flex-col gap-3 p-4 sm:flex-row sm:items-center sm:justify-between sm:p-5">
+            <div className="flex min-w-0 items-center gap-3">
               {theme === "dark" ? (
                 <Moon className="h-5 w-5 text-muted" />
               ) : (
@@ -412,22 +413,22 @@ export default function AccountPage() {
                 </div>
               </div>
             </div>
-            <Button variant="subtle" size="sm" onClick={toggleTheme}>
+            <Button variant="subtle" size="sm" className="w-full sm:w-auto" onClick={toggleTheme}>
               {lang === "th" 
                 ? `สลับเป็น${theme === "dark" ? "สว่าง" : "มืด"}` 
                 : `Switch to ${theme === "dark" ? "Light" : "Dark"}`}
             </Button>
           </div>
-          <div className="p-5">
+          <div className="p-3 sm:p-5">
             <div className="overflow-hidden rounded-2xl border border-sky-500/30 bg-gradient-to-br from-sky-500/10 via-elevate to-brand/10">
-              <div className="flex flex-col gap-4 p-4 sm:flex-row sm:items-start sm:justify-between">
+              <div className="flex flex-col gap-4 p-3 sm:p-4 lg:flex-row lg:items-start lg:justify-between">
                 <div className="flex min-w-0 gap-3">
                   <span className="grid h-11 w-11 shrink-0 place-items-center rounded-xl border border-sky-400/30 bg-sky-400/15 text-sky-300">
                     <MessageSquare className="h-5 w-5" />
                   </span>
-                  <div className="min-w-0">
+                  <div className="min-w-0 flex-1">
                     <div className="flex flex-wrap items-center gap-2">
-                      <h3 className="font-display text-sm font-black text-ink">
+                      <h3 className="font-display text-sm font-black leading-snug text-ink">
                         {lang === "th" ? "Telegram Alerts ส่วนตัว" : "Personal Telegram Alerts"}
                       </h3>
                       <Badge tone={telegram?.connected ? "up" : "gold"}>
@@ -436,7 +437,7 @@ export default function AccountPage() {
                           : lang === "th" ? "ยังไม่เชื่อมต่อ" : "Not connected"}
                       </Badge>
                     </div>
-                    <p className="mt-2 text-xs font-semibold leading-relaxed text-muted">
+                    <p className="mt-2 text-xs font-semibold leading-relaxed text-muted [overflow-wrap:anywhere]">
                       {lang === "th"
                         ? "เชื่อม Telegram ส่วนตัวครั้งเดียว เพื่อรับสรุป Watchlist, Portfolio, Compare Alert และใช้ Mini App โดยไม่ต้องล็อกอินเว็บซ้ำ"
                         : "Connect your personal Telegram account once to receive Watchlist summaries, Portfolio updates, Compare Alerts, and use the Mini App without logging into the web again."}
@@ -444,11 +445,11 @@ export default function AccountPage() {
                     <div className="mt-3 grid gap-2 text-[11px] font-semibold text-muted sm:grid-cols-2">
                       <div className="rounded-xl border border-line/70 bg-bg/45 px-3 py-2">
                         <span className="block text-[9px] font-black uppercase text-muted">Bot</span>
-                        <span className="text-ink">{telegram?.botUsername ? `@${telegram.botUsername}` : "-"}</span>
+                        <span className="block text-ink [overflow-wrap:anywhere]">{telegram?.botUsername ? `@${telegram.botUsername}` : "-"}</span>
                       </div>
                       <div className="rounded-xl border border-line/70 bg-bg/45 px-3 py-2">
                         <span className="block text-[9px] font-black uppercase text-muted">Telegram</span>
-                        <span className="text-ink">
+                        <span className="block text-ink [overflow-wrap:anywhere]">
                           {telegram?.connected
                             ? telegram.telegramUsername || telegram.chatIdMask || "Connected"
                             : lang === "th" ? "รอเชื่อมต่อ" : "Waiting"}
@@ -464,7 +465,7 @@ export default function AccountPage() {
                         <span>{lang === "th" ? "Telegram chat id" : "Telegram chat ID"}</span>
                         <span>{lang === "th" ? "สถานะเปิดแจ้งเตือน" : "Alert status"}</span>
                       </div>
-                      <p className="mt-2 text-[11px] font-semibold leading-relaxed text-muted">
+                      <p className="mt-2 text-[11px] font-semibold leading-relaxed text-muted [overflow-wrap:anywhere]">
                         {lang === "th"
                           ? "ข้อมูลนี้ใช้เฉพาะสำหรับส่งแจ้งเตือนจาก ValuStock Bot ไปยังบัญชี Telegram ของคุณเท่านั้น ไม่แสดง chat id เต็มบนหน้าเว็บ และยกเลิกการเชื่อมต่อได้ทุกเมื่อ"
                           : "This data is used only to deliver ValuStock Bot alerts to your Telegram account. Full chat IDs are hidden on the web and can be disconnected anytime."}
@@ -479,7 +480,7 @@ export default function AccountPage() {
                           <Badge tone="up">{lang === "th" ? "เชื่อมแล้ว ไม่ต้องทำซ้ำ" : "Connected once"}</Badge>
                         )}
                       </div>
-                      <div className="mt-3 grid gap-2 text-[11px] font-semibold leading-relaxed text-muted md:grid-cols-3">
+                      <div className="mt-3 grid gap-2 text-[11px] font-semibold leading-relaxed text-muted sm:grid-cols-3">
                         {[
                           {
                             step: "1",
@@ -511,13 +512,13 @@ export default function AccountPage() {
                               <span className="grid h-5 w-5 shrink-0 place-items-center rounded-full bg-sky-400/20 text-[10px] font-black text-sky-300">
                                 {item.step}
                               </span>
-                              <span className="font-black text-ink">{item.title}</span>
+                              <span className="font-black leading-snug text-ink">{item.title}</span>
                             </div>
                             <p className="mt-1 text-muted">{item.desc}</p>
                           </div>
                         ))}
                       </div>
-                      <p className="mt-2 text-[11px] font-semibold leading-relaxed text-muted">
+                      <p className="mt-2 text-[11px] font-semibold leading-relaxed text-muted [overflow-wrap:anywhere]">
                         {telegram?.connected
                           ? lang === "th"
                             ? "เมื่อเชื่อมต่อแล้ว สถานะจะค้างอยู่ในระบบ ไม่ต้องเชื่อมซ้ำ ยกเว้นคุณกดยกเลิกเชื่อมต่อหรือเปลี่ยนบัญชี Telegram"
@@ -541,7 +542,7 @@ export default function AccountPage() {
                           {lang === "th" ? "ส่งครบทุกตัวใน Watchlist และแบ่งข้อความให้อ่านง่าย" : "All Watchlist stocks, split into readable message batches"}
                         </div>
                       </div>
-                      <p className="mt-2 text-[11px] font-semibold leading-relaxed text-muted">
+                      <p className="mt-2 text-[11px] font-semibold leading-relaxed text-muted [overflow-wrap:anywhere]">
                         {lang === "th"
                           ? "ทุกตัวจะมีราคา, Fair Value, MOS, Dividend Yield, เหตุผลที่ติดตาม และลิงก์กลับไปหน้าหุ้น โดยใช้คำว่าเข้าโซนติดตาม ไม่ใช่คำแนะนำซื้อขาย"
                           : "Every stock includes price, fair value, MOS, dividend yield, reason, and a stock link. Messages are watch signals, not buy/sell advice."}
@@ -553,7 +554,7 @@ export default function AccountPage() {
                           <div className="text-[10px] font-black uppercase tracking-wide text-gold">
                             {lang === "th" ? "Telegram Mini App" : "Telegram Mini App"}
                           </div>
-                          <p className="mt-1 text-[11px] font-semibold leading-relaxed text-muted">
+                          <p className="mt-1 text-[11px] font-semibold leading-relaxed text-muted [overflow-wrap:anywhere]">
                             {lang === "th"
                               ? "Mini App ไม่ต้อง login เว็บซ้ำ ระบบใช้ Telegram ที่เชื่อมจากหน้านี้เป็นกุญแจยืนยันตัวตน แล้วดึงข้อมูลสมาชิกจากบัญชีที่ผูกไว้เท่านั้น"
                               : "The Mini App does not require another web login. It uses this connected Telegram account as the identity key and only loads data for the linked member account."}
@@ -566,23 +567,23 @@ export default function AccountPage() {
                               lang === "th" ? "ส่ง Watchlist Summary" : "Send Watchlist Summary",
                               lang === "th" ? "ส่ง Compare Alert รายชุด" : "Send Compare Set Alerts",
                             ].map((item) => (
-                              <span key={item} className="rounded-lg border border-line/60 bg-bg/35 px-2 py-1">
+                              <span key={item} className="rounded-lg border border-line/60 bg-bg/35 px-2 py-1 [overflow-wrap:anywhere]">
                                 {item}
                               </span>
                             ))}
                           </div>
                         </div>
-                        <div className="flex shrink-0 flex-wrap gap-2">
+                        <div className="grid shrink-0 gap-2 sm:flex sm:flex-wrap sm:justify-end">
                           {telegram?.botUsername && (
-                            <a href={`https://t.me/${telegram.botUsername}`} target="_blank" rel="noreferrer">
-                              <Button size="sm" variant="gold" disabled={!telegram?.connected}>
+                            <a href={`https://t.me/${telegram.botUsername}`} target="_blank" rel="noreferrer" className="w-full sm:w-auto">
+                              <Button size="sm" variant="gold" className="w-full sm:w-auto" disabled={!telegram?.connected}>
                                 {lang === "th" ? "เปิด Bot" : "Open Bot"}
                                 <ArrowRight className="h-4 w-4" />
                               </Button>
                             </a>
                           )}
-                          <Link href="/telegram">
-                            <Button size="sm" variant="outline">
+                          <Link href="/telegram" className="w-full sm:w-auto">
+                            <Button size="sm" variant="outline" className="w-full sm:w-auto">
                               {lang === "th" ? "ดูหน้า Mini App" : "Preview"}
                             </Button>
                           </Link>
@@ -598,14 +599,14 @@ export default function AccountPage() {
                     </div>
                   </div>
                 </div>
-                <div className="flex shrink-0 flex-wrap gap-2 sm:justify-end">
-                  <Button size="sm" variant={telegram?.connected ? "outline" : "primary"} onClick={startTelegramConnect} disabled={telegramLoading || !authToken}>
+                <div className="grid shrink-0 grid-cols-2 gap-2 lg:flex lg:flex-wrap lg:justify-end">
+                  <Button size="sm" className="w-full lg:w-auto" variant={telegram?.connected ? "outline" : "primary"} onClick={startTelegramConnect} disabled={telegramLoading || !authToken}>
                     <Key className="h-4 w-4" />
                     {telegram?.connected
                       ? lang === "th" ? "สร้างโค้ดใหม่" : "New code"
                       : lang === "th" ? "เชื่อมต่อ" : "Connect"}
                   </Button>
-                  <Button size="sm" variant="outline" onClick={loadTelegram} disabled={telegramLoading || !authToken}>
+                  <Button size="sm" className="w-full lg:w-auto" variant="outline" onClick={loadTelegram} disabled={telegramLoading || !authToken}>
                     {lang === "th" ? "รีเฟรช" : "Refresh"}
                   </Button>
                 </div>
@@ -623,7 +624,7 @@ export default function AccountPage() {
                           ? "ให้กดปุ่ม เปิด Telegram หรือคัดลอกคำสั่งด้านล่างไปส่งในแชทส่วนตัวของ Bot ภายใน 10 นาที ระบบจะผูก Telegram นี้กับบัญชีสมาชิกที่ล็อกอินอยู่"
                           : "Click Open Telegram or copy the command below into the bot's private chat within 10 minutes. ValuStock will link that Telegram account to the logged-in member."}
                       </p>
-                      <div className="mt-2 rounded-xl border border-line bg-bg px-3 py-2 font-mono text-sm font-black text-ink [overflow-wrap:anywhere]">
+                      <div className="mt-2 rounded-xl border border-line bg-bg px-3 py-2 font-mono text-xs font-black leading-relaxed text-ink [overflow-wrap:anywhere] sm:text-sm">
                         {telegramCode.command}
                       </div>
                       <div className="mt-2 grid gap-2 text-[11px] font-semibold leading-relaxed text-muted sm:grid-cols-2">
@@ -635,12 +636,12 @@ export default function AccountPage() {
                         </span>
                       </div>
                     </div>
-                    <div className="flex shrink-0 gap-2">
-                      <Button size="sm" variant="outline" onClick={copyTelegramCommand}>
+                    <div className="grid shrink-0 grid-cols-2 gap-2 sm:flex">
+                      <Button size="sm" className="w-full sm:w-auto" variant="outline" onClick={copyTelegramCommand}>
                         {lang === "th" ? "คัดลอก" : "Copy"}
                       </Button>
-                      <a href={telegramCode.deepLink} target="_blank" rel="noreferrer">
-                        <Button size="sm">
+                      <a href={telegramCode.deepLink} target="_blank" rel="noreferrer" className="w-full sm:w-auto">
+                        <Button size="sm" className="w-full sm:w-auto">
                           {lang === "th" ? "เปิด Telegram" : "Open Telegram"}
                         </Button>
                       </a>
@@ -650,7 +651,7 @@ export default function AccountPage() {
               )}
 
               <div className="flex flex-col gap-3 border-t border-line/60 p-4 sm:flex-row sm:items-center sm:justify-between">
-                <div className="text-[11px] font-semibold leading-relaxed text-muted">
+                <div className="text-[11px] font-semibold leading-relaxed text-muted [overflow-wrap:anywhere]">
                   {plan.limits.alerts
                     ? lang === "th"
                       ? "Premium/Lifetime สามารถส่งข้อความทดสอบและรับแจ้งเตือนจริงเมื่อราคาหรือ MOS เข้าเงื่อนไขที่ตั้งไว้"
@@ -659,12 +660,12 @@ export default function AccountPage() {
                       ? "เชื่อมบัญชีไว้ล่วงหน้าได้ แต่การส่ง alert ใช้งานใน Premium/Lifetime"
                       : "You can connect in advance. Alert delivery is available on Premium/Lifetime."}
                 </div>
-                <div className="flex shrink-0 flex-wrap gap-2">
-                  <Button size="sm" variant="gold" onClick={testTelegram} disabled={telegramLoading || !telegram?.connected || !plan.limits.alerts}>
+                <div className="grid shrink-0 grid-cols-2 gap-2 sm:flex sm:flex-wrap sm:justify-end">
+                  <Button size="sm" className="w-full sm:w-auto" variant="gold" onClick={testTelegram} disabled={telegramLoading || !telegram?.connected || !plan.limits.alerts}>
                     {lang === "th" ? "ส่งทดสอบ" : "Send test"}
                   </Button>
                   {telegram?.connected && (
-                    <Button size="sm" variant="outline" onClick={disconnectTelegram} disabled={telegramLoading}>
+                    <Button size="sm" className="w-full sm:w-auto" variant="outline" onClick={disconnectTelegram} disabled={telegramLoading}>
                       {lang === "th" ? "ยกเลิกเชื่อมต่อ" : "Disconnect"}
                     </Button>
                   )}
@@ -673,19 +674,20 @@ export default function AccountPage() {
 
               <div className="border-t border-line/60 bg-bg/25 p-4">
                 <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                  <div>
+                  <div className="min-w-0">
                     <div className="text-sm font-black text-ink">
                       {lang === "th" ? "สรุปรายการโปรดผ่าน Telegram" : "Telegram Watchlist Summary"}
                     </div>
-                    <p className="mt-1 text-[11px] font-semibold leading-relaxed text-muted">
+                    <p className="mt-1 text-[11px] font-semibold leading-relaxed text-muted [overflow-wrap:anywhere]">
                       {lang === "th"
                         ? "ส่งสรุปหุ้นครบทุกตัวจาก Watchlist ของคุณ โดยจัดอันดับจาก MOS, Dividend Yield และการเปลี่ยนแปลงราคา หากมีหลายตัวระบบจะแบ่งเป็นหลายข้อความ"
                         : "Send every stock in your Watchlist, ranked by MOS, dividend yield, and price movement. Large lists are split into multiple messages."}
                     </p>
                   </div>
-                  <div className="flex shrink-0 flex-wrap gap-2">
+                  <div className="grid shrink-0 gap-2 sm:flex sm:flex-wrap sm:justify-end">
                     <Button
                       size="sm"
+                      className="w-full sm:w-auto"
                       variant={telegram?.watchlistDigestEnabled ? "primary" : "outline"}
                       onClick={() => updateTelegramDigest(!telegram?.watchlistDigestEnabled)}
                       disabled={telegramLoading || !authToken}
@@ -696,6 +698,7 @@ export default function AccountPage() {
                     </Button>
                     <Button
                       size="sm"
+                      className="w-full sm:w-auto"
                       variant="outline"
                       onClick={() => updateTelegramDigest(true, telegram?.watchlistDigestFrequency === "weekly" ? "daily" : "weekly")}
                       disabled={telegramLoading || !authToken}
@@ -704,7 +707,7 @@ export default function AccountPage() {
                         ? lang === "th" ? "รายสัปดาห์" : "Weekly"
                         : lang === "th" ? "รายวัน" : "Daily"}
                     </Button>
-                    <Button size="sm" variant="gold" onClick={sendWatchlistSummary} disabled={telegramLoading || !telegram?.connected || !plan.limits.alerts}>
+                    <Button size="sm" className="w-full sm:w-auto" variant="gold" onClick={sendWatchlistSummary} disabled={telegramLoading || !telegram?.connected || !plan.limits.alerts}>
                       {lang === "th" ? "ส่งสรุปทดสอบ" : "Send summary"}
                     </Button>
                   </div>
@@ -712,7 +715,7 @@ export default function AccountPage() {
               </div>
 
               {telegramMessage && (
-                <div className="border-t border-line/60 bg-bg/30 px-4 py-3 text-xs font-bold text-muted">
+                <div className="border-t border-line/60 bg-bg/30 px-4 py-3 text-xs font-bold leading-relaxed text-muted [overflow-wrap:anywhere]">
                   {telegramMessage}
                 </div>
               )}
@@ -763,15 +766,15 @@ function FeatureRow({
   t: any;
 }) {
   return (
-    <div className="flex items-center justify-between p-5">
-      <div className="flex items-center gap-3">
+    <div className="flex flex-col gap-3 p-4 sm:flex-row sm:items-center sm:justify-between sm:p-5">
+      <div className="flex min-w-0 items-center gap-3">
         {icon}
-        <div className="text-sm font-medium">{title}</div>
+        <div className="min-w-0 text-sm font-medium leading-relaxed [overflow-wrap:anywhere]">{title}</div>
       </div>
       {on ? (
         <Badge tone="up">{lang === "th" ? "เปิดใช้งาน" : "Active"}</Badge>
       ) : (
-        <Link href="/pricing">
+        <Link href="/pricing" className="w-full sm:w-auto">
           <Badge tone="gold">{t("common.upgrade")}</Badge>
         </Link>
       )}

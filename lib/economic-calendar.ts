@@ -92,12 +92,29 @@ const ECONOMIC_SCRIPT = `(function() {
     "\\u0E01\\u0E31\\u0E19\\u0E22\\u0E32\\u0E22\\u0E19":9,"\\u0E15\\u0E38\\u0E25\\u0E32\\u0E04\\u0E21":10,
     "\\u0E1E\\u0E24\\u0E28\\u0E08\\u0E34\\u0E01\\u0E32\\u0E22\\u0E19":11,"\\u0E18\\u0E31\\u0E19\\u0E27\\u0E32\\u0E04\\u0E21":12
   };
+  var EN_MONTHS = {
+    Jan:1, January:1, Feb:2, February:2, Mar:3, March:3, Apr:4, April:4,
+    May:5, Jun:6, June:6, Jul:7, July:7, Aug:8, August:8,
+    Sep:9, Sept:9, September:9, Oct:10, October:10,
+    Nov:11, November:11, Dec:12, December:12
+  };
   function parseThaiDate(text) {
     var m = text.match(/(\\d{1,2})\\s+(\\S+)\\s+(\\d{4})/);
     if (!m) return 0;
     var month = THAI_MONTHS[m[2]] || 0;
     if (month===0) return 0;
     return Math.floor(Date.UTC(parseInt(m[3],10), month-1, parseInt(m[1],10)) / 1000);
+  }
+  function parseEnglishDate(text) {
+    var m = text.match(/(?:Mon|Tue|Wed|Thu|Fri|Sat|Sun|Monday|Tuesday|Wednesday|Thursday|Friday|Saturday|Sunday)?\\s*,?\\s*(Jan|January|Feb|February|Mar|March|Apr|April|May|Jun|June|Jul|July|Aug|August|Sep|Sept|September|Oct|October|Nov|November|Dec|December)\\s+(\\d{1,2}),?\\s+(\\d{4})/i);
+    if (!m) return 0;
+    var key = m[1].charAt(0).toUpperCase() + m[1].slice(1).toLowerCase();
+    var month = EN_MONTHS[key] || 0;
+    if (month===0) return 0;
+    return Math.floor(Date.UTC(parseInt(m[3],10), month-1, parseInt(m[2],10)) / 1000);
+  }
+  function parseEventDate(text) {
+    return parseThaiDate(text) || parseEnglishDate(text);
   }
   function cleanName(raw) {
     return raw.replace(/\\s*Act\\s*:.*$/i,"").replace(/\\s*Cons\\s*:.*$/i,"")
@@ -115,7 +132,7 @@ const ECONOMIC_SCRIPT = `(function() {
     if (row.querySelector("th")) continue;
     if (!row.id) {
       var td=row.querySelector("td");
-      if (td) { var ts=parseThaiDate((td.textContent||"").trim()); if (ts>0) currentDay=ts; }
+      if (td) { var ts=parseEventDate((td.textContent||"").trim()); if (ts>0) currentDay=ts; }
       continue;
     }
     var cells=row.querySelectorAll("td");
