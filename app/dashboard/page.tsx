@@ -10,6 +10,7 @@ import { Card, CardHeader, Badge } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import { num, pct, dollar, nav, baht } from "@/lib/format";
 import { useTranslation } from "@/lib/translations";
+import { planAllows } from "@/lib/plans";
 import { Sparkline } from "@/components/Charts";
 import { AssetLogo } from "@/components/AssetLogo";
 import { QuoteLoadingCard } from "@/components/QuoteLoading";
@@ -26,14 +27,69 @@ import {
   Layers,
   ChevronRight,
   ArrowUpRight,
+  Calendar,
+  Clock,
+  AlertTriangle,
+  Globe,
+  RefreshCw,
+  Zap,
 } from "@/lib/icons";
 import { Stock } from "@/lib/types";
 
 type StrategyType = "dividend" | "growth" | "value";
 type GlossaryTerm = "mos" | "dcf" | "roe" | "pe" | "de";
 
+type DashboardCalendarEvent = {
+  _id?: string;
+  eventId?: string;
+  date: number;
+  time?: string;
+  country?: string;
+  currency?: string;
+  name?: string;
+  importance?: number;
+  actual?: string | null;
+  forecast?: string | null;
+  previous?: string | null;
+};
+
+type DashboardCalendarPayload = {
+  events: DashboardCalendarEvent[];
+  total: number;
+  summary: {
+    highImportance?: number;
+    latestFetchedAt?: number;
+    countries?: string[];
+  } | null;
+};
+
+function formatCalendarDate(ts: number, lang: "th" | "en") {
+  if (!ts) return "-";
+  return new Date(ts * 1000).toLocaleDateString(lang === "th" ? "th-TH" : "en-US", {
+    weekday: "short",
+    day: "numeric",
+    month: "short",
+  });
+}
+
+function formatCalendarSync(ms: number | undefined, lang: "th" | "en") {
+  if (!ms) return "-";
+  const minutes = Math.max(0, Math.floor((Date.now() - ms) / 60000));
+  if (minutes < 1) return lang === "th" ? "เมื่อสักครู่" : "just now";
+  if (minutes < 60) return `${minutes}m`;
+  const hours = Math.floor(minutes / 60);
+  if (hours < 24) return `${hours}h`;
+  return `${Math.floor(hours / 24)}d`;
+}
+
+function calendarImpactLabel(value: number | undefined, lang: "th" | "en") {
+  if (value === 3) return lang === "th" ? "แรง" : "High";
+  if (value === 2) return lang === "th" ? "กลาง" : "Med";
+  return lang === "th" ? "เบา" : "Low";
+}
+
 export default function Dashboard() {
-  const { user, watchlist, toggleWatch, isWatched } = useStore();
+  const { user, watchlist, toggleWatch, isWatched, authToken } = useStore();
   const plan = useCurrentPlan();
   const { t, lang } = useTranslation();
 
@@ -121,6 +177,10 @@ export default function Dashboard() {
     : `Hello${user ? `, ${user.name}` : ", Investor"}`;
 
   const [currentDate, setCurrentDate] = useState<string>("");
+  const [calendarData, setCalendarData] = useState<DashboardCalendarPayload | null>(null);
+  const [calendarLoading, setCalendarLoading] = useState(false);
+  const [calendarError, setCalendarError] = useState("");
+  const canUseCalendar = planAllows(plan.id, "premium");
 
   useEffect(() => {
     setCurrentDate(
@@ -132,6 +192,35 @@ export default function Dashboard() {
       })
     );
   }, [lang]);
+
+  const loadDashboardCalendar = async () => {
+    if (!authToken || !canUseCalendar) return;
+    setCalendarLoading(true);
+    setCalendarError("");
+    try {
+      const params = new URLSearchParams({
+        calendarType: "economic",
+        timeFilter: "thisWeek",
+        minImportance: "2",
+        limit: "8",
+      });
+      const res = await fetch(`/api/economic-calendar?${params.toString()}`, {
+        headers: { Authorization: `Bearer ${authToken}` },
+      });
+      const payload = await res.json();
+      if (!res.ok) throw new Error(payload.error || "Failed to load economic calendar");
+      setCalendarData(payload);
+    } catch (err: any) {
+      setCalendarError(err.message || "Failed to load economic calendar");
+    } finally {
+      setCalendarLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    loadDashboardCalendar();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [authToken, canUseCalendar, lang]);
 
   const formatPrice = (s: any, p: number) => {
     if (s.assetType === "US_FUND") {
@@ -324,7 +413,138 @@ export default function Dashboard() {
         />
       </div>
 
-      {/* 5. PORTFOLIO STRATEGY WIZARD & GLOSSARY PORTAL */}
+      {/* 5. ECONOMIC CALENDAR RADAR */}
+      <Card className="overflow-hidden border border-line bg-surface/40">
+        <div className="border-b border-line p-4 sm:p-5">
+          <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+            <div className="min-w-0">
+              <div className="inline-flex items-center gap-2 rounded-full border border-gold/30 bg-gold/10 px-3 py-1 text-[10px] font-black uppercase tracking-wide text-gold">
+                <Calendar className="h-3.5 w-3.5" />
+                {lang === "th" ? "Economic Radar" : "Economic Radar"}
+              </div>
+              <h2 className="mt-3 font-display text-lg font-black text-ink">
+                {lang === "th" ? "ปฏิทินเศรษฐกิจที่อาจกระทบพอร์ต" : "Economic Events That May Move Your Portfolio"}
+              </h2>
+              <p className="mt-1 max-w-2xl text-xs font-semibold leading-relaxed text-muted">
+                {lang === "th"
+                  ? "สรุปเหตุการณ์ระดับกลางขึ้นไปในสัปดาห์นี้ เพื่อช่วยวางจังหวะก่อนตัวเลขเศรษฐกิจสำคัญออก"
+                  : "Medium and high-impact events this week, summarized before key macro releases hit the market."}
+              </p>
+            </div>
+            <div className="grid grid-cols-2 gap-2 sm:flex sm:flex-wrap sm:justify-end">
+              <Button variant="outline" size="sm" className="w-full sm:w-auto" onClick={loadDashboardCalendar} disabled={calendarLoading || !authToken || !canUseCalendar}>
+                <RefreshCw className={`h-4 w-4 ${calendarLoading ? "animate-spin" : ""}`} />
+                {lang === "th" ? "รีเฟรช" : "Refresh"}
+              </Button>
+              <Link href="/economic-calendar" className="w-full sm:w-auto">
+                <Button variant="gold" size="sm" className="w-full sm:w-auto">
+                  {lang === "th" ? "เปิดปฏิทินเต็ม" : "Open Calendar"}
+                  <ChevronRight className="h-4 w-4" />
+                </Button>
+              </Link>
+            </div>
+          </div>
+        </div>
+
+        {canUseCalendar ? (
+          <div className="grid gap-0 lg:grid-cols-[280px_minmax(0,1fr)]">
+            <div className="border-b border-line p-4 sm:p-5 lg:border-b-0 lg:border-r">
+              <div className="grid grid-cols-3 gap-2 lg:grid-cols-1">
+                <CalendarMetric
+                  icon={<Zap className="h-4 w-4" />}
+                  label={lang === "th" ? "เหตุการณ์" : "Events"}
+                  value={calendarData?.total || 0}
+                  tone="brand"
+                />
+                <CalendarMetric
+                  icon={<AlertTriangle className="h-4 w-4" />}
+                  label={lang === "th" ? "แรงสูง" : "High"}
+                  value={calendarData?.summary?.highImportance || 0}
+                  tone="gold"
+                />
+                <CalendarMetric
+                  icon={<Clock className="h-4 w-4" />}
+                  label={lang === "th" ? "ซิงก์" : "Synced"}
+                  value={formatCalendarSync(calendarData?.summary?.latestFetchedAt, lang)}
+                  tone="muted"
+                />
+              </div>
+              <div className="mt-3 rounded-xl border border-line bg-elevate/40 p-3 text-[11px] font-semibold leading-relaxed text-muted">
+                <div className="flex items-center gap-2 font-black text-ink">
+                  <Globe className="h-4 w-4 text-brand" />
+                  {lang === "th" ? "โฟกัสสัปดาห์นี้" : "This Week Focus"}
+                </div>
+                <p className="mt-1">
+                  {lang === "th"
+                    ? "จับตา USD, EUR, GBP, JPY และตัวเลขแรงงาน/เงินเฟ้อ เพราะมักกระทบดอกเบี้ย ค่าเงิน และสินทรัพย์เสี่ยง"
+                    : "Watch USD, EUR, GBP, JPY plus labor and inflation data because they often affect rates, FX, and risk assets."}
+                </p>
+              </div>
+            </div>
+
+            <div className="min-w-0">
+              {calendarError ? (
+                <div className="m-4 rounded-xl border border-down/30 bg-down/10 p-3 text-sm font-bold text-down">
+                  {calendarError}
+                </div>
+              ) : calendarLoading ? (
+                <div className="p-10 text-center text-sm font-bold text-muted animate-pulse">
+                  {lang === "th" ? "กำลังโหลดเหตุการณ์สำคัญ..." : "Loading key events..."}
+                </div>
+              ) : calendarData?.events?.length ? (
+                <div className="divide-y divide-line">
+                  {calendarData.events.slice(0, 5).map((event, index) => (
+                    <DashboardCalendarLine key={event._id || event.eventId || index} event={event} lang={lang} />
+                  ))}
+                </div>
+              ) : (
+                <div className="p-8 text-center">
+                  <Zap className="mx-auto h-8 w-8 text-muted" />
+                  <div className="mt-2 text-sm font-bold text-muted">
+                    {lang === "th" ? "ยังไม่มีเหตุการณ์ระดับกลางขึ้นไปในสัปดาห์นี้" : "No medium/high-impact events this week."}
+                  </div>
+                  <Link href="/economic-calendar" className="mt-3 inline-flex text-xs font-black text-brand hover:underline">
+                    {lang === "th" ? "ดูทุกประเภทในปฏิทินเต็ม" : "View all calendar types"}
+                  </Link>
+                </div>
+              )}
+            </div>
+          </div>
+        ) : (
+          <div className="grid gap-4 p-4 sm:p-5 lg:grid-cols-[minmax(0,1fr)_260px] lg:items-center">
+            <div className="grid gap-3 sm:grid-cols-3">
+              {[
+                { title: lang === "th" ? "ตัวเลขเศรษฐกิจ" : "Macro Data", desc: lang === "th" ? "เงินเฟ้อ ดอกเบี้ย แรงงาน" : "Inflation, rates, jobs" },
+                { title: lang === "th" ? "ผลประกอบการ" : "Earnings", desc: lang === "th" ? "ติดตามบริษัทใหญ่ทั่วโลก" : "Track global releases" },
+                { title: lang === "th" ? "ปันผล / IPO" : "Dividends / IPO", desc: lang === "th" ? "ดูเหตุการณ์หุ้นรายตัว" : "Company event radar" },
+              ].map((item) => (
+                <div key={item.title} className="rounded-xl border border-line bg-elevate/35 p-3">
+                  <div className="text-xs font-black text-ink">{item.title}</div>
+                  <div className="mt-1 text-[11px] font-semibold leading-relaxed text-muted">{item.desc}</div>
+                </div>
+              ))}
+            </div>
+            <div className="rounded-xl border border-gold/30 bg-gold/10 p-4">
+              <div className="text-sm font-black text-gold">
+                {lang === "th" ? "ปลดล็อกด้วย Premium" : "Unlock with Premium"}
+              </div>
+              <p className="mt-1 text-[11px] font-semibold leading-relaxed text-muted">
+                {lang === "th"
+                  ? "ดูปฏิทินเศรษฐกิจครบ 6 ประเภท พร้อมสรุปเหตุการณ์ที่ควรจับตา"
+                  : "Access all 6 calendar types and portfolio-ready event summaries."}
+              </p>
+              <Link href="/pricing">
+                <Button variant="gold" size="sm" className="mt-3 w-full">
+                  <Crown className="h-4 w-4" />
+                  {lang === "th" ? "อัปเกรด" : "Upgrade"}
+                </Button>
+              </Link>
+            </div>
+          </div>
+        )}
+      </Card>
+
+      {/* 6. PORTFOLIO STRATEGY WIZARD & GLOSSARY PORTAL */}
       <div className="grid gap-6 lg:grid-cols-12">
         {/* WIDGET 1: INTERACTIVE BEGINNER STRATEGY PORTABLE */}
         <Card className="lg:col-span-8 border border-line bg-surface/40 backdrop-blur-md p-5 flex flex-col justify-between rounded-2xl relative overflow-hidden">
@@ -990,6 +1210,90 @@ function GlossaryContent({
         <strong>{lang === "th" ? "ตัวอย่างเชิงปฏิบัติ:" : "Practical example:"}</strong> {example}
       </div>
     </div>
+  );
+}
+
+function CalendarMetric({
+  icon,
+  label,
+  value,
+  tone,
+}: {
+  icon: React.ReactNode;
+  label: string;
+  value: string | number;
+  tone: "brand" | "gold" | "muted";
+}) {
+  const toneClass =
+    tone === "gold"
+      ? "border-gold/25 bg-gold/10 text-gold"
+      : tone === "brand"
+        ? "border-brand/25 bg-brand/10 text-brand"
+        : "border-line bg-elevate text-muted";
+
+  return (
+    <div className={`rounded-xl border p-3 ${toneClass}`}>
+      <div className="flex items-center gap-1.5 text-[10px] font-black uppercase tracking-wide">
+        {icon}
+        <span className="truncate">{label}</span>
+      </div>
+      <div className="mt-1 font-display text-xl font-black text-ink">
+        {typeof value === "number" ? value.toLocaleString() : value}
+      </div>
+    </div>
+  );
+}
+
+function DashboardCalendarLine({
+  event,
+  lang,
+}: {
+  event: DashboardCalendarEvent;
+  lang: "th" | "en";
+}) {
+  const impact = Math.max(1, Math.min(event.importance || 1, 3));
+  const impactClass =
+    impact === 3
+      ? "border-up/30 bg-up/10 text-up"
+      : impact === 2
+        ? "border-gold/30 bg-gold/10 text-gold"
+        : "border-line bg-elevate text-muted";
+  const meta = [
+    event.actual ? `Act ${event.actual}` : null,
+    event.forecast ? `Fcst ${event.forecast}` : null,
+    event.previous ? `Prev ${event.previous}` : null,
+  ].filter(Boolean).join(" · ");
+
+  return (
+    <Link
+      href="/economic-calendar"
+      className="grid gap-2 px-4 py-3 transition hover:bg-elevate/35 sm:grid-cols-[104px_minmax(0,1fr)_92px] sm:items-center sm:gap-4"
+    >
+      <div className="flex items-center justify-between gap-2 sm:block">
+        <div className="font-display text-sm font-black leading-none text-ink">
+          {formatCalendarDate(event.date, lang)}
+        </div>
+        <div className="mt-1 font-mono text-[11px] font-black text-muted">{event.time || "-"}</div>
+      </div>
+      <div className="min-w-0">
+        <div className="flex min-w-0 items-center gap-2">
+          <span className="rounded-lg border border-line bg-bg px-2 py-1 font-mono text-[10px] font-black text-muted">
+            {event.currency || event.country || "GLOBAL"}
+          </span>
+          <span className="truncate text-xs font-bold text-muted">{event.country || "-"}</span>
+        </div>
+        <div className="mt-1 truncate font-display text-sm font-black text-ink">
+          {event.name || "-"}
+        </div>
+        {meta && <div className="mt-0.5 truncate text-[11px] font-semibold text-muted">{meta}</div>}
+      </div>
+      <div className="flex items-center justify-between gap-2 sm:justify-end">
+        <span className={`rounded-full border px-2 py-1 text-[10px] font-black ${impactClass}`}>
+          {calendarImpactLabel(impact, lang)}
+        </span>
+        <ChevronRight className="h-4 w-4 text-muted" />
+      </div>
+    </Link>
   );
 }
 
