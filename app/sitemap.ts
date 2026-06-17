@@ -55,7 +55,7 @@ function entry(path: string, priority = 0.7): MetadataRoute.Sitemap[number] {
 export default function sitemap(): MetadataRoute.Sitemap {
   const stockRoutes = STOCKS.flatMap((stock) => {
     const symbol = stock.symbol.toLowerCase();
-    return [entry(`/stocks/${symbol}`, 0.8), entry(`/stock/${symbol}`, 0.7)];
+    return [entry(`/stocks/${symbol}`, 0.8)];
   });
 
   const sectorRoutes = SECTORS.map((sector) => sectorSlugs[String(sector)])

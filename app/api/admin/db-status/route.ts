@@ -146,6 +146,12 @@ async function getDataCacheStatus() {
           refresh: "Inserted whenever a fresh quote is saved",
           deleteAfterDays: 90,
         },
+        marketUniverse: {
+          refresh: "On first market universe request after 60 seconds, then saved to MongoDB",
+          freshForSeconds: 60,
+          staleForSeconds: 600,
+          deleteAfter: "staleUntil via MongoDB TTL index",
+        },
         historicalBars: {
           refresh: "On first chart/history request after 6 hours",
           freshForSeconds: 21600,

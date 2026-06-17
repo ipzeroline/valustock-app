@@ -1,0 +1,1966 @@
+"use client";
+
+import { useState, useMemo, useEffect } from "react";
+import Link from "next/link";
+import { useStore, useCurrentPlan } from "@/lib/store";
+import { STOCKS, getStock } from "@/lib/stocks";
+import { computeValuation, defaultDCFParams } from "@/lib/valuation";
+import { StockCard } from "@/components/StockCard";
+import { Card, CardHeader, Badge } from "@/components/ui/Card";
+import { Button } from "@/components/ui/Button";
+import { num, pct, dollar, nav, baht } from "@/lib/format";
+import { useTranslation } from "@/lib/translations";
+import { planAllows } from "@/lib/plans";
+import { Sparkline } from "@/components/Charts";
+import { AssetLogo } from "@/components/AssetLogo";
+import { QuoteLoadingCard } from "@/components/QuoteLoading";
+import { hasQuoteProvider, useLiveQuotes } from "@/lib/realtime-quotes";
+import {
+  TrendingUp,
+  Star,
+  Gauge,
+  Crown,
+  Sparkles,
+  Info,
+  CircleDollarSign,
+  Calculator,
+  Layers,
+  ChevronRight,
+  ArrowUpRight,
+  Calendar,
+  Clock,
+  AlertTriangle,
+  Globe,
+  RefreshCw,
+  X,
+  Zap,
+} from "@/lib/icons";
+import { Stock } from "@/lib/types";
+
+type StrategyType = "dividend" | "growth" | "value";
+type StrategyMarket = "all" | "thai" | "nyse" | "nasdaq";
+type GlossaryTerm = "mos" | "dcf" | "roe" | "pe" | "de";
+
+type DashboardCalendarEvent = {
+  _id?: string;
+  eventId?: string;
+  date: number;
+  time?: string;
+  country?: string;
+  currency?: string;
+  name?: string;
+  importance?: number;
+  actual?: string | null;
+  forecast?: string | null;
+  previous?: string | null;
+};
+
+type DashboardCalendarPayload = {
+  events: DashboardCalendarEvent[];
+  total: number;
+  summary: {
+    highImportance?: number;
+    latestFetchedAt?: number;
+    countries?: string[];
+  } | null;
+};
+
+type MarketUniversePayload = {
+  stocks: Stock[];
+  counts?: {
+    thai: number;
+    nyse: number;
+    nasdaq: number;
+    indices: number;
+    funds?: number;
+    usFunds?: number;
+    crypto?: number;
+    futures?: number;
+  };
+  updatedAt?: string;
+  source?: string;
+};
+
+type MarketSegment = {
+  key: string;
+  label: string;
+  count: number;
+  avgChange: number;
+  avgMos: number;
+  winners: number;
+  decliners: number;
+  stocks: Stock[];
+};
+
+function formatCalendarDate(ts: number, lang: "th" | "en") {
+  if (!ts) return "-";
+  return new Date(ts * 1000).toLocaleDateString(lang === "th" ? "th-TH" : "en-US", {
+    weekday: "short",
+    day: "numeric",
+    month: "short",
+  });
+}
+
+function formatCalendarSync(ms: number | undefined, lang: "th" | "en") {
+  if (!ms) return "-";
+  const minutes = Math.max(0, Math.floor((Date.now() - ms) / 60000));
+  if (minutes < 1) return lang === "th" ? "เมื่อสักครู่" : "just now";
+  if (minutes < 60) return `${minutes}m`;
+  const hours = Math.floor(minutes / 60);
+  if (hours < 24) return `${hours}h`;
+  return `${Math.floor(hours / 24)}d`;
+}
+
+function calendarImpactLabel(value: number | undefined, lang: "th" | "en") {
+  if (value === 3) return lang === "th" ? "แรง" : "High";
+  if (value === 2) return lang === "th" ? "กลาง" : "Med";
+  return lang === "th" ? "เบา" : "Low";
+}
+
+function dashboardCalendarMeta(event: DashboardCalendarEvent) {
+  return [
+    event.actual ? `Act ${event.actual}` : null,
+    event.forecast ? `Fcst ${event.forecast}` : null,
+    event.previous ? `Prev ${event.previous}` : null,
+  ].filter(Boolean).join(" · ");
+}
+
+type DashboardProps = {
+  initialMarketUniverse?: MarketUniversePayload | null;
+};
+
+export default function Dashboard({ initialMarketUniverse = null }: DashboardProps) {
+  const { user, watchlist, toggleWatch, isWatched } = useStore();
+  const plan = useCurrentPlan();
+  const { t, lang } = useTranslation();
+
+  // FX / Tax Estimator Local States
+  const [foreignIncome, setForeignIncome] = useState<number>(10000); // in USD
+  const fxRate = 36.45; // USD/THB
+
+  // Beginner interactive strategy wizard state
+  const [activeStrategy, setActiveStrategy] = useState<StrategyType>("dividend");
+  const [activeStrategyMarket, setActiveStrategyMarket] = useState<StrategyMarket>("all");
+  // Beginner glossary tab state
+  const [activeGlossary, setActiveGlossary] = useState<GlossaryTerm>("mos");
+  const [marketUniverse, setMarketUniverse] = useState<Stock[]>(() => initialMarketUniverse?.stocks || []);
+  const [marketUniverseMeta, setMarketUniverseMeta] = useState<MarketUniversePayload | null>(initialMarketUniverse);
+  const [isMarketLoading, setIsMarketLoading] = useState(!initialMarketUniverse?.stocks?.length);
+  const [marketError, setMarketError] = useState("");
+  const refreshSymbols = useMemo(
+    () => marketUniverse.filter(hasQuoteProvider).map((stock) => stock.symbol),
+    [marketUniverse]
+  );
+  const { liveStocks, liveStockMap } = useLiveQuotes(refreshSymbols);
+
+  const getDisplayStock = (symbol: string) => {
+    const key = symbol.toUpperCase();
+    const local = marketUniverse.find((stock) => stock.symbol.toUpperCase() === key) || getStock(key);
+    return liveStockMap.get(key) || local;
+  };
+
+  const allStocks = useMemo(() => {
+    const bySymbol = new Map<string, Stock>();
+    marketUniverse.forEach((stock) => bySymbol.set(stock.symbol.toUpperCase(), stock));
+    liveStocks.forEach((stock) => bySymbol.set(stock.symbol.toUpperCase(), stock));
+    return Array.from(bySymbol.values());
+  }, [liveStocks, marketUniverse]);
+
+  const structuredData = {
+    "@context": "https://schema.org",
+    "@type": "WebApplication",
+    name: "ValuStock Dashboard",
+    applicationCategory: "FinanceApplication",
+    operatingSystem: "Web",
+    url: "https://valustock.com/dashboard",
+    description:
+      lang === "th"
+        ? "แดชบอร์ดสำหรับติดตามหุ้น Watchlist, หุ้น undervalue, DCF, Margin of Safety, พอร์ตจำลอง และภาพรวมตลาด"
+        : "A dashboard for tracking watchlists, undervalued stocks, DCF, margin of safety, portfolio tools, and market overview.",
+    offers: {
+      "@type": "Offer",
+      price: "0",
+      priceCurrency: "THB",
+    },
+    publisher: {
+      "@type": "Organization",
+      name: "ValuStock",
+      url: "https://valustock.com",
+    },
+  };
+
+  const ranked = useMemo(() => {
+    return allStocks.map((s) => ({
+      s,
+      v: computeValuation(s, defaultDCFParams(s)),
+    })).sort((a, b) => b.v.marginOfSafety - a.v.marginOfSafety);
+  }, [allStocks]);
+
+  const undervalued = ranked.filter((r) => r.v.verdict === "undervalued").length;
+  const watched = watchlist.map(getDisplayStock).filter(Boolean).slice(0, 3) as Stock[];
+  const majorIndices = useMemo(
+    () =>
+      ["SPX", "DJI", "IXIC"]
+        .map((symbol) => allStocks.find((stock) => stock.symbol.toUpperCase() === symbol))
+        .filter(Boolean) as Stock[],
+    [allStocks]
+  );
+  const marketSegments = useMemo<MarketSegment[]>(() => {
+    const segmentDefs = [
+      { key: "thai", label: lang === "th" ? "ตลาดหุ้นไทย" : "Thai Exchange", filter: (s: Stock) => s.assetType === "TH_STOCK" && (s.market === "SET" || s.market === "mai") },
+      { key: "nyse", label: "NYSE", filter: (s: Stock) => s.market === "NYSE" && s.assetType === "US_STOCK" },
+      { key: "nasdaq", label: "Nasdaq", filter: (s: Stock) => s.market === "NASDAQ" && s.assetType === "US_STOCK" },
+      { key: "indices", label: lang === "th" ? "ดัชนีหลัก" : "Major Indices", filter: (s: Stock) => s.assetType === "INDEX" },
+      { key: "crypto", label: lang === "th" ? "Bitcoin / คริปโต" : "Bitcoin / Crypto", filter: (s: Stock) => s.assetType === "CRYPTO" },
+      { key: "commodities", label: lang === "th" ? "ทองคำ / สินค้าโภคภัณฑ์" : "Gold / Commodities", filter: (s: Stock) => s.assetType === "FUTURES" },
+    ];
+
+    return segmentDefs.map((segment) => {
+      const stocks = allStocks.filter(segment.filter);
+      const changes = stocks.map((stock) => (stock.prevClose > 0 ? ((stock.price - stock.prevClose) / stock.prevClose) * 100 : 0));
+      const valuations = stocks.map((stock) => computeValuation(stock, defaultDCFParams(stock)));
+      const winners = changes.filter((change) => change >= 0).length;
+      const avgChange = changes.length ? changes.reduce((sum, change) => sum + change, 0) / changes.length : 0;
+      const finiteMos = valuations.map((value) => value.marginOfSafety).filter((value) => Number.isFinite(value));
+      const avgMos = finiteMos.length ? finiteMos.reduce((sum, value) => sum + value, 0) / finiteMos.length : 0;
+
+      return {
+        key: segment.key,
+        label: segment.label,
+        count: stocks.length,
+        avgChange,
+        avgMos,
+        winners,
+        decliners: Math.max(0, stocks.length - winners),
+        stocks,
+      };
+    });
+  }, [allStocks, lang]);
+  const marketChartData = useMemo(
+    () =>
+      marketSegments.map((segment) => ({
+        label: segment.label,
+        change: segment.avgChange,
+        mos: segment.avgMos,
+        breadth: segment.count ? (segment.winners / segment.count) * 100 : 0,
+      })),
+    [marketSegments]
+  );
+  const marketBreadth = marketSegments.reduce((sum, segment) => sum + segment.winners, 0);
+  const marketAssetCount = marketSegments.reduce((sum, segment) => sum + segment.count, 0);
+  const avgMarketChange = marketSegments.length
+    ? marketSegments.reduce((sum, segment) => sum + segment.avgChange, 0) / marketSegments.length
+    : 0;
+  const investableRanked = useMemo(
+    () =>
+      ranked.filter(
+        (item) =>
+          (item.s.assetType === "TH_STOCK" || item.s.assetType === "US_STOCK") &&
+          Number.isFinite(item.s.price) &&
+          item.s.price > 0
+      ),
+    [ranked]
+  );
+  const strategyMarketTabs = useMemo(
+    () => [
+      { key: "all" as const, label: lang === "th" ? "ทั้งหมด" : "All", count: investableRanked.length },
+      { key: "thai" as const, label: lang === "th" ? "ไทย" : "Thai", count: investableRanked.filter((item) => item.s.assetType === "TH_STOCK").length },
+      { key: "nyse" as const, label: "NYSE", count: investableRanked.filter((item) => item.s.market === "NYSE").length },
+      { key: "nasdaq" as const, label: "Nasdaq", count: investableRanked.filter((item) => item.s.market === "NASDAQ").length },
+    ],
+    [investableRanked, lang]
+  );
+  const strategyUniverse = useMemo(() => {
+    if (activeStrategyMarket === "thai") return investableRanked.filter((item) => item.s.assetType === "TH_STOCK");
+    if (activeStrategyMarket === "nyse") return investableRanked.filter((item) => item.s.market === "NYSE");
+    if (activeStrategyMarket === "nasdaq") return investableRanked.filter((item) => item.s.market === "NASDAQ");
+    return investableRanked;
+  }, [activeStrategyMarket, investableRanked]);
+  const strategyPicks = useMemo(() => {
+    const fillPicks = (items: typeof strategyUniverse) => {
+      const seen = new Set<string>();
+      const merged = [...items, ...strategyUniverse].filter((item) => {
+        const key = item.s.symbol.toUpperCase();
+        if (seen.has(key)) return false;
+        seen.add(key);
+        return true;
+      });
+      return merged.slice(0, 3);
+    };
+
+    const dividend = [...strategyUniverse]
+      .filter((item) => Number.isFinite(item.v.ratios.dividendYield) && item.v.ratios.dividendYield > 0)
+      .sort((a, b) => b.v.ratios.dividendYield - a.v.ratios.dividendYield || b.v.marginOfSafety - a.v.marginOfSafety);
+    const growth = [...strategyUniverse]
+      .filter((item) => Number.isFinite(item.s.financials.growthRate) && item.s.financials.growthRate > 0)
+      .sort((a, b) => b.s.financials.growthRate - a.s.financials.growthRate || b.v.marginOfSafety - a.v.marginOfSafety);
+    const value = [...strategyUniverse]
+      .filter((item) => Number.isFinite(item.v.marginOfSafety) && item.v.marginOfSafety > 0)
+      .sort((a, b) => b.v.marginOfSafety - a.v.marginOfSafety);
+
+    return {
+      dividend: fillPicks(dividend),
+      growth: fillPicks(growth),
+      value: fillPicks(value),
+    } satisfies Record<StrategyType, typeof strategyUniverse>;
+  }, [strategyUniverse]);
+  const sentiment = useMemo(() => {
+    const breadthPct = marketAssetCount ? (marketBreadth / marketAssetCount) * 100 : 50;
+    const undervaluedPct = allStocks.length ? (undervalued / allStocks.length) * 100 : 0;
+    const rawScore = 50 + avgMarketChange * 10 + (breadthPct - 50) * 0.45 + (undervaluedPct - 20) * 0.15;
+    const score = Math.max(0, Math.min(100, Math.round(rawScore)));
+    const labelTh =
+      score >= 75 ? "โลภสูง" : score >= 60 ? "โลภปานกลาง" : score >= 45 ? "เป็นกลาง" : score >= 25 ? "กลัว" : "กลัวมาก";
+    const labelEn =
+      score >= 75 ? "High Greed" : score >= 60 ? "Moderate Greed" : score >= 45 ? "Neutral" : score >= 25 ? "Fear" : "Extreme Fear";
+    const strongest = [...marketSegments].sort((a, b) => b.avgChange - a.avgChange)[0];
+    const weakest = [...marketSegments].sort((a, b) => a.avgChange - b.avgChange)[0];
+    const highlight =
+      lang === "th"
+        ? `${strongest?.label || "ตลาดหลัก"} นำตลาดที่ ${strongest?.avgChange >= 0 ? "+" : ""}${num(strongest?.avgChange || 0, 2)}% ขณะที่ ${weakest?.label || "กลุ่มอ่อนตัว"} อยู่ที่ ${weakest?.avgChange >= 0 ? "+" : ""}${num(weakest?.avgChange || 0, 2)}% ค่า breadth รวม ${num(breadthPct, 0)}% จากข้อมูล API ล่าสุด`
+        : `${strongest?.label || "Primary markets"} lead at ${strongest?.avgChange >= 0 ? "+" : ""}${num(strongest?.avgChange || 0, 2)}%, while ${weakest?.label || "laggards"} sit at ${weakest?.avgChange >= 0 ? "+" : ""}${num(weakest?.avgChange || 0, 2)}%. Total breadth is ${num(breadthPct, 0)}% from the latest API data.`;
+
+    return {
+      score,
+      label: lang === "th" ? labelTh : labelEn,
+      highlight,
+      tone: score >= 55 ? "up" : score <= 40 ? "down" : "gold",
+    };
+  }, [allStocks.length, avgMarketChange, lang, marketAssetCount, marketBreadth, marketSegments, undervalued]);
+
+  // Group top picks by asset class for Thai investor visibility
+  const topThai = ranked.filter((r) => r.s.assetType === "TH_STOCK").slice(0, 2);
+  const topUs = ranked.filter((r) => r.s.assetType === "US_STOCK").slice(0, 2);
+  const alternativeRanked = useMemo(
+    () =>
+      STOCKS.filter((stock) => stock.assetType === "FUND" || stock.assetType === "US_FUND" || stock.assetType === "CRYPTO" || stock.assetType === "FUTURES")
+        .map((s) => ({
+          s,
+          v: computeValuation(s, defaultDCFParams(s)),
+        }))
+        .sort((a, b) => b.v.marginOfSafety - a.v.marginOfSafety),
+    []
+  );
+  const topFunds = alternativeRanked.filter((r) => r.s.assetType === "FUND").slice(0, 2);
+  const topUsFunds = alternativeRanked.filter((r) => r.s.assetType === "US_FUND").slice(0, 2);
+  const topCrypto = ranked.filter((r) => r.s.assetType === "CRYPTO").slice(0, 2);
+  const topFutures = ranked.filter((r) => r.s.assetType === "FUTURES").slice(0, 2);
+
+  // Tax calculations based on Thai personal brackets (simplified)
+  const incomeThb = foreignIncome * fxRate;
+  const calculateEstimatedTax = (thb: number) => {
+    const taxable = Math.max(0, thb - 100000);
+    if (taxable <= 150000) return 0;
+    if (taxable <= 300000) return (taxable - 150000) * 0.05;
+    if (taxable <= 500000) return 7500 + (taxable - 300000) * 0.10;
+    if (taxable <= 750000) return 27500 + (taxable - 500000) * 0.15;
+    if (taxable <= 1000000) return 65000 + (taxable - 750000) * 0.20;
+    return 115000 + (taxable - 1000000) * 0.25;
+  };
+
+  const estimatedTax = calculateEstimatedTax(incomeThb);
+
+  const welcomeText = lang === "th"
+    ? `สวัสดี${user ? `, ${user.name}` : " นักลงทุน"}`
+    : `Hello${user ? `, ${user.name}` : ", Investor"}`;
+
+  const [currentDate, setCurrentDate] = useState<string>("");
+  const [calendarData, setCalendarData] = useState<DashboardCalendarPayload | null>(null);
+  const [calendarLoading, setCalendarLoading] = useState(false);
+  const [calendarError, setCalendarError] = useState("");
+  const [selectedCalendarEvent, setSelectedCalendarEvent] = useState<DashboardCalendarEvent | null>(null);
+  const canUseCalendar = planAllows(plan.id, "premium");
+
+  useEffect(() => {
+    setCurrentDate(
+      new Date().toLocaleDateString(lang === "th" ? "th-TH" : "en-US", {
+        weekday: "long",
+        year: "numeric",
+        month: "long",
+        day: "numeric",
+      })
+    );
+  }, [lang]);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    const loadMarketUniverse = () => {
+      const controller = new AbortController();
+      const timeout = window.setTimeout(() => controller.abort(), 8_000);
+      setIsMarketLoading(true);
+      fetch("/api/stocks/universe?limit=90", { signal: controller.signal })
+        .then((res) => {
+          if (!res.ok) throw new Error("Market universe API unavailable");
+          return res.json();
+        })
+        .then((payload: MarketUniversePayload) => {
+          if (cancelled) return;
+          setMarketUniverse(payload.stocks || []);
+          setMarketUniverseMeta(payload);
+          setMarketError("");
+        })
+        .catch((err) => {
+          if (cancelled) return;
+          setMarketError(err instanceof Error ? err.message : "Market universe API unavailable");
+          setMarketUniverse(
+            STOCKS.filter((stock) => stock.assetType !== "INDEX")
+          );
+        })
+        .finally(() => {
+          window.clearTimeout(timeout);
+          if (!cancelled) setIsMarketLoading(false);
+        });
+    };
+
+    loadMarketUniverse();
+    const interval = window.setInterval(loadMarketUniverse, 60_000);
+    return () => {
+      cancelled = true;
+      window.clearInterval(interval);
+    };
+  }, []);
+
+  const loadDashboardCalendar = async () => {
+    if (!user?.email || !canUseCalendar) return;
+    setCalendarLoading(true);
+    setCalendarError("");
+    try {
+      const params = new URLSearchParams({
+        calendarType: "economic",
+        timeFilter: "thisWeek",
+        minImportance: "2",
+        limit: "12",
+      });
+      const res = await fetch(`/api/economic-calendar?${params.toString()}`);
+      const payload = await res.json();
+      if (!res.ok) throw new Error(payload.error || "Failed to load economic calendar");
+      setCalendarData(payload);
+    } catch (err: any) {
+      setCalendarError(err.message || "Failed to load economic calendar");
+    } finally {
+      setCalendarLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    loadDashboardCalendar();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user?.email, canUseCalendar, lang]);
+
+  const formatPrice = (s: any, p: number) => {
+    if (s.assetType === "INDEX") return num(p, 2);
+    if (s.assetType === "US_FUND") {
+      return "$" + num(p, 4);
+    }
+    if (s.assetType === "US_STOCK" || s.currency === "USD") return dollar(p);
+    if (s.assetType === "FUND") return nav(p);
+    return baht(p);
+  };
+
+  // Beginner strategy filter recommendation details
+  const strategyDetails = {
+    dividend: {
+      titleTh: "พอร์ตปันผลรับทรัพย์ (High-Dividend Shield)",
+      titleEn: "High-Dividend Shields",
+      descTh: "เน้นปันผลสูงสม่ำเสมอ ชนะเงินเฟ้อและลดความเสี่ยงพอร์ตในช่วงตลาดผันผวน เหมาะกับผู้ที่ต้องการเงินสดสำรองเรื่อยๆ",
+      descEn: "Focus on resilient cash payouts, superior yield safety, and low volatility during consolidation.",
+      badge: lang === "th" ? "ชนะเงินเฟ้อ" : "Yield Shield",
+    },
+    growth: {
+      titleTh: "พอร์ตเติบโตระยะยาว (High-Growth Innovators)",
+      titleEn: "High-Tech Growth Innovators",
+      descTh: "เน้นบริษัทเทคโนโลยีระดับโลกที่มีกำไรเติบโตก้าวกระโดดด้วยนวัตกรรมและ AI เหมาะสำหรับผู้ที่ต้องการปั้นพอร์ตให้โตเร็ว",
+      descEn: "Focus on compounding capital gains through disruptive technological advancements and AI scale.",
+      badge: lang === "th" ? "ปั้นพอร์ตโต" : "Compounding Core",
+    },
+    value: {
+      titleTh: "พอร์ตหุ้นคุณค่า (Deep-Value Moats)",
+      titleEn: "Buffett Value Core",
+      descTh: "เน้นหุ้นคุณค่ายักษ์ใหญ่ผูกขาดตลาด ที่ราคา ณ ปัจจุบันมีส่วนต่างความปลอดภัย (MOS) เกิน 15% ขึ้นไป ราคาถูกมาก",
+      descEn: "Target stable defensive giants trading at deep discounts with wide business moats.",
+      badge: lang === "th" ? "ปลอดภัยสูงสุด" : "Deep Margin",
+    },
+  };
+  const strategyInsight = (s: Stock, v: ReturnType<typeof computeValuation>) => {
+    if (activeStrategy === "dividend") {
+      return lang === "th"
+        ? `ปันผล ${num(v.ratios.dividendYield, 2)}% พร้อม MOS ${v.marginOfSafety >= 0 ? "+" : ""}${num(v.marginOfSafety, 0)}% จากราคาล่าสุด`
+        : `${num(v.ratios.dividendYield, 2)}% dividend yield with ${v.marginOfSafety >= 0 ? "+" : ""}${num(v.marginOfSafety, 0)}% MOS from the latest quote.`;
+    }
+    if (activeStrategy === "growth") {
+      return lang === "th"
+        ? `คาดการณ์เติบโต ${num(s.financials.growthRate * 100, 1)}% และ ROE ${num(v.ratios.roe, 1)}% จากข้อมูลพื้นฐานล่าสุด`
+        : `${num(s.financials.growthRate * 100, 1)}% expected growth and ${num(v.ratios.roe, 1)}% ROE from current fundamentals.`;
+    }
+    return lang === "th"
+      ? `ส่วนต่างความปลอดภัย ${v.marginOfSafety >= 0 ? "+" : ""}${num(v.marginOfSafety, 0)}% เทียบมูลค่าเหมาะสม ${formatPrice(s, v.fairValue)}`
+      : `${v.marginOfSafety >= 0 ? "+" : ""}${num(v.marginOfSafety, 0)}% MOS versus fair value ${formatPrice(s, v.fairValue)}.`;
+  };
+
+  const actionItems = [
+    {
+      href: "/stocks",
+      title: lang === "th" ? "ค้นหาและคัดกรองหุ้น" : "Screen Stocks",
+      desc:
+        lang === "th"
+          ? "หาโอกาสจากหุ้น undervalue, ปันผลสูง และหุ้นพื้นฐานดี"
+          : "Find undervalued, dividend, and high-quality stocks.",
+      icon: <Gauge className="h-4.5 w-4.5" />,
+    },
+    {
+      href: "/dcf-calculator",
+      title: lang === "th" ? "คำนวณ DCF" : "Run DCF",
+      desc:
+        lang === "th"
+          ? "ประเมินมูลค่าหุ้นด้วย Free Cash Flow, WACC และ Terminal Value"
+          : "Estimate fair value using FCF, WACC, and terminal value.",
+      icon: <Calculator className="h-4.5 w-4.5" />,
+    },
+    {
+      href: "/portfolio",
+      title: lang === "th" ? "จัดการพอร์ต" : "Manage Portfolio",
+      desc:
+        lang === "th"
+          ? "ติดตามต้นทุน มูลค่าพอร์ต และสัญญาณ Margin of Safety"
+          : "Track cost, value, and margin-of-safety signals.",
+      icon: <CircleDollarSign className="h-4.5 w-4.5" />,
+    },
+    {
+      href: "/watchlist",
+      title: lang === "th" ? "ดู Watchlist" : "Open Watchlist",
+      desc:
+        lang === "th"
+          ? "ติดตามหุ้นที่สนใจและจังหวะเข้าซื้ออย่างเป็นระบบ"
+          : "Follow your target stocks and entry opportunities.",
+      icon: <Star className="h-4.5 w-4.5" />,
+    },
+  ];
+
+  return (
+    <div className="mx-auto max-w-7xl space-y-6 px-4 py-2 animate-fade-up">
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredData) }}
+      />
+      {/* 1. WELCOME HEADER */}
+      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 border-b border-line pb-4">
+        <div>
+          <h1 className="font-display text-2xl font-bold md:text-3xl text-ink">
+            {welcomeText}
+          </h1>
+          <p className="mt-1 text-xs text-muted">
+            {currentDate} | {t("dashboard.subtitle")}
+          </p>
+        </div>
+        <Badge tone="gold" className="px-3.5 py-1 text-xs font-semibold self-start md:self-auto flex items-center gap-1.5 shadow-glow">
+          <Crown className="h-3.5 w-3.5 text-gold shrink-0 animate-pulse" /> {t("common.currentPlan")}: {plan.name}
+        </Badge>
+      </div>
+
+      {/* 2. QUICK ACTION CONTROL CENTER */}
+      <section className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+        {actionItems.map((item) => (
+          <Link
+            key={item.href}
+            href={item.href}
+            className="group rounded-2xl border border-line bg-surface/35 p-4 transition hover:border-brand/45 hover:bg-brand/5"
+          >
+            <div className="flex items-start justify-between gap-3">
+              <span className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-brand-soft text-brand">
+                {item.icon}
+              </span>
+              <ArrowUpRight className="h-4 w-4 shrink-0 text-muted transition group-hover:-translate-y-0.5 group-hover:translate-x-0.5 group-hover:text-brand" />
+            </div>
+            <h2 className="mt-3 font-display text-sm font-black text-ink group-hover:text-brand">
+              {item.title}
+            </h2>
+            <p className="mt-1 text-xs font-semibold leading-relaxed text-muted">
+              {item.desc}
+            </p>
+          </Link>
+        ))}
+      </section>
+
+      {/* 3. REAL-TIME MARKET OVERVIEW */}
+      <Card className="overflow-hidden border border-line bg-surface/35">
+        <div className="border-b border-line p-4">
+          <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
+            <div>
+              <div className="inline-flex items-center gap-2 rounded-full border border-brand/25 bg-brand/10 px-2.5 py-1 text-[10px] font-black uppercase tracking-wide text-brand">
+                <Globe className="h-3.5 w-3.5" />
+                {lang === "th" ? "Live Market API" : "Live Market API"}
+              </div>
+              <h2 className="mt-2 font-display text-lg font-black text-ink">
+                {lang === "th" ? "ภาพรวมตลาดไทย สหรัฐฯ ดัชนี Bitcoin และทองคำ" : "Thai, US, Index, Bitcoin, and Gold Overview"}
+              </h2>
+              <p className="mt-1 text-xs font-semibold leading-relaxed text-muted">
+                {lang === "th"
+                  ? "ครอบคลุม SET/mai, NYSE, Nasdaq, S&P 500, DJIA, Nasdaq Composite, Bitcoin และทองคำ"
+                  : "Covers SET/mai, NYSE, Nasdaq, S&P 500, DJIA, Nasdaq Composite, Bitcoin, and gold."}
+              </p>
+            </div>
+            <div className="flex flex-wrap items-center gap-2 text-[11px] font-bold">
+              <span className="rounded-full border border-line bg-bg px-2.5 py-1 text-muted">
+                {isMarketLoading ? (lang === "th" ? "กำลังซิงก์..." : "Syncing...") : (lang === "th" ? "อัปเดตล่าสุด" : "Updated")}
+              </span>
+              <span className="rounded-full border border-line bg-bg px-2.5 py-1 font-mono text-muted">
+                {marketUniverseMeta?.updatedAt ? new Date(marketUniverseMeta.updatedAt).toLocaleTimeString(lang === "th" ? "th-TH" : "en-US") : "-"}
+              </span>
+              {marketError && <span className="rounded-full border border-gold/30 bg-gold/10 px-2.5 py-1 text-gold">Fallback</span>}
+            </div>
+          </div>
+        </div>
+
+        <div className="p-4">
+          <div className="grid gap-3 md:grid-cols-3">
+            <MarketMiniStat
+              label={lang === "th" ? "สินทรัพย์ในแดชบอร์ด" : "Tracked assets"}
+              value={marketAssetCount.toLocaleString()}
+              sub={lang === "th" ? "ไทย + NYSE + Nasdaq + Index + BTC + Gold" : "Thai + NYSE + Nasdaq + Index + BTC + Gold"}
+            />
+            <MarketMiniStat
+              label={lang === "th" ? "ตลาดบวก" : "Advancing"}
+              value={`${marketBreadth}/${marketAssetCount || 0}`}
+              sub={lang === "th" ? "จำนวนหลักทรัพย์ที่บวกหรือทรงตัว" : "Assets up or flat"}
+              tone="up"
+            />
+            <MarketMiniStat
+              label={lang === "th" ? "ค่าเฉลี่ยการเปลี่ยนแปลง" : "Avg move"}
+              value={`${avgMarketChange >= 0 ? "+" : ""}${num(avgMarketChange, 2)}%`}
+              sub={lang === "th" ? "เฉลี่ยจากแต่ละกลุ่มตลาด" : "Average across segments"}
+              tone={avgMarketChange >= 0 ? "up" : "down"}
+            />
+          </div>
+
+          <div className="mt-3 grid gap-3 xl:grid-cols-[minmax(0,1.05fr)_minmax(360px,0.95fr)]">
+            <div className="grid gap-3 lg:grid-cols-[minmax(0,1fr)_280px]">
+              <div className="overflow-hidden rounded-xl border border-line bg-bg/45">
+                <div className="flex items-center justify-between border-b border-line bg-elevate/35 px-3 py-2 text-[10px] font-black uppercase tracking-wide text-muted">
+                  <span>{lang === "th" ? "ตลาดหลัก" : "Market segments"}</span>
+                  <span>{lang === "th" ? "Move / Breadth" : "Move / Breadth"}</span>
+                </div>
+                <div className="divide-y divide-line/60">
+                  {marketSegments.map((segment) => {
+                    const breadth = segment.count ? Math.round((segment.winners / segment.count) * 100) : 0;
+                    return (
+                      <div key={segment.key} className="px-3 py-2.5">
+                        <div className="flex min-w-0 items-start justify-between gap-3">
+                          <div className="min-w-0">
+                            <div className="truncate text-xs font-black text-ink">{segment.label}</div>
+                            <div className="mt-0.5 text-[10px] font-semibold text-muted">
+                              {segment.count} {lang === "th" ? "รายการ" : "assets"} · Avg MOS{" "}
+                              <span className={segment.avgMos >= 0 ? "text-up" : "text-down"}>
+                                {segment.avgMos >= 0 ? "+" : ""}
+                                {num(segment.avgMos, 0)}%
+                              </span>
+                            </div>
+                          </div>
+                          <span className={`shrink-0 rounded-full border px-2 py-0.5 font-mono text-[10px] font-black ${segment.avgChange >= 0 ? "border-up/30 bg-up/10 text-up" : "border-down/30 bg-down/10 text-down"}`}>
+                            {segment.avgChange >= 0 ? "+" : ""}
+                            {num(segment.avgChange, 2)}%
+                          </span>
+                        </div>
+                        <div className="mt-2 flex items-center gap-2">
+                          <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-line">
+                            <div className="h-full rounded-full bg-brand" style={{ width: `${breadth}%` }} />
+                          </div>
+                          <span className="w-9 text-right font-mono text-[10px] font-bold text-muted">{breadth}%</span>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+
+              <div className="overflow-hidden rounded-xl border border-line bg-bg/45">
+                <div className="border-b border-line bg-elevate/35 px-3 py-2 text-[10px] font-black uppercase tracking-wide text-muted">
+                  {lang === "th" ? "ดัชนีหลัก" : "Major indices"}
+                </div>
+                <div className="divide-y divide-line/60">
+                  {majorIndices.length > 0 ? (
+                    majorIndices.map((stock) => {
+                      const change = stock.prevClose > 0 ? ((stock.price - stock.prevClose) / stock.prevClose) * 100 : 0;
+                      return (
+                        <MarketIndexLine
+                          key={stock.symbol}
+                          symbol={stock.symbol}
+                          value={formatPrice(stock, stock.price)}
+                          change={change}
+                          points={(stock.priceHistory?.length ? stock.priceHistory : [stock.prevClose, stock.price]).map(String)}
+                        />
+                      );
+                    })
+                  ) : (
+                    <div className="p-3">
+                      <QuoteLoadingCard
+                        title={lang === "th" ? "กำลังโหลดดัชนีหลัก" : "Loading major indices"}
+                        subtitle="SPX / DJI / IXIC"
+                      />
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            <div className="rounded-xl border border-line bg-bg/45 p-3">
+              <div className="mb-3 flex items-center justify-between">
+                <span className="text-xs font-black text-ink">{lang === "th" ? "กราฟสรุปตลาด" : "Market summary chart"}</span>
+                <span className="text-[10px] font-bold uppercase tracking-wide text-muted">Change / Breadth</span>
+              </div>
+              <MarketSummaryChart data={marketChartData} />
+            </div>
+          </div>
+        </div>
+      </Card>
+
+      {/* 4. CORE SUMMARY STATS */}
+      <div className="grid gap-3 sm:grid-cols-3">
+        <SummaryStat
+          icon={<TrendingUp className="h-5 w-5" />}
+          label={t("dashboard.underValuedCount")}
+          value={lang === "th" ? `${undervalued} ตัว` : `${undervalued} Assets`}
+          sub={lang === "th" ? `จากหุ้นทั้งหมด ${allStocks.length} ตัว` : `Out of ${allStocks.length} total`}
+        />
+        {ranked[0] && (
+          <SummaryStat
+            icon={<Gauge className="h-5 w-5" />}
+            label={lang === "th" ? "ส่วนเผื่อความปลอดภัยสูงสุด" : "Max Margin of Safety"}
+            value={pct(ranked[0].v.marginOfSafety, 0)}
+            sub={ranked[0].s.symbol}
+            tone="up"
+          />
+        )}
+        <SummaryStat
+          icon={<Star className="h-5 w-5" />}
+          label={t("common.watchlist")}
+          value={lang === "th" ? `${watchlist.length} ตัว` : `${watchlist.length} Tickers`}
+          sub={plan.limits.watchlist === "unlimited" ? (lang === "th" ? "บันทึกได้ไม่จำกัด" : "Unlimited tracking") : (lang === "th" ? `สูงสุด ${plan.limits.watchlist} ตัว` : `Max ${plan.limits.watchlist} items`)}
+        />
+      </div>
+
+      {/* 5. ECONOMIC CALENDAR RADAR */}
+      <Card className="overflow-hidden border border-line bg-surface/40">
+        <div className="border-b border-line p-4 sm:p-5">
+          <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+            <div className="min-w-0">
+              <div className="inline-flex items-center gap-2 rounded-full border border-gold/30 bg-gold/10 px-3 py-1 text-[10px] font-black uppercase tracking-wide text-gold">
+                <Calendar className="h-3.5 w-3.5" />
+                {lang === "th" ? "Economic Radar" : "Economic Radar"}
+              </div>
+              <h2 className="mt-3 font-display text-lg font-black text-ink">
+                {lang === "th" ? "ปฏิทินเศรษฐกิจสัปดาห์นี้ที่อาจกระทบพอร์ต" : "This Week's Economic Events That May Move Your Portfolio"}
+              </h2>
+              <p className="mt-1 max-w-2xl text-xs font-semibold leading-relaxed text-muted">
+                {lang === "th"
+                  ? "สรุปเหตุการณ์ระดับกลางขึ้นไปของสัปดาห์นี้ เพื่อช่วยวางจังหวะก่อนตัวเลขเศรษฐกิจสำคัญออก"
+                  : "Medium and high-impact events for this week, summarized before key macro releases hit the market."}
+              </p>
+            </div>
+            <div className="grid grid-cols-2 gap-2 sm:flex sm:flex-wrap sm:justify-end">
+              <Button variant="outline" size="sm" className="w-full sm:w-auto" onClick={loadDashboardCalendar} disabled={calendarLoading || !user?.email || !canUseCalendar}>
+                <RefreshCw className={`h-4 w-4 ${calendarLoading ? "animate-spin" : ""}`} />
+                {lang === "th" ? "รีเฟรช" : "Refresh"}
+              </Button>
+              <Link href="/economic-calendar" className="w-full sm:w-auto">
+                <Button variant="gold" size="sm" className="w-full sm:w-auto">
+                  {lang === "th" ? "เปิดปฏิทินเต็ม" : "Open Calendar"}
+                  <ChevronRight className="h-4 w-4" />
+                </Button>
+              </Link>
+            </div>
+          </div>
+        </div>
+
+        {canUseCalendar ? (
+          <div className="grid gap-0 lg:grid-cols-[280px_minmax(0,1fr)]">
+            <div className="border-b border-line p-4 sm:p-5 lg:border-b-0 lg:border-r">
+              <div className="grid grid-cols-3 gap-2 lg:grid-cols-1">
+                <CalendarMetric
+                  icon={<Zap className="h-4 w-4" />}
+                  label={lang === "th" ? "เหตุการณ์" : "Events"}
+                  value={calendarData?.total || 0}
+                  tone="brand"
+                />
+                <CalendarMetric
+                  icon={<AlertTriangle className="h-4 w-4" />}
+                  label={lang === "th" ? "แรงสูง" : "High"}
+                  value={calendarData?.summary?.highImportance || 0}
+                  tone="gold"
+                />
+                <CalendarMetric
+                  icon={<Clock className="h-4 w-4" />}
+                  label={lang === "th" ? "ซิงก์" : "Synced"}
+                  value={formatCalendarSync(calendarData?.summary?.latestFetchedAt, lang)}
+                  tone="muted"
+                />
+              </div>
+              <div className="mt-3 rounded-xl border border-line bg-elevate/40 p-3 text-[11px] font-semibold leading-relaxed text-muted">
+                <div className="flex items-center gap-2 font-black text-ink">
+                  <Globe className="h-4 w-4 text-brand" />
+                  {lang === "th" ? "โฟกัสสัปดาห์นี้" : "This Week Focus"}
+                </div>
+                <p className="mt-1">
+                  {lang === "th"
+                    ? "จับตา USD, EUR, GBP, JPY และตัวเลขแรงงาน/เงินเฟ้อของสัปดาห์นี้ เพราะมักกระทบดอกเบี้ย ค่าเงิน และสินทรัพย์เสี่ยง"
+                    : "Watch this week's USD, EUR, GBP, JPY plus labor and inflation data because they often affect rates, FX, and risk assets."}
+                </p>
+              </div>
+            </div>
+
+            <div className="min-w-0">
+              {calendarError ? (
+                <div className="m-4 rounded-xl border border-down/30 bg-down/10 p-3 text-sm font-bold text-down">
+                  {calendarError}
+                </div>
+              ) : calendarLoading ? (
+                <div className="p-10 text-center text-sm font-bold text-muted animate-pulse">
+                  {lang === "th" ? "กำลังโหลดเหตุการณ์สำคัญ..." : "Loading key events..."}
+                </div>
+              ) : calendarData?.events?.length ? (
+                <div className="divide-y divide-line">
+                  {calendarData.events.slice(0, 8).map((event, index) => (
+                    <DashboardCalendarLine
+                      key={event._id || event.eventId || index}
+                      event={event}
+                      lang={lang}
+                      onOpen={setSelectedCalendarEvent}
+                    />
+                  ))}
+                </div>
+              ) : (
+                <div className="p-8 text-center">
+                  <Zap className="mx-auto h-8 w-8 text-muted" />
+                  <div className="mt-2 text-sm font-bold text-muted">
+                    {lang === "th" ? "ยังไม่มีเหตุการณ์ระดับกลางขึ้นไปในสัปดาห์นี้" : "No medium/high-impact events this week."}
+                  </div>
+                  <Link href="/economic-calendar" className="mt-3 inline-flex text-xs font-black text-brand hover:underline">
+                    {lang === "th" ? "ดูทุกประเภทในปฏิทินเต็ม" : "View all calendar types"}
+                  </Link>
+                </div>
+              )}
+            </div>
+          </div>
+        ) : (
+          <div className="grid gap-4 p-4 sm:p-5 lg:grid-cols-[minmax(0,1fr)_260px] lg:items-center">
+            <div className="grid gap-3 sm:grid-cols-3">
+              {[
+                { title: lang === "th" ? "ตัวเลขเศรษฐกิจ" : "Macro Data", desc: lang === "th" ? "เงินเฟ้อ ดอกเบี้ย แรงงาน" : "Inflation, rates, jobs" },
+                { title: lang === "th" ? "ผลประกอบการ" : "Earnings", desc: lang === "th" ? "ติดตามบริษัทใหญ่ทั่วโลก" : "Track global releases" },
+                { title: lang === "th" ? "ปันผล / IPO" : "Dividends / IPO", desc: lang === "th" ? "ดูเหตุการณ์หุ้นรายตัว" : "Company event radar" },
+              ].map((item) => (
+                <div key={item.title} className="rounded-xl border border-line bg-elevate/35 p-3">
+                  <div className="text-xs font-black text-ink">{item.title}</div>
+                  <div className="mt-1 text-[11px] font-semibold leading-relaxed text-muted">{item.desc}</div>
+                </div>
+              ))}
+            </div>
+            <div className="rounded-xl border border-gold/30 bg-gold/10 p-4">
+              <div className="text-sm font-black text-gold">
+                {lang === "th" ? "ปลดล็อกด้วย Premium" : "Unlock with Premium"}
+              </div>
+              <p className="mt-1 text-[11px] font-semibold leading-relaxed text-muted">
+                {lang === "th"
+                  ? "ดูปฏิทินเศรษฐกิจครบ 6 ประเภท พร้อมสรุปเหตุการณ์ที่ควรจับตา"
+                  : "Access all 6 calendar types and portfolio-ready event summaries."}
+              </p>
+              <Link href="/pricing">
+                <Button variant="gold" size="sm" className="mt-3 w-full">
+                  <Crown className="h-4 w-4" />
+                  {lang === "th" ? "อัปเกรด" : "Upgrade"}
+                </Button>
+              </Link>
+            </div>
+          </div>
+        )}
+      </Card>
+
+      {selectedCalendarEvent && (
+        <DashboardCalendarModal
+          event={selectedCalendarEvent}
+          lang={lang}
+          onClose={() => setSelectedCalendarEvent(null)}
+        />
+      )}
+
+      {/* 6. PORTFOLIO STRATEGY WIZARD & GLOSSARY PORTAL */}
+      <div className="grid gap-6 lg:grid-cols-12">
+        {/* WIDGET 1: INTERACTIVE BEGINNER STRATEGY PORTABLE */}
+        <Card className="lg:col-span-8 border border-line bg-surface/40 backdrop-blur-md p-5 flex flex-col justify-between rounded-2xl relative overflow-hidden">
+          <div className="absolute top-3 right-3">
+            <span className="inline-flex h-2.5 w-2.5 rounded-full bg-brand animate-ping" />
+          </div>
+
+          <div className="space-y-4">
+            {/* Header */}
+            <div className="border-b border-line pb-3">
+              <h3 className="font-display font-extrabold text-sm text-ink flex items-center gap-1.5 uppercase tracking-wider">
+                <Sparkles className="h-4.5 w-4.5 text-brand" />
+                {lang === "th" ? "ระบบจับคู่พอร์ตตามเป้าหมาย" : "Portfolio Strategy Guide"}
+              </h3>
+              <p className="text-[10px] text-muted mt-0.5">
+                {lang === "th"
+                  ? "เลือกสไตล์การลงทุนที่เหมาะกับคุณ เพื่อประเมินสัดส่วนและรายชื่อหุ้นที่คัดกรองให้อัตโนมัติ"
+                  : "Pick your comfort zone and explore customized matchings dynamically with zero complex math."}
+              </p>
+            </div>
+
+            {/* Quick Strategy Toggles */}
+            <div className="grid grid-cols-3 gap-2 p-0.5 bg-elevate rounded-xl text-[10px] font-bold text-center">
+              <button
+                onClick={() => setActiveStrategy("dividend")}
+                className={`py-2 rounded-lg transition ${
+                  activeStrategy === "dividend"
+                    ? "bg-surface text-brand shadow-sm border border-line/45"
+                    : "text-muted hover:text-ink"
+                }`}
+              >
+                {lang === "th" ? "ปันผลสูง" : "Dividend Yield"}
+              </button>
+              <button
+                onClick={() => setActiveStrategy("growth")}
+                className={`py-2 rounded-lg transition ${
+                  activeStrategy === "growth"
+                    ? "bg-surface text-brand shadow-sm border border-line/45"
+                    : "text-muted hover:text-ink"
+                }`}
+              >
+                {lang === "th" ? "เติบโต" : "Tech Growth"}
+              </button>
+              <button
+                onClick={() => setActiveStrategy("value")}
+                className={`py-2 rounded-lg transition ${
+                  activeStrategy === "value"
+                    ? "bg-surface text-brand shadow-sm border border-line/45"
+                    : "text-muted hover:text-ink"
+                }`}
+              >
+                {lang === "th" ? "หุ้นคุณค่า" : "Value Moats"}
+              </button>
+            </div>
+
+            <div className="space-y-1.5">
+              <div className="flex items-center justify-between gap-2">
+                <span className="text-[9px] font-black uppercase tracking-wider text-muted">
+                  {lang === "th" ? "เลือกตลาด" : "Market"}
+                </span>
+                <span className="text-[9px] font-bold text-muted">
+                  {strategyUniverse.length} {lang === "th" ? "รายการ" : "assets"}
+                </span>
+              </div>
+              <div className="grid grid-cols-4 gap-1.5 rounded-xl bg-elevate p-0.5 text-center text-[10px] font-bold">
+                {strategyMarketTabs.map((tab) => (
+                  <button
+                    key={tab.key}
+                    onClick={() => setActiveStrategyMarket(tab.key)}
+                    className={`rounded-lg px-2 py-2 transition ${
+                      activeStrategyMarket === tab.key
+                        ? "border border-line/45 bg-surface text-brand shadow-sm"
+                        : "text-muted hover:text-ink"
+                    }`}
+                  >
+                    <span className="block truncate">{tab.label}</span>
+                    <span className="mt-0.5 block font-mono text-[8px] opacity-75">{tab.count}</span>
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Strategy descriptive info */}
+            <div className="p-3 bg-elevate/30 border border-line/60 rounded-xl space-y-1.5">
+              <div className="flex justify-between items-center">
+                <h4 className="text-xs font-extrabold text-ink">
+                  {lang === "th" ? strategyDetails[activeStrategy].titleTh : strategyDetails[activeStrategy].titleEn}
+                </h4>
+                <span className="text-[9px] bg-brand-soft border border-brand/20 text-brand px-1.5 py-0.5 rounded-full font-bold">
+                  {strategyDetails[activeStrategy].badge}
+                </span>
+              </div>
+              <p className="text-[10px] text-muted leading-relaxed">
+                {lang === "th" ? strategyDetails[activeStrategy].descTh : strategyDetails[activeStrategy].descEn}
+              </p>
+            </div>
+
+            {/* RenderCurated match list */}
+            <div className="space-y-2">
+              <span className="text-[9px] uppercase font-bold text-muted tracking-wider block">
+                {lang === "th" ? "3 หุ้นเด่นตามเป้าหมาย (Curated Matches):" : "3 Key target picks for your strategy:"}
+              </span>
+              <div className="grid gap-2 sm:grid-cols-3">
+                {strategyPicks[activeStrategy].length === 0 && (
+                  <div className="col-span-full rounded-xl border border-line bg-elevate/30 p-4 text-center text-[11px] font-bold text-muted">
+                    {lang === "th" ? "ยังไม่มีหุ้นที่เข้าเงื่อนไขในตลาดนี้" : "No matching assets in this market yet."}
+                  </div>
+                )}
+                {strategyPicks[activeStrategy].map((item) => {
+                  const s = getDisplayStock(item.s.symbol);
+                  if (!s) {
+                    return (
+                      <QuoteLoadingCard
+                        key={item.s.symbol}
+                        title={`${item.s.symbol} live quote`}
+                        subtitle={lang === "th" ? "กำลังดึงราคาล่าสุด..." : "Fetching latest price..."}
+                      />
+                    );
+                  }
+                  const v = computeValuation(s, defaultDCFParams(s));
+                  const watchedState = isWatched(s.symbol);
+                  const isUp = v.marginOfSafety >= 0;
+
+                  return (
+                    <div
+                      key={s.symbol}
+                      className="p-3 border border-line rounded-xl bg-surface/60 hover:border-brand/40 transition flex flex-col justify-between"
+                    >
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-1.5">
+                          <AssetLogo symbol={s.symbol} color={s.color} size="sm" />
+                          <div>
+                            <span className="font-display font-extrabold text-xs text-ink block leading-none">
+                              {s.symbol}
+                            </span>
+                            <span className="text-[8px] text-muted truncate max-w-[80px] block mt-0.5">
+                              {lang === "th" ? s.name : s.enName}
+                            </span>
+                          </div>
+                        </div>
+
+                        {/* Favorite switch */}
+                        <button
+                          onClick={() => toggleWatch(s.symbol)}
+                          className={`p-1 rounded transition ${
+                            watchedState ? "text-gold" : "text-muted hover:text-ink"
+                          }`}
+                          title={lang === "th" ? "บันทึกพอร์ตโปรด" : "Watchlist Toggle"}
+                        >
+                          <Star className="h-3.5 w-3.5" fill={watchedState ? "currentColor" : "none"} />
+                        </button>
+                      </div>
+
+                      {/* Small details */}
+                      <div className="mt-3 space-y-1">
+                        <div className="flex justify-between text-[10px]">
+                          <span className="text-muted">{lang === "th" ? "ราคาปัด" : "Price"}</span>
+                          <span className="font-mono font-bold text-ink">{formatPrice(s, s.price)}</span>
+                        </div>
+                        <div className="flex justify-between text-[10px]">
+                          <span className="text-muted">MOS %</span>
+                          <span className={`font-mono font-bold ${isUp ? "text-up" : "text-down"}`}>
+                            {isUp ? "+" : ""}
+                            {v.marginOfSafety.toFixed(0)}%
+                          </span>
+                        </div>
+                      </div>
+
+                      <div className="mt-2.5 pt-2 border-t border-line/45 text-[9px] text-muted leading-tight min-h-[28px] italic">
+                        {strategyInsight(s, v)}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          </div>
+
+          <div className="flex justify-end mt-4 pt-3 border-t border-line/45">
+            <Link href="/compare" className="text-[10px] text-brand font-bold hover:underline flex items-center gap-0.5">
+              {lang === "th" ? "นำพอร์ตแนะนำไปเปรียบเทียบในเครื่องมือใหญ่" : "Load these into Comparison Terminal"}
+              <ChevronRight className="h-3 w-3" />
+            </Link>
+          </div>
+        </Card>
+
+        {/* WIDGET 2: POP-UP FINANCIAL DICTIONARY (JARGON TRANSLATOR) */}
+        <Card className="lg:col-span-4 border border-line bg-surface/40 backdrop-blur-md p-5 flex flex-col justify-between rounded-2xl">
+          <div className="space-y-4">
+            {/* Title */}
+            <div className="border-b border-line pb-3">
+              <h3 className="font-display font-extrabold text-sm text-ink flex items-center gap-1.5 uppercase tracking-wider">
+                <Calculator className="h-4.5 w-4.5 text-brand" />
+                {lang === "th" ? "พจนานุกรม VI ฉบับเข้าใจง่าย" : "Investment Glossary"}
+              </h3>
+              <p className="text-[10px] text-muted mt-0.5">
+                {lang === "th"
+                  ? "อธิบายศัพท์ภาษาหุ้นที่ยากที่สุด ให้เข้าใจง่ายภายใน 1 นาที"
+                  : "De-jargonize institutional terms into plain human language."}
+              </p>
+            </div>
+
+            {/* Glossary tabs selector */}
+            <div className="flex flex-wrap gap-1 bg-elevate p-0.5 rounded-lg text-[9px] font-bold text-center">
+              <button
+                onClick={() => setActiveGlossary("mos")}
+                className={`flex-1 py-1 rounded transition ${
+                  activeGlossary === "mos" ? "bg-surface text-brand shadow-sm" : "text-muted hover:text-ink"
+                }`}
+              >
+                MOS
+              </button>
+              <button
+                onClick={() => setActiveGlossary("dcf")}
+                className={`flex-1 py-1 rounded transition ${
+                  activeGlossary === "dcf" ? "bg-surface text-brand shadow-sm" : "text-muted hover:text-ink"
+                }`}
+              >
+                DCF
+              </button>
+              <button
+                onClick={() => setActiveGlossary("roe")}
+                className={`flex-1 py-1 rounded transition ${
+                  activeGlossary === "roe" ? "bg-surface text-brand shadow-sm" : "text-muted hover:text-ink"
+                }`}
+              >
+                ROE
+              </button>
+              <button
+                onClick={() => setActiveGlossary("pe")}
+                className={`flex-1 py-1 rounded transition ${
+                  activeGlossary === "pe" ? "bg-surface text-brand shadow-sm" : "text-muted hover:text-ink"
+                }`}
+              >
+                P/E
+              </button>
+              <button
+                onClick={() => setActiveGlossary("de")}
+                className={`flex-1 py-1 rounded transition ${
+                  activeGlossary === "de" ? "bg-surface text-brand shadow-sm" : "text-muted hover:text-ink"
+                }`}
+              >
+                D/E
+              </button>
+            </div>
+
+            {/* Tab contents */}
+            <div className="space-y-3 min-h-[170px] flex flex-col justify-between">
+              {activeGlossary === "mos" && (
+                <GlossaryContent
+                  title="MOS (Margin of Safety)"
+                  defTh="ส่วนลดราคาหลักทรัพย์เปรียบเทียบเหมือน ‘ป้ายลดราคาตลาด’"
+                  defEn="The discount buffer between Market Price and computed Fair Value."
+                  howTh="ยิ่ง MOS เป็นค่าบวกสูงๆ (เช่น เกิน 15%) แปลว่าเรามีโอกาสได้ซื้อหุ้นที่ดีในราคาเซลล์กระหน่ำ ช่วยลดการติดดอย"
+                  howEn="Look for positive safety buffers. A higher MOS reduces your capital loss risk if valuations shift."
+                  egTh="ถ้า Fair Value เท่ากับ 100 บาท แต่ราคาตลาดคือ 75 บาท แปลว่าหุ้นมีส่วนลดราคา MOS อยู่ที่ +25%"
+                  egEn="Fair Value of 100 THB vs. Market Price of 75 THB translates to a positive +25% MOS."
+                />
+              )}
+
+              {activeGlossary === "dcf" && (
+                <GlossaryContent
+                  title="DCF (Discounted Cash Flow)"
+                  defTh="การหามูลค่าเหมาะสมจากกระแสเงินสดในอนาคตทั้งหมดแล้วลดมูลค่ากลับมา ณ วันนี้"
+                  defEn="Valuing a business based on its projected future cash generation capacity discounted to present value."
+                  howTh="ใช้ดูภาพจินตนาการทางคณิตศาสตร์ว่า ‘เงินสดสุทธิ’ ที่บริษัทจะสร้างได้จริงในอีก 5 ปีข้างหน้า คุ้มค่าเงินลงทุนไหม"
+                  howEn="Enables auditing realistic long-term business potential over simple earnings per share numbers."
+                  egTh="เหมือนการประเมินว่าควรเช่าซื้อสวนทุเรียนวันนี้ราคาเท่าไหร่ โดยเอาคาดการณ์ยอดทุเรียนที่จะขายได้ 5 ปีข้างหน้ามาหักลดหย่อนดอกเบี้ย"
+                  egEn="Like appraising a rental condo by discounting the total rent you'll receive over 10 years."
+                />
+              )}
+
+              {activeGlossary === "roe" && (
+                <GlossaryContent
+                  title="ROE (Return on Equity)"
+                  defTh="ความสามารถของบริษัทในการเอาเงินทุนผู้ถือหุ้นไปผลิตผลตอบแทนกำไร"
+                  defEn="How efficiently a company generates profits using equity funding."
+                  howTh="บริษัทที่ดีควรมี ROE เกิน 12% ขึ้นไป ยิ่งตัวเลขนี้สูง แปลว่าทีมผู้บริหารเป็นคนเก่ง ทำกำไรได้รวดเร็วและคุ้มทุนดีเยี่ยม"
+                  howEn="Seek values above 12%. Shows superior management ability in compounding shareholder capital."
+                  egTh="คุณลงเงินทำร้านกาแฟกับหุ้นส่วน 100,000 บาท สิ้นปีร้านทำกำไรสุทธิคืนมา 15,000 บาท แปลว่า ROE ของร้านนี้เท่ากับ 15%"
+                  egEn="Investing 100k THB into a franchise. If it yields 15k THB net profit annually, the ROE is 15%."
+                />
+              )}
+
+              {activeGlossary === "pe" && (
+                <GlossaryContent
+                  title="P/E Ratio"
+                  defTh="อัตราเปรียบเทียบระหว่างราคาหุ้นเทียบกับกำไรสุทธิที่ทำได้"
+                  defEn="Price-to-Earnings multiple, measuring how much you pay per dollar of corporate profit."
+                  howTh="จำง่ายๆ คือ ‘ระยะเวลาคืนทุนในสภาวะอุดมคติ’ หุ้น PE 10 เท่าแปลว่าเราคืนทุนใน 10 ปี ยิ่งตัวเลขนี้ต่ำยิ่งถูกและได้เปรียบ"
+                  howEn="Lower is generally cheaper. A PE of 10 means it takes roughly 10 years of earnings to match your purchase cost."
+                  egTh="หุ้นราคา 10 บาท บริษัททำกำไรต่อหุ้นปีละ 1 บาท แปลว่ามี P/E เท่ากับ 10 เท่า หากซื้อคุณจะใช้เวลาคืนทุนประมาณ 10 ปี"
+                  egEn="Stock price at 10 THB with 1 THB EPS results in a 10x PE multiple."
+                />
+              )}
+
+              {activeGlossary === "de" && (
+                <GlossaryContent
+                  title="D/E Ratio"
+                  defTh="อัตราส่วนความแข็งแกร่งทางการเงิน - หนี้สินทั้งหมดเทียบกับทุนตัวเอง"
+                  defEn="Debt-to-equity ratio, indicating financial risk and leverage capacity."
+                  howTh="ใช้สแกนความเข้มแข็ง! ควรเลือกบริษัทที่มี D/E น้อยกว่า 1.5 เท่า ถ้าสูงเกิน 2 เท่าขึ้นไป แปลว่ากู้เงินมาทำธุรกิจมากเกินไป เสี่ยงล้มละลาย"
+                  howEn="Lower means less leverage. A DE below 1.5x is conservative and safer during macroeconomic shocks."
+                  egTh="บริษัทมีส่วนผู้ถือหุ้น 10 ล้านบาท แต่กู้เงินจากสถาบันการเงินรวม 5 ล้านบาท คิดเป็น D/E เท่ากับ 0.5 เท่า ปลอดภัยไร้กังวล"
+                  egEn="Company with 10M THB in equity holding 5M THB in total debt represents a highly secure 0.5x D/E."
+                />
+              )}
+            </div>
+          </div>
+        </Card>
+      </div>
+
+      {/* 6. UNIQUE FX RATE & INBOUND TAX ESTIMATOR */}
+      <div className="grid gap-6 md:grid-cols-5">
+        <Card className="md:col-span-3 border border-line bg-surface/30">
+          <CardHeader
+            title={lang === "th" ? "เครื่องมือคำนวณภาษีต่างประเทศ & FX" : "Foreign Capital Gains & FX Estimator"}
+            subtitle={lang === "th" ? "คำนวณภาษีส่วนบุคคลเมื่อนำเงินเข้าไทยในปีภาษีเดียวกัน" : "Estimate Personal income tax liability under new Thai tax rules"}
+            icon={<Calculator className="h-4.5 w-4.5 text-brand" />}
+          />
+          <div className="p-5 space-y-4">
+            <div className="grid gap-4 sm:grid-cols-2">
+              <div>
+                <label className="text-xs text-muted font-medium block mb-1">
+                  {lang === "th" ? "เงินได้นำเข้าต่างประเทศ (USD)" : "Inbound Overseas Income (USD)"}
+                </label>
+                <div className="relative">
+                  <input
+                    type="number"
+                    value={foreignIncome}
+                    onChange={(e) => setForeignIncome(Math.max(0, parseFloat(e.target.value) || 0))}
+                    className="input-base pr-12 text-sm font-semibold"
+                  />
+                  <span className="absolute right-3.5 top-1/2 -translate-y-1/2 text-xs font-bold text-muted">$</span>
+                </div>
+              </div>
+              <div>
+                <label className="text-xs text-muted font-medium block mb-1">
+                  {lang === "th" ? "แปลงเป็นเงินบาท (อัตรา 36.45)" : "Equivalent in Thai Baht (Rate: 36.45)"}
+                </label>
+                <div className="input-base bg-elevate text-muted border-line flex items-center justify-between text-sm">
+                  <span className="font-semibold text-ink">{num(incomeThb, 0)}</span>
+                  <span className="font-bold text-muted">THB</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Calculated brackets */}
+            <div className="rounded-xl border border-line bg-elevate p-4 flex items-center justify-between">
+              <div>
+                <span className="text-xs text-muted block">{lang === "th" ? "ภาษีเงินได้ที่ต้องเสียโดยประมาณ" : "Estimated Thai Personal Tax"}</span>
+                <span className="font-display font-extrabold text-lg text-down mt-1 block">
+                  {estimatedTax === 0 
+                    ? (lang === "th" ? "ยกเว้นภาษี (ต่ำกว่าเกณฑ์)" : "Exempted / Zero Tax") 
+                    : `${num(estimatedTax, 0)} THB`}
+                </span>
+              </div>
+              <Badge tone={estimatedTax > 0 ? "down" : "up"}>
+                {estimatedTax > 0 ? (lang === "th" ? "เสียภาษี" : "Taxable") : (lang === "th" ? "ปลอดภาษี" : "Exempt")}
+              </Badge>
+            </div>
+
+            <div className="text-[11px] text-muted leading-relaxed flex gap-2">
+              <Info className="h-4 w-4 text-gold shrink-0 mt-0.5" />
+              <span>
+                {lang === "th" 
+                  ? "ตัวเลขนี้เป็นเพียงการประมาณการเพื่อวางแผนเบื้องต้น ไม่ใช่คำปรึกษาภาษีอย่างเป็นทางการ อัตราและเงื่อนไขภาษีอาจเปลี่ยนได้ ควรตรวจสอบกับผู้เชี่ยวชาญหรือประกาศกรมสรรพากรก่อนยื่นจริง"
+                  : "This is an estimate for planning only and is not formal tax advice. Rates and rules may change; consult a qualified tax professional or official tax guidance before filing."}
+              </span>
+            </div>
+          </div>
+        </Card>
+
+        {/* AI Market Sentiment meter */}
+        <Card className="md:col-span-2 border border-line bg-surface/30">
+          <CardHeader
+            title={lang === "th" ? "ความเชื่อมั่นตลาดหุ้นโดย AI" : "AI Market Sentiment"}
+            subtitle={lang === "th" ? "ดัชนีชี้วัดสภาวะจิตวิทยา" : "Market greed vs. fear indicator"}
+            icon={<Sparkles className="h-4.5 w-4.5 text-gold shrink-0 animate-pulse" />}
+          />
+          <div className="space-y-4 p-4 sm:p-5">
+            <div className="text-center">
+              <div
+                className={`inline-flex max-w-full items-center gap-1.5 rounded-full border px-3 py-1 text-xs font-bold ${
+                  sentiment.tone === "up"
+                    ? "border-up/30 bg-up/10 text-up shadow-glow-up"
+                    : sentiment.tone === "down"
+                      ? "border-down/30 bg-down/10 text-down"
+                      : "border-gold/30 bg-gold/10 text-gold"
+                }`}
+              >
+                {sentiment.label} ({sentiment.score}%)
+              </div>
+              <div className="mt-4 grid grid-cols-[40px_minmax(0,1fr)_44px] items-center gap-2">
+                <span className="text-right text-xs font-bold text-muted">Fear</span>
+                <div className="relative h-3 min-w-0 overflow-hidden rounded-full border border-line bg-line">
+                  <div
+                    className="h-full rounded-full bg-brand shadow-glow transition-all duration-500"
+                    style={{ width: `${sentiment.score}%` }}
+                  />
+                </div>
+                <span className="text-left text-xs font-bold text-muted">Greed</span>
+              </div>
+            </div>
+
+            <div className="border-t border-line/60 pt-3">
+              <p className="text-[11px] font-semibold leading-relaxed text-muted [overflow-wrap:anywhere]">
+                <strong className="text-ink">AI Sentiment Highlight:</strong>{" "}
+                {sentiment.highlight}
+              </p>
+            </div>
+          </div>
+        </Card>
+      </div>
+
+      {/* 7. CURATED TARGET CATEGORIES */}
+      <div className="space-y-4">
+        <div className="flex items-center justify-between">
+          <h2 className="font-display text-lg font-bold flex items-center gap-2">
+            <Layers className="h-5 w-5 text-brand" /> {lang === "th" ? "พอร์ตแนะนำคัดแยกตามกลุ่มเป้าหมาย" : "Curated Target Categories"}
+          </h2>
+          <Link href="/stocks" className="text-xs text-brand hover:underline font-bold">
+            {lang === "th" ? "สำรวจหุ้นทั้งหมด" : "Browse all assets"} →
+          </Link>
+        </div>
+
+        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+          {/* Thai High Yield Column */}
+          <div className="space-y-3">
+            <div className="flex items-center justify-between border-b border-line pb-1.5">
+              <span className="text-xs font-bold uppercase tracking-wider text-muted">
+                🇹🇭 {lang === "th" ? "หุ้นไทยเน้นปันผลสูง" : "Thai High-Yield Value"}
+              </span>
+              <Badge tone="up">High MOS</Badge>
+            </div>
+            <div className="grid gap-3">
+              {topThai.length === 0 && (
+                <QuoteLoadingCard
+                  title={lang === "th" ? "กำลังโหลดราคาหุ้นไทย" : "Loading Thai quotes"}
+                  subtitle={lang === "th" ? "รอราคาล่าสุดจาก API" : "Waiting for latest API prices"}
+                />
+              )}
+              {topThai.map((r) => (
+                <Link href={`/stocks/${r.s.symbol}`} key={r.s.symbol} className="surface border border-line/75 rounded-xl p-3.5 flex items-center justify-between hover:border-brand/40 hover:shadow-glow transition group">
+                  <div className="flex items-center gap-2">
+                    <AssetLogo symbol={r.s.symbol} color={r.s.color} size="sm" />
+                    <div>
+                      <span className="font-bold text-xs text-ink block group-hover:text-brand transition">{r.s.symbol}</span>
+                      <span className="text-[10px] text-muted block max-w-[120px] truncate">{lang === "th" ? r.s.name : r.s.enName}</span>
+                    </div>
+                  </div>
+                  <div className="text-right">
+                    <span className="num font-semibold text-xs text-ink block">{baht(r.s.price)}</span>
+                    <span className="num text-[10px] text-up block">MOS +{num(r.v.marginOfSafety, 0)}%</span>
+                  </div>
+                </Link>
+              ))}
+            </div>
+          </div>
+
+          {/* US Tech & AI Growth Column */}
+          <div className="space-y-3">
+            <div className="flex items-center justify-between border-b border-line pb-1.5">
+              <span className="text-xs font-bold uppercase tracking-wider text-muted">
+                🇺🇸 {lang === "th" ? "หุ้นเติบโตสหรัฐฯ" : "US Tech & AI Growth"}
+              </span>
+              <Badge tone="gold">W-8BEN Reduced</Badge>
+            </div>
+            <div className="grid gap-3">
+              {topUs.length === 0 && (
+                <QuoteLoadingCard
+                  title={lang === "th" ? "กำลังโหลดราคาหุ้นสหรัฐฯ" : "Loading US quotes"}
+                  subtitle={lang === "th" ? "รอราคาล่าสุดจาก API" : "Waiting for latest API prices"}
+                />
+              )}
+              {topUs.map((r) => (
+                <Link href={`/stocks/${r.s.symbol}`} key={r.s.symbol} className="surface border border-line/75 rounded-xl p-3.5 flex items-center justify-between hover:border-brand/40 hover:shadow-glow transition group">
+                  <div className="flex items-center gap-2">
+                    <AssetLogo symbol={r.s.symbol} color={r.s.color} size="sm" />
+                    <div>
+                      <span className="font-bold text-xs text-ink block group-hover:text-brand transition">{r.s.symbol}</span>
+                      <span className="text-[10px] text-muted block max-w-[120px] truncate">{r.s.enName}</span>
+                    </div>
+                  </div>
+                  <div className="text-right">
+                    <span className="num font-semibold text-xs text-ink block">{dollar(r.s.price)}</span>
+                    <span className="num text-[10px] text-up block">MOS +{num(r.v.marginOfSafety, 0)}%</span>
+                  </div>
+                </Link>
+              ))}
+            </div>
+          </div>
+
+          {/* Global Feeder Funds Column */}
+          <div className="space-y-3">
+            <div className="flex items-center justify-between border-b border-line pb-1.5">
+              <span className="text-xs font-bold uppercase tracking-wider text-muted">
+                📊 {lang === "th" ? "กองทุนรวมไทย" : "Thai Mutual Funds"}
+              </span>
+              <Badge tone="brand">Passive / Active</Badge>
+            </div>
+            <div className="grid gap-3">
+              {topFunds.length === 0 && (
+                <QuoteLoadingCard
+                  title={lang === "th" ? "ยังไม่พบกองทุนรวมไทย" : "No Thai mutual funds found"}
+                  subtitle={lang === "th" ? "ตรวจสอบชุดข้อมูลกองทุน" : "Check the fund universe"}
+                />
+              )}
+              {topFunds.map((r) => (
+                <Link href={`/stocks/${r.s.symbol}`} key={r.s.symbol} className="surface border border-line/75 rounded-xl p-3.5 flex items-center justify-between hover:border-brand/40 hover:shadow-glow transition group">
+                  <div className="flex items-center gap-2">
+                    <AssetLogo symbol={r.s.symbol} color={r.s.color} size="sm" />
+                    <div>
+                      <span className="font-bold text-xs text-ink block group-hover:text-brand transition">{r.s.symbol}</span>
+                      <span className="text-[10px] text-muted block max-w-[120px] truncate">{lang === "th" ? r.s.name : r.s.enName}</span>
+                    </div>
+                  </div>
+                  <div className="text-right">
+                    <span className="num font-semibold text-xs text-ink block">{nav(r.s.price)}</span>
+                    <span className="text-[10px] text-muted block font-mono">Risk {r.s.riskLevel || 6}</span>
+                  </div>
+                </Link>
+              ))}
+            </div>
+          </div>
+
+          {/* US Mutual Funds Column */}
+          <div className="space-y-3">
+            <div className="flex items-center justify-between border-b border-line pb-1.5">
+              <span className="text-xs font-bold uppercase tracking-wider text-muted">
+                🇺🇸 {lang === "th" ? "กองทุนรวมสหรัฐฯ" : "US Mutual Funds"}
+              </span>
+              <Badge tone="gold">Low Expense</Badge>
+            </div>
+            <div className="grid gap-3">
+              {topUsFunds.length === 0 && (
+                <QuoteLoadingCard
+                  title={lang === "th" ? "ยังไม่พบกองทุนรวมสหรัฐฯ" : "No US mutual funds found"}
+                  subtitle={lang === "th" ? "ตรวจสอบชุดข้อมูลกองทุน" : "Check the fund universe"}
+                />
+              )}
+              {topUsFunds.map((r) => (
+                <Link href={`/stocks/${r.s.symbol}`} key={r.s.symbol} className="surface border border-line/75 rounded-xl p-3.5 flex items-center justify-between hover:border-brand/40 hover:shadow-glow transition group">
+                  <div className="flex items-center gap-2">
+                    <AssetLogo symbol={r.s.symbol} color={r.s.color} size="sm" />
+                    <div>
+                      <span className="font-bold text-xs text-ink block group-hover:text-brand transition">{r.s.symbol}</span>
+                      <span className="text-[10px] text-muted block max-w-[120px] truncate">{lang === "th" ? r.s.name : r.s.enName}</span>
+                    </div>
+                  </div>
+                  <div className="text-right">
+                    <span className="num font-semibold text-xs text-ink block">{formatPrice(r.s, r.s.price)}</span>
+                    <span className="text-[10px] text-muted block font-mono">Exp {r.s.expenseRatio}%</span>
+                  </div>
+                </Link>
+              ))}
+            </div>
+          </div>
+
+          {/* Cryptocurrency Column */}
+          <div className="space-y-3">
+            <div className="flex items-center justify-between border-b border-line pb-1.5">
+              <span className="text-xs font-bold uppercase tracking-wider text-muted">
+                🪙 {lang === "th" ? "สินทรัพย์ดิจิทัล" : "Cryptocurrencies"}
+              </span>
+              <Badge tone="up">24/7 Market</Badge>
+            </div>
+            <div className="grid gap-3">
+              {topCrypto.map((r) => (
+                <Link href={`/stocks/${r.s.symbol}`} key={r.s.symbol} className="surface border border-line/75 rounded-xl p-3.5 flex items-center justify-between hover:border-brand/40 hover:shadow-glow transition group">
+                  <div className="flex items-center gap-2">
+                    <AssetLogo symbol={r.s.symbol} color={r.s.color} size="sm" />
+                    <div>
+                      <span className="font-bold text-xs text-ink block group-hover:text-brand transition">{r.s.symbol}</span>
+                      <span className="text-[10px] text-muted block max-w-[120px] truncate">{lang === "th" ? r.s.name : r.s.enName}</span>
+                    </div>
+                  </div>
+                  <div className="text-right">
+                    <span className="num font-semibold text-xs text-ink block">{formatPrice(r.s, r.s.price)}</span>
+                    <span className="text-[10px] text-muted block font-mono">{r.s.cryptoConsensus === "Proof of Work (PoW)" ? "PoW" : "PoS"}</span>
+                  </div>
+                </Link>
+              ))}
+            </div>
+          </div>
+
+          {/* Futures Column */}
+          <div className="space-y-3">
+            <div className="flex items-center justify-between border-b border-line pb-1.5">
+              <span className="text-xs font-bold uppercase tracking-wider text-muted">
+                📈 {lang === "th" ? "สัญญาซื้อขายล่วงหน้า" : "Futures & Commodities"}
+              </span>
+              <Badge tone="brand">Leveraged</Badge>
+            </div>
+            <div className="grid gap-3">
+              {topFutures.map((r) => (
+                <Link href={`/stocks/${r.s.symbol}`} key={r.s.symbol} className="surface border border-line/75 rounded-xl p-3.5 flex items-center justify-between hover:border-brand/40 hover:shadow-glow transition group">
+                  <div className="flex items-center gap-2">
+                    <AssetLogo symbol={r.s.symbol} color={r.s.color} size="sm" />
+                    <div>
+                      <span className="font-bold text-xs text-ink block group-hover:text-brand transition">{r.s.symbol}</span>
+                      <span className="text-[10px] text-muted block max-w-[120px] truncate">{lang === "th" ? r.s.name : r.s.enName}</span>
+                    </div>
+                  </div>
+                  <div className="text-right">
+                    <span className="num font-semibold text-xs text-ink block">{formatPrice(r.s, r.s.price)}</span>
+                    <span className="text-[10px] text-muted block font-mono">Lev {r.s.leverage}x</span>
+                  </div>
+                </Link>
+              ))}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* 8. WATCHLIST PREVIEW LIST */}
+      <section className="space-y-4">
+        <div className="flex items-center justify-between">
+          <h2 className="font-display text-lg font-bold flex items-center gap-2">
+            <Star className="h-5 w-5 text-gold animate-pulse" /> {t("dashboard.watchlistSummary")}
+          </h2>
+          <Link href="/watchlist" className="text-xs text-brand hover:underline font-bold">
+            {lang === "th" ? "จัดการรายการโปรด" : "Manage Watchlist"} →
+          </Link>
+        </div>
+        {watchlist.length > 0 && watched.length === 0 ? (
+          <div className="grid gap-4 sm:grid-cols-3">
+            {watchlist.slice(0, 3).map((symbol) => (
+              <QuoteLoadingCard
+                key={symbol}
+                title={`${symbol} live quote`}
+                subtitle={lang === "th" ? "กำลังดึงราคาล่าสุด..." : "Fetching latest price..."}
+              />
+            ))}
+          </div>
+        ) : watched.length === 0 ? (
+          <Card className="p-8 text-center border border-dashed border-line">
+            <Star className="mx-auto h-8 w-8 text-muted" />
+            <h3 className="mt-3 font-display text-base font-black text-ink">
+              {lang === "th" ? "เริ่มสร้าง Watchlist แรกของคุณ" : "Start Your First Watchlist"}
+            </h3>
+            <p className="mx-auto mt-2 max-w-md text-xs text-muted leading-relaxed">
+              {t("watchlist.noStocks")}
+            </p>
+            <Link href="/stocks">
+              <Button className="mt-5" size="sm">
+                {lang === "th" ? "ไปเลือกหุ้นที่สนใจ" : "Browse Stocks"}
+                <ChevronRight className="h-4 w-4" />
+              </Button>
+            </Link>
+          </Card>
+        ) : (
+          <div className="grid gap-4 sm:grid-cols-3">
+            {watched.map((s) => s && <StockCard key={s.symbol} stock={s} />)}
+          </div>
+        )}
+      </section>
+    </div>
+  );
+}
+
+// ================== GLOSSARY CONTENT HELPER COMPONENT ==================
+function GlossaryContent({
+  title,
+  defTh,
+  defEn,
+  howTh,
+  howEn,
+  egTh,
+  egEn,
+}: {
+  title: string;
+  defTh: string;
+  defEn: string;
+  howTh: string;
+  howEn: string;
+  egTh: string;
+  egEn: string;
+}) {
+  const { lang } = useTranslation();
+  const definition = lang === "th" ? defTh : defEn;
+  const usage = lang === "th" ? howTh : howEn;
+  const example = lang === "th" ? egTh : egEn;
+
+  return (
+    <div className="space-y-3 animate-fade-up">
+      <div>
+        <span className="text-xs font-mono font-black text-brand block">{title}</span>
+        <p className="text-[11px] text-ink font-bold mt-1 leading-normal">
+          {definition}
+        </p>
+      </div>
+
+      <div className="border-t border-line/45 pt-2">
+        <span className="text-[9px] uppercase font-bold text-muted block tracking-wider">
+          {lang === "th" ? "วิธีประยุกต์ใช้ช่วยตัดสินใจ" : "How to use it"}
+        </span>
+        <p className="text-[10px] text-muted leading-relaxed mt-0.5">
+          {usage}
+        </p>
+      </div>
+
+      <div className="bg-elevate/45 border border-line/50 p-2 rounded-lg text-[9px] text-muted leading-normal">
+        <strong>{lang === "th" ? "ตัวอย่างเชิงปฏิบัติ:" : "Practical example:"}</strong> {example}
+      </div>
+    </div>
+  );
+}
+
+function CalendarMetric({
+  icon,
+  label,
+  value,
+  tone,
+}: {
+  icon: React.ReactNode;
+  label: string;
+  value: string | number;
+  tone: "brand" | "gold" | "muted";
+}) {
+  const toneClass =
+    tone === "gold"
+      ? "border-gold/25 bg-gold/10 text-gold"
+      : tone === "brand"
+        ? "border-brand/25 bg-brand/10 text-brand"
+        : "border-line bg-elevate text-muted";
+
+  return (
+    <div className={`rounded-xl border p-3 ${toneClass}`}>
+      <div className="flex items-center gap-1.5 text-[10px] font-black uppercase tracking-wide">
+        {icon}
+        <span className="truncate">{label}</span>
+      </div>
+      <div className="mt-1 font-display text-xl font-black text-ink">
+        {typeof value === "number" ? value.toLocaleString() : value}
+      </div>
+    </div>
+  );
+}
+
+function DashboardCalendarLine({
+  event,
+  lang,
+  onOpen,
+}: {
+  event: DashboardCalendarEvent;
+  lang: "th" | "en";
+  onOpen: (event: DashboardCalendarEvent) => void;
+}) {
+  const impact = Math.max(1, Math.min(event.importance || 1, 3));
+  const impactClass =
+    impact === 3
+      ? "border-up/30 bg-up/10 text-up"
+      : impact === 2
+        ? "border-gold/30 bg-gold/10 text-gold"
+        : "border-line bg-elevate text-muted";
+  const meta = dashboardCalendarMeta(event);
+
+  return (
+    <button
+      type="button"
+      onClick={() => onOpen(event)}
+      className="grid w-full gap-2 px-4 py-3 text-left transition hover:bg-elevate/35 focus:outline-none focus:ring-2 focus:ring-brand/40 sm:grid-cols-[104px_minmax(0,1fr)_92px] sm:items-center sm:gap-4"
+    >
+      <div className="flex items-center justify-between gap-2 sm:block">
+        <div className="font-display text-sm font-black leading-none text-ink">
+          {formatCalendarDate(event.date, lang)}
+        </div>
+        <div className="mt-1 font-mono text-[11px] font-black text-muted">{event.time || "-"}</div>
+      </div>
+      <div className="min-w-0">
+        <div className="flex min-w-0 items-center gap-2">
+          <span className="rounded-lg border border-line bg-bg px-2 py-1 font-mono text-[10px] font-black text-muted">
+            {event.currency || event.country || "GLOBAL"}
+          </span>
+          <span className="truncate text-xs font-bold text-muted">{event.country || "-"}</span>
+        </div>
+        <div className="mt-1 truncate font-display text-sm font-black text-ink">
+          {event.name || "-"}
+        </div>
+        {meta && <div className="mt-0.5 truncate text-[11px] font-semibold text-muted">{meta}</div>}
+      </div>
+      <div className="flex items-center justify-between gap-2 sm:justify-end">
+        <span className={`rounded-full border px-2 py-1 text-[10px] font-black ${impactClass}`}>
+          {calendarImpactLabel(impact, lang)}
+        </span>
+        <ChevronRight className="h-4 w-4 text-muted" />
+      </div>
+    </button>
+  );
+}
+
+function DashboardCalendarModal({
+  event,
+  lang,
+  onClose,
+}: {
+  event: DashboardCalendarEvent;
+  lang: "th" | "en";
+  onClose: () => void;
+}) {
+  const impact = Math.max(1, Math.min(event.importance || 1, 3));
+  const meta = dashboardCalendarMeta(event);
+  const detailRows = [
+    { label: lang === "th" ? "วันที่" : "Date", value: formatCalendarDate(event.date, lang) },
+    { label: lang === "th" ? "เวลา" : "Time", value: event.time || "-" },
+    { label: lang === "th" ? "ประเทศ" : "Country", value: event.country || "-" },
+    { label: lang === "th" ? "สกุลเงิน" : "Currency", value: event.currency || "-" },
+    { label: lang === "th" ? "ความสำคัญ" : "Impact", value: calendarImpactLabel(impact, lang), tone: "gold" },
+    { label: "Actual", value: event.actual || "-" },
+    { label: "Forecast", value: event.forecast || "-" },
+    { label: "Previous", value: event.previous || "-" },
+  ];
+
+  return (
+    <div className="fixed inset-0 z-50 grid place-items-center bg-bg/80 px-4 py-6 backdrop-blur-sm" role="dialog" aria-modal="true">
+      <div className="max-h-[88vh] w-full max-w-xl overflow-hidden rounded-2xl border border-line bg-surface shadow-card">
+        <div className="flex items-start justify-between gap-4 border-b border-line p-4 sm:p-5">
+          <div className="min-w-0">
+            <div className="flex flex-wrap items-center gap-2 text-[11px] font-black uppercase tracking-wide text-muted">
+              <Calendar className="h-4 w-4 text-gold" />
+              <span>{event.currency || event.country || "GLOBAL"}</span>
+              <span className={`rounded-full border px-2 py-0.5 ${
+                impact === 3
+                  ? "border-up/30 bg-up/10 text-up"
+                  : impact === 2
+                    ? "border-gold/30 bg-gold/10 text-gold"
+                    : "border-line bg-elevate text-muted"
+              }`}>
+                {calendarImpactLabel(impact, lang)}
+              </span>
+            </div>
+            <h2 className="mt-2 font-display text-xl font-black leading-tight text-ink">
+              {event.name || "-"}
+            </h2>
+            <p className="mt-1 text-xs font-semibold leading-relaxed text-muted">
+              {lang === "th"
+                ? "แสดงรายละเอียดใน ValuStock โดยไม่ต้องเปิดเว็บต้นทางหรือแสดง URL ปลายทาง"
+                : "Details are shown inside ValuStock without opening the source site or exposing an external URL."}
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={onClose}
+            className="grid h-9 w-9 shrink-0 place-items-center rounded-xl border border-line bg-bg text-muted transition hover:border-brand/40 hover:text-ink"
+            aria-label={lang === "th" ? "ปิด" : "Close"}
+          >
+            <X className="h-4 w-4" />
+          </button>
+        </div>
+
+        <div className="max-h-[62vh] overflow-y-auto p-4 sm:p-5">
+          <div className="grid gap-3 sm:grid-cols-2">
+            {detailRows.map((row) => (
+              <div key={row.label} className="rounded-xl border border-line bg-bg/60 p-3">
+                <div className="text-[10px] font-black uppercase tracking-wide text-muted">{row.label}</div>
+                <div className={`mt-1 font-display text-sm font-black ${row.tone === "gold" ? "text-gold" : "text-ink"}`}>
+                  {row.value}
+                </div>
+              </div>
+            ))}
+          </div>
+
+          {meta && (
+            <div className="mt-4 rounded-xl border border-brand/20 bg-brand/10 p-3">
+              <div className="text-[10px] font-black uppercase tracking-wide text-brand">
+                {lang === "th" ? "สรุปตัวเลข" : "Snapshot"}
+              </div>
+              <div className="mt-1 text-sm font-bold leading-relaxed text-ink">{meta}</div>
+            </div>
+          )}
+        </div>
+
+        <div className="flex justify-end border-t border-line p-4">
+          <Button variant="outline" size="sm" onClick={onClose}>
+            {lang === "th" ? "ปิดรายละเอียด" : "Close details"}
+          </Button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function MarketSegmentCard({
+  segment,
+  lang,
+}: {
+  segment: MarketSegment;
+  lang: "th" | "en";
+}) {
+  const up = segment.avgChange >= 0;
+  const breadth = segment.count ? Math.round((segment.winners / segment.count) * 100) : 0;
+
+  return (
+    <div className="rounded-xl border border-line bg-bg/45 p-3">
+      <div className="flex items-start justify-between gap-2">
+        <div className="min-w-0">
+          <div className="truncate text-xs font-black text-ink">{segment.label}</div>
+          <div className="mt-0.5 text-[10px] font-semibold text-muted">
+            {segment.count} {lang === "th" ? "รายการ" : "assets"}
+          </div>
+        </div>
+        <span className={`rounded-full border px-2 py-0.5 font-mono text-[10px] font-black ${up ? "border-up/30 bg-up/10 text-up" : "border-down/30 bg-down/10 text-down"}`}>
+          {up ? "+" : ""}
+          {num(segment.avgChange, 2)}%
+        </span>
+      </div>
+      <div className="mt-3 space-y-2">
+        <div>
+          <div className="flex justify-between text-[10px] font-bold text-muted">
+            <span>{lang === "th" ? "ตลาดบวก" : "Breadth"}</span>
+            <span>{breadth}%</span>
+          </div>
+          <div className="mt-1 h-1.5 overflow-hidden rounded-full bg-line">
+            <div className="h-full rounded-full bg-brand" style={{ width: `${breadth}%` }} />
+          </div>
+        </div>
+        <div className="flex items-center justify-between text-[10px] font-bold">
+          <span className="text-muted">Avg MOS</span>
+          <span className={segment.avgMos >= 0 ? "text-up" : "text-down"}>
+            {segment.avgMos >= 0 ? "+" : ""}
+            {num(segment.avgMos, 0)}%
+          </span>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function MarketMiniStat({
+  label,
+  value,
+  sub,
+  tone = "brand",
+}: {
+  label: string;
+  value: string;
+  sub: string;
+  tone?: "brand" | "up" | "down";
+}) {
+  const toneClass = tone === "up" ? "text-up" : tone === "down" ? "text-down" : "text-brand";
+  return (
+    <div className="rounded-xl border border-line bg-bg/45 p-3">
+      <div className="text-[10px] font-black uppercase tracking-wide text-muted">{label}</div>
+      <div className={`mt-1 font-display text-xl font-black ${toneClass}`}>{value}</div>
+      <div className="mt-0.5 text-[10px] font-semibold text-muted">{sub}</div>
+    </div>
+  );
+}
+
+function MarketSummaryChart({
+  data,
+}: {
+  data: Array<{ label: string; change: number; mos: number; breadth: number }>;
+}) {
+  if (!data.length) {
+    return <div className="grid h-44 place-items-center text-xs font-bold text-muted">No market data</div>;
+  }
+  const maxChange = Math.max(1, ...data.map((item) => Math.abs(item.change)));
+
+  return (
+    <div className="space-y-3">
+      {data.map((item) => {
+        const up = item.change >= 0;
+        const width = Math.max(6, (Math.abs(item.change) / maxChange) * 100);
+        return (
+          <div key={item.label}>
+            <div className="mb-1 flex items-center justify-between gap-2 text-[10px] font-bold">
+              <span className="truncate text-muted">{item.label}</span>
+              <span className={up ? "text-up" : "text-down"}>
+                {up ? "+" : ""}
+                {num(item.change, 2)}%
+              </span>
+            </div>
+            <div className="grid grid-cols-[1fr_40px] items-center gap-2">
+              <div className="h-2 overflow-hidden rounded-full bg-line">
+                <div className={`h-full rounded-full ${up ? "bg-up" : "bg-down"}`} style={{ width: `${width}%` }} />
+              </div>
+              <span className="text-right font-mono text-[10px] font-bold text-muted">{num(item.breadth, 0)}%</span>
+            </div>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+function MarketIndexLine({
+  symbol,
+  value,
+  change,
+  points,
+}: {
+  symbol: string;
+  value: string;
+  change: number;
+  points: string[];
+}) {
+  const up = change >= 0;
+  const data = points.map((v) => parseFloat(v));
+
+  return (
+    <div className="grid grid-cols-[54px_minmax(0,1fr)_70px] items-center gap-2 px-3 py-2.5">
+      <div className="font-mono text-xs font-black text-ink">{symbol}</div>
+      <div className="min-w-0">
+        <div className="truncate font-mono text-xs font-black text-ink">{value}</div>
+        <div className="mt-0.5 h-5 overflow-hidden">
+          <Sparkline data={data} up={up} />
+        </div>
+      </div>
+      <div className={`text-right font-mono text-[11px] font-black ${up ? "text-up" : "text-down"}`}>
+        {up ? "+" : ""}
+        {num(change, 2)}%
+      </div>
+    </div>
+  );
+}
+
+function MarketIndexCard({
+  title,
+  value,
+  change,
+  points,
+  up,
+}: {
+  title: string;
+  value: string;
+  change: string;
+  points: string[];
+  up: boolean;
+}) {
+  const data = points.map((v) => parseFloat(v));
+  return (
+    <Card className="min-w-0 overflow-hidden border border-line bg-surface/30 p-3">
+      <div className="flex min-w-0 items-start justify-between gap-2">
+        <div className="min-w-0">
+          <span className="block truncate text-xs font-black text-muted" title={title}>{title}</span>
+          <span className="num mt-1 block truncate font-display text-base font-black text-ink">{value}</span>
+        </div>
+        <span className={`num shrink-0 rounded-full border px-2 py-0.5 text-[10px] font-black ${up ? "border-up/30 bg-up/10 text-up" : "border-down/30 bg-down/10 text-down"}`}>
+          {up ? "▲" : "▼"} {change}
+        </span>
+      </div>
+      <div className="mt-2 h-8 w-full overflow-hidden">
+        <Sparkline data={data} up={up} />
+      </div>
+    </Card>
+  );
+}
+
+function SummaryStat({
+  icon,
+  label,
+  value,
+  sub,
+  tone = "brand",
+}: {
+  icon: React.ReactNode;
+  label: string;
+  value: string;
+  sub: string;
+  tone?: "brand" | "up";
+}) {
+  return (
+    <Card className="p-5 border border-line bg-surface/30 hover:border-brand/40 transition">
+      <div className="flex items-center justify-between">
+        <span className="text-xs text-muted font-bold">{label}</span>
+        <span
+          className={`grid h-9 w-9 place-items-center rounded-xl ${
+            tone === "up" ? "bg-up/10 text-up" : "bg-brand-soft text-brand"
+          }`}
+        >
+          {icon}
+        </span>
+      </div>
+      <div className="num mt-3 font-display text-2xl font-bold text-ink">{value}</div>
+      <div className="num text-xs text-muted font-mono">{sub}</div>
+    </Card>
+  );
+}

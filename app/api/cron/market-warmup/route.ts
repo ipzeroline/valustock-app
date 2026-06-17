@@ -32,7 +32,10 @@ const DEFAULT_SYMBOLS = [
 function isAuthorized(request: NextRequest) {
   const expected = process.env.CRON_SECRET;
   if (!expected) return process.env.NODE_ENV !== "production";
-  return request.headers.get("x-cron-secret") === expected;
+  const authorization = request.headers.get("authorization");
+  const legacySecret = request.headers.get("x-cron-secret");
+  const isVercelCron = request.headers.get("user-agent")?.includes("vercel-cron/1.0") || false;
+  return authorization === `Bearer ${expected}` || legacySecret === expected || isVercelCron;
 }
 
 function parseSymbols(value: string | null) {

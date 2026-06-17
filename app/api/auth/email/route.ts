@@ -4,6 +4,7 @@ import { signToken } from "@/lib/auth";
 import { createSingleActiveSession } from "@/lib/sessions";
 import { normalizeMemberEmail } from "@/lib/member-identity";
 import { sendTelegramMessage } from "@/lib/telegram";
+import { setMemberSessionCookie } from "@/lib/member-session-cookie";
 
 function normalizeEmail(value: unknown) {
   return typeof value === "string" ? normalizeMemberEmail(value) : "";
@@ -83,7 +84,7 @@ export async function POST(req: Request) {
     const sessionId = await createSingleActiveSession("member", email);
     const token = signToken({ email, name: user.name, sessionId });
 
-    return NextResponse.json({
+    const response = NextResponse.json({
       success: true,
       email: user.email,
       name: user.name,
@@ -91,6 +92,8 @@ export async function POST(req: Request) {
       billing: user.billing,
       token,
     });
+    setMemberSessionCookie(response, token);
+    return response;
   } catch (err: any) {
     console.error("Email auth upsert error:", err.message);
     return NextResponse.json(

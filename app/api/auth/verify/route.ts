@@ -3,10 +3,12 @@ import { isDbConnected, query } from "@/lib/db";
 import { shouldRefreshToken, signToken, verifyToken } from "@/lib/auth";
 import { validateActiveSession } from "@/lib/sessions";
 import { normalizeMemberEmail } from "@/lib/member-identity";
+import { getMemberSessionToken, setMemberSessionCookie } from "@/lib/member-session-cookie";
 
 export async function POST(req: Request) {
   try {
-    const { token } = await req.json();
+    const body = await req.json().catch(() => ({}));
+    const token = body.token || getMemberSessionToken(req);
 
     if (!token) {
       return NextResponse.json({ error: "Token is required" }, { status: 400 });
@@ -61,7 +63,7 @@ export async function POST(req: Request) {
       ? signToken({ email, name, sessionId })
       : null;
 
-    return NextResponse.json({
+    const response = NextResponse.json({
       success: true,
       email,
       name,
@@ -71,6 +73,8 @@ export async function POST(req: Request) {
       token: refreshedToken || token,
       tokenRefreshed: Boolean(refreshedToken),
     });
+    if (refreshedToken) setMemberSessionCookie(response, refreshedToken);
+    return response;
   } catch (err: any) {
     console.error("Token verification exception:", err.message);
     return NextResponse.json({ error: "Server error during verification" }, { status: 500 });

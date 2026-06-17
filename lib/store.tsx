@@ -18,18 +18,16 @@ const DEFAULT: AppData = {
   watchlist: [],
   theme: "dark",
   lang: "th",
-  authToken: null,
 };
 
 interface Ctx {
   ready: boolean;
   user: User | null;
-  authToken: string | null;
   watchlist: string[];
   theme: "dark" | "light";
   lang: "th" | "en";
   // auth
-  login: (email: string, name?: string, plan?: PlanId, billing?: "monthly" | "yearly" | "lifetime", authToken?: string) => void;
+  login: (email: string, name?: string, plan?: PlanId, billing?: "monthly" | "yearly" | "lifetime") => void;
   logout: () => void;
   // membership
   setPlan: (plan: PlanId, billing?: "monthly" | "yearly" | "lifetime") => void;
@@ -70,14 +68,35 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
   }, [data, ready]);
 
   useEffect(() => {
+    if (!ready) return;
+
+    fetch("/api/auth/session")
+      .then((res) => (res.ok ? res.json() : null))
+      .then((payload) => {
+        if (!payload?.authenticated) return;
+        setData((current) => ({
+          ...current,
+          user: {
+            name: payload.name || payload.email,
+            email: payload.email,
+            plan: payload.plan || "free",
+            billing: payload.billing || "monthly",
+            joinedAt: current.user?.joinedAt || new Date().toISOString(),
+          },
+        }));
+      })
+      .catch(() => {
+        /* anonymous session */
+      });
+  }, [ready]);
+
+  useEffect(() => {
     if (!ready || !data.user?.email) return;
 
     const email = data.user.email.trim().toLowerCase();
     const localSymbols = data.watchlist.map((symbol) => symbol.toUpperCase());
 
-    fetch(`/api/watchlist?email=${encodeURIComponent(email)}`, {
-      headers: data.authToken ? { Authorization: `Bearer ${data.authToken}` } : undefined,
-    })
+    fetch(`/api/watchlist?email=${encodeURIComponent(email)}`)
       .then((res) => (res.ok ? res.json() : null))
       .then((payload) => {
         if (!payload || !Array.isArray(payload.watchlist)) return;
@@ -97,7 +116,6 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
               method: "POST",
               headers: {
                 "Content-Type": "application/json",
-                ...(data.authToken ? { Authorization: `Bearer ${data.authToken}` } : {}),
               },
               body: JSON.stringify({ email, symbol }),
             }).catch(() => {
@@ -108,15 +126,13 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
       .catch(() => {
         /* keep local optimistic state if the database is unavailable */
       });
-  }, [ready, data.user?.email, data.authToken]);
+  }, [ready, data.user?.email]);
 
   useEffect(() => {
     if (!ready || !data.user?.email) return;
 
     const email = data.user.email.trim().toLowerCase();
-    fetch(`/api/preferences?email=${encodeURIComponent(email)}`, {
-      headers: data.authToken ? { Authorization: `Bearer ${data.authToken}` } : undefined,
-    })
+    fetch(`/api/preferences?email=${encodeURIComponent(email)}`)
       .then((res) => (res.ok ? res.json() : null))
       .then((payload) => {
         if (!payload?.preferences) return;
@@ -132,7 +148,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
       .catch(() => {
         /* keep local preferences if the database is unavailable */
       });
-  }, [ready, data.user?.email, data.authToken]);
+  }, [ready, data.user?.email]);
 
   useEffect(() => {
     if (!ready || !data.user?.email) return;
@@ -142,7 +158,6 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        ...(data.authToken ? { Authorization: `Bearer ${data.authToken}` } : {}),
       },
       body: JSON.stringify({
         email,
@@ -152,7 +167,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     }).catch(() => {
       /* local preferences remain available while offline */
     });
-  }, [ready, data.user?.email, data.authToken, data.theme, data.lang]);
+  }, [ready, data.user?.email, data.theme, data.lang]);
 
   // apply theme class
   useEffect(() => {
@@ -161,28 +176,18 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     else root.classList.remove("light");
   }, [data.theme]);
 
-  const PLAN_OVERRIDES = new Map<string, { plan: PlanId; billing: "monthly" | "yearly" | "lifetime"; name?: string }>([
-    ["zeroline@live.com", { plan: "lifetime", billing: "lifetime", name: "Zeroline VIP" }],
-    ["ipzeroline@gmail.com", { plan: "lifetime", billing: "lifetime", name: "Zeroline VIP" }],
-    ["tayasit.pea@gmail.com", { plan: "premium", billing: "yearly" }],
-  ]);
-
   useEffect(() => {
-    if (!ready || !data.user?.email || !data.authToken) return;
+    if (!ready || !data.user?.email) return;
     const email = data.user.email.trim().toLowerCase();
 
     const verifyCurrentSession = () => {
-      fetch("/api/auth/verify", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ token: data.authToken }),
-      })
+      fetch("/api/auth/session")
         .then((res) => {
           if (!res.ok) throw new Error("Session is no longer active");
           return res.json();
         })
         .then((payload) => {
-          if (!payload?.success) throw new Error("Session verification failed");
+          if (!payload?.authenticated) throw new Error("Session verification failed");
           setData((current) => {
             if (!current.user || current.user.email.trim().toLowerCase() !== email) return current;
             return {
@@ -193,27 +198,24 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
                 plan: payload.plan || current.user.plan,
                 billing: payload.billing || current.user.billing,
               },
-              authToken: payload.token || current.authToken,
             };
           });
         })
         .catch(() => {
-          setData((current) => ({ ...current, user: null, authToken: null }));
+          setData((current) => ({ ...current, user: null }));
         });
     };
 
-    verifyCurrentSession();
     const timer = window.setInterval(verifyCurrentSession, SESSION_VERIFY_INTERVAL_MS);
     return () => window.clearInterval(timer);
-  }, [ready, data.user?.email, data.authToken]);
+  }, [ready, data.user?.email]);
 
-  const login = useCallback((email: string, name?: string, plan?: PlanId, billing?: "monthly" | "yearly" | "lifetime", authToken?: string) => {
+  const login = useCallback((email: string, name?: string, plan?: PlanId, billing?: "monthly" | "yearly" | "lifetime") => {
     const normalizedEmail = email.toLowerCase().trim();
-    const override = PLAN_OVERRIDES.get(normalizedEmail);
-    const nextPlan = override?.plan || plan || "free";
-    const nextBilling = override?.billing || billing || "monthly";
+    const nextPlan = plan || "free";
+    const nextBilling = billing || "monthly";
     const nextUser = {
-      name: override?.name || name || email.split("@")[0] || "นักลงทุน",
+      name: name || email.split("@")[0] || "นักลงทุน",
       email: normalizedEmail,
       plan: nextPlan,
       billing: nextBilling,
@@ -222,10 +224,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     setData((d) => ({
       ...d,
       user: nextUser,
-      authToken: authToken || d.authToken || null,
     }));
-
-    if (authToken) return;
 
     fetch("/api/auth/email", {
       method: "POST",
@@ -248,7 +247,6 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
               plan: payload.plan || current.user.plan,
               billing: payload.billing || current.user.billing,
             },
-            authToken: payload.token || current.authToken,
           };
         });
       })
@@ -258,10 +256,8 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const logout = useCallback(() => {
-    let tokenForLogout: string | null = null;
     setData((d) => {
-      tokenForLogout = d.authToken || null;
-      return { ...d, user: null, authToken: null };
+      return { ...d, user: null };
     });
 
     // Clear all locally stored user data for security
@@ -284,11 +280,8 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     }
 
     setTimeout(() => {
-      if (!tokenForLogout) return;
       fetch("/api/auth/logout", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ token: tokenForLogout }),
       }).catch(() => {
         /* local logout already completed */
       });
@@ -312,11 +305,10 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
             user: nextUserForSync,
           };
         }
-        const override = PLAN_OVERRIDES.get(d.user.email.toLowerCase().trim());
         nextUserForSync = {
           ...d.user,
-          plan: override?.plan || plan,
-          billing: override?.billing || billing,
+          plan,
+          billing,
         };
         return {
           ...d,
@@ -395,7 +387,6 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
   const value: Ctx = {
     ready,
     user: data.user,
-    authToken: data.authToken || null,
     watchlist: data.watchlist,
     theme: data.theme,
     lang: data.lang || "th",

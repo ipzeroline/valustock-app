@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { verifyToken } from "@/lib/auth";
 import { validateActiveSession } from "@/lib/sessions";
 import { normalizeMemberEmail } from "@/lib/member-identity";
+import { getMemberSessionToken } from "@/lib/member-session-cookie";
 
 function getBearerToken(req: Request) {
   const header = req.headers.get("authorization") || "";
@@ -10,7 +11,7 @@ function getBearerToken(req: Request) {
 }
 
 export async function requireMember(req: Request) {
-  const token = getBearerToken(req);
+  const token = getBearerToken(req) || getMemberSessionToken(req);
   if (!token) {
     return {
       error: NextResponse.json({ error: "Member authentication required" }, { status: 401 }),

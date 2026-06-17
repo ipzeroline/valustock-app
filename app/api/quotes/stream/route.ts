@@ -54,14 +54,23 @@ export async function GET(request: NextRequest) {
   const stream = new ReadableStream<Uint8Array>({
     start(controller) {
       const encoder = new TextEncoder();
-      const send = (event: string, data: unknown) => {
-        controller.enqueue(encoder.encode(encodeSse(event, data)));
-      };
-
-      const realtimeEndpoint = process.env.MASSIVE_WS_URL || "wss://socket.massive.com/stocks";
       let activeSocket: WebSocket | null = null;
       let heartbeat: ReturnType<typeof setInterval> | null = null;
       let closed = false;
+      const send = (event: string, data: unknown) => {
+        if (closed) return;
+        try {
+          controller.enqueue(encoder.encode(encodeSse(event, data)));
+        } catch {
+          closed = true;
+          if (heartbeat) clearInterval(heartbeat);
+          if (activeSocket?.readyState === WebSocket.OPEN || activeSocket?.readyState === WebSocket.CONNECTING) {
+            activeSocket.close();
+          }
+        }
+      };
+
+      const realtimeEndpoint = process.env.MASSIVE_WS_URL || "wss://socket.massive.com/stocks";
 
       const close = () => {
         if (closed) return;

@@ -99,6 +99,71 @@ export async function saveCachedQuote(
   }
 }
 
+export type MarketUniverseCacheDocument<TPayload = unknown> = {
+  cacheKey: string;
+  cacheVersion?: string;
+  payload: TPayload;
+  fetchedAt: Date;
+  expiresAt: Date;
+  staleUntil: Date;
+};
+
+export async function readCachedMarketUniverse<TPayload>(
+  cacheKey: string,
+  options: { allowStale?: boolean; cacheVersion?: string } = {}
+) {
+  if (!isMongoConfigured()) return null;
+
+  try {
+    await ensureMarketDataIndexes();
+    const db = await getMongoDb();
+    const doc = await db.collection<MarketUniverseCacheDocument<TPayload>>("market_universe_cache").findOne({
+      cacheKey,
+      ...(options.cacheVersion ? { cacheVersion: options.cacheVersion } : {}),
+      [options.allowStale ? "staleUntil" : "expiresAt"]: { $gt: new Date() },
+    });
+    return doc?.payload || null;
+  } catch {
+    return null;
+  }
+}
+
+export async function saveCachedMarketUniverse<TPayload>(
+  cacheKey: string,
+  payload: TPayload,
+  ttlMs: number,
+  staleMs: number,
+  cacheVersion?: string
+) {
+  if (!isMongoConfigured()) return;
+
+  try {
+    await ensureMarketDataIndexes();
+    const db = await getMongoDb();
+    const fetchedAt = new Date();
+    const document: MarketUniverseCacheDocument<TPayload> = {
+      cacheKey,
+      cacheVersion,
+      payload,
+      fetchedAt,
+      expiresAt: new Date(fetchedAt.getTime() + ttlMs),
+      staleUntil: new Date(fetchedAt.getTime() + staleMs),
+    };
+
+    await withTimeout(
+      db.collection<MarketUniverseCacheDocument<TPayload>>("market_universe_cache").updateOne(
+        { cacheKey },
+        { $set: document },
+        { upsert: true }
+      ),
+      4500,
+      "saveCachedMarketUniverse"
+    );
+  } catch {
+    /* Universe cache should never block market data responses. */
+  }
+}
+
 export async function logMarketApiEvent(event: {
   provider: string;
   symbol: string;

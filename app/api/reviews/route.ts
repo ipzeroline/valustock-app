@@ -11,6 +11,7 @@ import {
   sanitizeReviewText,
 } from "@/lib/reviews";
 import { validateActiveSession } from "@/lib/sessions";
+import { getMemberSessionToken } from "@/lib/member-session-cookie";
 
 function toPublicReview(row: ReviewRow) {
   return {
@@ -66,7 +67,7 @@ export async function GET(req: Request) {
 
     let myReview: ReviewRow | null = null;
     const authHeader = req.headers.get("authorization") || "";
-    const token = authHeader.toLowerCase().startsWith("bearer ") ? authHeader.slice(7).trim() : "";
+    const token = authHeader.toLowerCase().startsWith("bearer ") ? authHeader.slice(7).trim() : getMemberSessionToken(req);
     const payload = token ? verifyToken(token) : null;
     const email = payload ? normalizeReviewEmail(payload.email) : "";
     if (payload && email && isValidReviewEmail(email)) {
@@ -118,7 +119,7 @@ export async function POST(req: Request) {
   }
 
   const body = await req.json().catch(() => ({}));
-  const payload = verifyToken(String(body.token || ""));
+  const payload = verifyToken(String(body.token || getMemberSessionToken(req)));
   if (!payload) {
     return NextResponse.json({ error: "Member login is required to write a review" }, { status: 401 });
   }

@@ -97,6 +97,68 @@ function inferExternalUsStock(symbol: string): Stock {
   };
 }
 
+function buildIndexStock(symbol: string): Stock | null {
+  const map: Record<string, { name: string; color: string; about: string }> = {
+    SPX: {
+      name: "S&P 500",
+      color: "#22C55E",
+      about: "ดัชนีหุ้นขนาดใหญ่ 500 บริษัทของสหรัฐ ใช้เป็นตัวแทนภาพรวมตลาดหุ้นสหรัฐ",
+    },
+    GSPC: {
+      name: "S&P 500",
+      color: "#22C55E",
+      about: "ดัชนีหุ้นขนาดใหญ่ 500 บริษัทของสหรัฐ ใช้เป็นตัวแทนภาพรวมตลาดหุ้นสหรัฐ",
+    },
+    DJI: {
+      name: "Dow Jones Industrial Average",
+      color: "#F59E0B",
+      about: "ดัชนีหุ้น blue-chip สหรัฐ 30 บริษัท ใช้ดูภาพรวมอุตสาหกรรมขนาดใหญ่",
+    },
+    DJIA: {
+      name: "Dow Jones Industrial Average",
+      color: "#F59E0B",
+      about: "ดัชนีหุ้น blue-chip สหรัฐ 30 บริษัท ใช้ดูภาพรวมอุตสาหกรรมขนาดใหญ่",
+    },
+    IXIC: {
+      name: "Nasdaq Composite",
+      color: "#38BDF8",
+      about: "ดัชนีรวมหลักทรัพย์ใน Nasdaq เน้นบริษัทเทคโนโลยีและ growth stocks",
+    },
+  };
+  const meta = map[symbol.toUpperCase()];
+  if (!meta) return null;
+  return {
+    symbol: symbol.toUpperCase() === "GSPC" ? "SPX" : symbol.toUpperCase() === "DJIA" ? "DJI" : symbol.toUpperCase(),
+    name: meta.name,
+    enName: meta.name,
+    sector: "กองทุนรวมดัชนี",
+    market: "INDEX",
+    price: 100,
+    prevClose: 100,
+    sharesOutstanding: 1,
+    color: meta.color,
+    about: meta.about,
+    revenueHistory: [],
+    fcfHistory: [],
+    priceHistory: [],
+    financials: {
+      revenue: 0,
+      netIncome: 0,
+      eps: 0,
+      bookValuePerShare: 0,
+      freeCashFlow: 0,
+      ebitda: 0,
+      totalDebt: 0,
+      cash: 0,
+      dividendPerShare: 0,
+      growthRate: 0,
+      totalAssets: 0,
+    },
+    assetType: "INDEX",
+    currency: "USD",
+  };
+}
+
 function numberOrNull(value: unknown) {
   const number = Number(value);
   return Number.isFinite(number) && number > 0 ? number : null;
@@ -282,7 +344,12 @@ export async function GET(
   const aliasMeta = tickerAliasNote(requestedSymbol);
 
   const staticFound = STOCKS.find(s => s.symbol.toUpperCase() === symbol);
+  const indexFound = buildIndexStock(symbol);
   const massiveApiKey = process.env.MASSIVE_API_KEY;
+
+  if (indexFound) {
+    return jsonQuoteCache({ ...(await applyMarketDataToStaticStock(indexFound)), ...aliasMeta });
+  }
 
   if (!staticFound) {
     const cachedExternal = await readExternalAsset(symbol);

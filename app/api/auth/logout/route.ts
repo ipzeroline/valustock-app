@@ -2,18 +2,24 @@ import { NextResponse } from "next/server";
 import { verifyToken } from "@/lib/auth";
 import { isDbConnected } from "@/lib/db";
 import { clearActiveSession } from "@/lib/sessions";
+import { clearMemberSessionCookie, getMemberSessionToken } from "@/lib/member-session-cookie";
 
 export async function POST(req: Request) {
   try {
-    const { token } = await req.json();
+    const body = await req.json().catch(() => ({}));
+    const token = body.token || getMemberSessionToken(req);
 
     if (!token) {
-      return NextResponse.json({ error: "Token is required" }, { status: 400 });
+      const response = NextResponse.json({ success: true });
+      clearMemberSessionCookie(response);
+      return response;
     }
 
     const payload = verifyToken(token);
     if (!payload) {
-      return NextResponse.json({ error: "Invalid or expired token" }, { status: 401 });
+      const response = NextResponse.json({ error: "Invalid or expired token" }, { status: 401 });
+      clearMemberSessionCookie(response);
+      return response;
     }
 
     if (!(await isDbConnected())) {
@@ -25,11 +31,13 @@ export async function POST(req: Request) {
 
     await clearActiveSession("member", payload.email, payload.sessionId);
 
-    return NextResponse.json({
+    const response = NextResponse.json({
       success: true,
       email: payload.email,
       sessionId: payload.sessionId,
     });
+    clearMemberSessionCookie(response);
+    return response;
   } catch (err: any) {
     console.error("Logout exception:", err.message);
     return NextResponse.json({ error: "Server error during logout" }, { status: 500 });

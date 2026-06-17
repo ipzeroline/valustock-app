@@ -112,7 +112,7 @@ function verdictFromMargin(margin: number): Verdict {
  * Margin of Safety = (fairValue - price) / fairValue
  */
 export function computeValuation(s: Stock, params: DCFParams): Valuation {
-  if (s.assetType === "FUND") {
+  if (s.assetType === "FUND" || s.assetType === "INDEX") {
     return {
       ratios: {
         pe: NaN,

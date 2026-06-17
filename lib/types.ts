@@ -17,7 +17,7 @@ export type Sector =
   | "กองทุนรวมดัชนี"
   | "กองทุนรวมสินค้าโภคภัณฑ์";
 
-export type AssetType = "TH_STOCK" | "US_STOCK" | "FUND" | "US_FUND" | "ETF" | "CRYPTO" | "FUTURES";
+export type AssetType = "TH_STOCK" | "US_STOCK" | "FUND" | "US_FUND" | "ETF" | "CRYPTO" | "FUTURES" | "INDEX";
 
 export interface YearPoint {
   year: number;
@@ -52,7 +52,7 @@ export interface Stock {
   name: string; // ชื่อบริษัท/กองทุนภาษาไทย
   enName: string;
   sector: Sector | string;
-  market: "SET" | "mai" | "NASDAQ" | "NYSE" | "MUTUAL_FUND";
+  market: "SET" | "mai" | "NASDAQ" | "NYSE" | "MUTUAL_FUND" | "INDEX";
   price: number; // ราคาปัจจุบัน (บาท หรือ ดอลลาร์ หรือ NAV)
   prevClose: number; // ราคาปิดก่อนหน้า
   quoteSource?: string;
@@ -172,7 +172,6 @@ export interface User {
 
 export interface AppData {
   user: User | null;
-  authToken?: string | null;
   watchlist: string[]; // symbols
   theme: "dark" | "light";
   lang?: "th" | "en";

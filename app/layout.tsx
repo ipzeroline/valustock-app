@@ -1,13 +1,10 @@
 import type { Metadata } from "next";
-import Script from "next/script";
 import {
   Bricolage_Grotesque,
   IBM_Plex_Sans_Thai,
   IBM_Plex_Mono,
 } from "next/font/google";
 import "./globals.css";
-import { StoreProvider } from "@/lib/store";
-import { Shell } from "@/components/Shell";
 
 const display = Bricolage_Grotesque({
   subsets: ["latin"],
@@ -132,21 +129,7 @@ export default function RootLayout({
   return (
     <html lang="th" data-scroll-behavior="smooth" className={`${display.variable} ${body.variable} ${mono.variable}`}>
       <body className="font-sans antialiased">
-        <Script
-          src="https://www.googletagmanager.com/gtag/js?id=G-XXH2TRCZCD"
-          strategy="afterInteractive"
-        />
-        <Script id="google-analytics" strategy="afterInteractive">
-          {`
-            window.dataLayer = window.dataLayer || [];
-            function gtag(){dataLayer.push(arguments);}
-            gtag('js', new Date());
-            gtag('config', 'G-XXH2TRCZCD');
-          `}
-        </Script>
-        <StoreProvider>
-          <Shell>{children}</Shell>
-        </StoreProvider>
+        {children}
       </body>
     </html>
   );

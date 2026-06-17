@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import Image from "next/image";
 
 // Set this to true to completely bypass external logo fetching.
 // Benefits: Instant logo loading (0ms latency), 100% clean console (no ERR_NAME_NOT_RESOLVED), and 100% offline support.
@@ -130,9 +131,12 @@ export function AssetLogo({
 
   return (
     <div className={`relative shrink-0 overflow-hidden bg-white border border-line ${dims} flex items-center justify-center p-1 shadow-sm`}>
-      <img
+      <Image
         src={logoUrl}
         alt={sym}
+        width={56}
+        height={56}
+        sizes={size === "lg" ? "56px" : size === "md" ? "44px" : "32px"}
         className="max-h-full max-w-full object-contain rounded-md"
         onError={() => setError(true)}
       />

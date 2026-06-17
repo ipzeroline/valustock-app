@@ -1,8 +1,6 @@
 import { ImageResponse } from "next/og";
 import type { NextRequest } from "next/server";
 
-export const runtime = "edge";
-
 const THEMES = [
   { accent: "#22c55e", accent2: "#0ea5e9", label: "VALUE RESEARCH" },
   { accent: "#f59e0b", accent2: "#22c55e", label: "DIVIDEND STRATEGY" },

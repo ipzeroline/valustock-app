@@ -6,6 +6,25 @@ const nextConfig = {
   images: {
     formats: ['image/avif', 'image/webp'], // Deliver optimized AVIF/WebP image payloads
     deviceSizes: [320, 420, 640, 750, 828, 1080, 1200],
+    localPatterns: [
+      {
+        pathname: "/opengraph-image",
+      },
+      {
+        pathname: "/article-image/**",
+      },
+    ],
+    remotePatterns: [
+      {
+        protocol: "https",
+        hostname: "logo.clearbit.com",
+      },
+      {
+        protocol: "https",
+        hostname: "images.financialmodelingprep.com",
+        pathname: "/symbol/**",
+      },
+    ],
   },
   async headers() {
     return [

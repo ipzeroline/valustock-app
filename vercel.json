@@ -1,28 +1,8 @@
 {
   "crons": [
     {
-      "path": "/api/cron/calendar-sync?types=economic",
-      "schedule": "0 23 * * *"
-    },
-    {
-      "path": "/api/cron/calendar-sync?types=holiday",
-      "schedule": "10 23 * * *"
-    },
-    {
-      "path": "/api/cron/calendar-sync?types=earnings",
-      "schedule": "20 23 * * *"
-    },
-    {
-      "path": "/api/cron/calendar-sync?types=stock_split",
-      "schedule": "30 23 * * *"
-    },
-    {
-      "path": "/api/cron/calendar-sync?types=ipo",
-      "schedule": "40 23 * * *"
-    },
-    {
-      "path": "/api/cron/calendar-sync?types=dividends",
-      "schedule": "50 23 * * *"
+      "path": "/api/cron/calendar-sync",
+      "schedule": "5 0 * * *"
     },
     {
       "path": "/api/cron/market-warmup",

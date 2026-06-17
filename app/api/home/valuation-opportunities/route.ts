@@ -1,6 +1,11 @@
 import { NextResponse } from "next/server";
 import { STOCKS } from "@/lib/stocks";
+import { applyLatestQuote, getLatestQuote } from "@/lib/market-quotes";
 import { computeValuation, defaultDCFParams } from "@/lib/valuation";
+import { Stock } from "@/lib/types";
+
+export const dynamic = "force-dynamic";
+export const runtime = "nodejs";
 
 export async function GET(req: Request) {
   const { searchParams } = new URL(req.url);
@@ -9,7 +14,7 @@ export async function GET(req: Request) {
   const etfPriority = ["GLD", "SPY", "QQQ", "VOO", "VIG", "SCHD", "TLT", "JEPQ", "XLE"];
   const alternativePriority = ["GOLD", "BTC", "ETH", "OIL", "SILVER", "COPPER"];
 
-  function categoryOf(stock: (typeof STOCKS)[number]) {
+  function categoryOf(stock: Stock) {
     if (stock.assetType === "TH_STOCK") return "thai";
     if (stock.assetType === "US_STOCK") return "us";
     if (stock.assetType === "ETF" || stock.assetType === "US_FUND") return "etf";
@@ -17,8 +22,14 @@ export async function GET(req: Request) {
     return "other";
   }
 
-  const ranked = STOCKS
-    .filter((stock) => categoryOf(stock) !== "other")
+  const marketStocks = await Promise.all(
+    STOCKS.filter((stock) => categoryOf(stock) !== "other").map(async (stock) => {
+      const quote = await getLatestQuote(stock.symbol, stock, { allowStale: true });
+      return quote ? applyLatestQuote(stock, quote) : stock;
+    })
+  );
+
+  const ranked = marketStocks
     .map((stock) => {
       const valuation = computeValuation(stock, defaultDCFParams(stock));
       const priceHistory = stock.priceHistory || [];

@@ -5,6 +5,7 @@ import { createSingleActiveSession } from "@/lib/sessions";
 import { normalizeMemberEmail } from "@/lib/member-identity";
 import { getRequestOrigin } from "@/lib/request-origin";
 import { sendTelegramMessage } from "@/lib/telegram";
+import { setMemberSessionCookie } from "@/lib/member-session-cookie";
 
 function getCookieValue(req: Request, name: string) {
   const cookieHeader = req.headers.get("cookie") || "";
@@ -117,9 +118,10 @@ export async function GET(req: Request) {
     const sessionId = await createSingleActiveSession("member", email);
     const token = signToken({ email, name, sessionId });
 
-    // 5. Redirect back to client callback route with the signed token
-    const callbackTargetUrl = `${getRequestOrigin(req, "/login/callback")}?token=${encodeURIComponent(token)}`;
+    // 5. Redirect back to client callback route. The signed session is stored in an HttpOnly cookie.
+    const callbackTargetUrl = getRequestOrigin(req, "/login/callback");
     const response = NextResponse.redirect(callbackTargetUrl);
+    setMemberSessionCookie(response, token);
     response.cookies.set("valustock_google_oauth_state", "", {
       httpOnly: true,
       sameSite: "lax",

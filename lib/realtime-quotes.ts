@@ -38,6 +38,7 @@ export function hasQuoteProvider(stock: Pick<Stock, "assetType" | "market" | "cu
 
 export function hasMassiveStream(stock: Pick<Stock, "assetType" | "market" | "currency"> | undefined, symbol: string) {
   if (!stock) return /^[A-Z]{1,5}(\.[A-Z])?$/.test(symbol);
+  if (stock.assetType === "INDEX") return false;
   if (stock.assetType === "CRYPTO" || stock.assetType === "FUTURES") return false;
   return (
     stock.assetType === "US_STOCK" ||

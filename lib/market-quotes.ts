@@ -55,6 +55,7 @@ function finiteNumber(value: unknown) {
 
 export function isUsExchangeSecurity(stock: Stock | undefined, symbol: string) {
   if (!stock) return /^[A-Z]{1,5}(\.[A-Z])?$/.test(symbol);
+  if (stock.assetType === "INDEX") return false;
   if (stock.assetType === "CRYPTO" || stock.assetType === "FUTURES") return false;
   return (
     stock.assetType === "US_STOCK" ||
@@ -86,6 +87,17 @@ function cryptoTicker(symbol: string) {
 }
 
 export function eodhdRealtimeTicker(symbol: string, stock: Stock | undefined) {
+  if (stock?.assetType === "INDEX") {
+    const map: Record<string, string> = {
+      SPX: "GSPC.INDX",
+      GSPC: "GSPC.INDX",
+      DJI: "DJI.INDX",
+      DJIA: "DJI.INDX",
+      IXIC: "IXIC.INDX",
+      NDX: "NDX.INDX",
+    };
+    return map[symbol.toUpperCase()] || `${symbol}.INDX`;
+  }
   if (stock?.assetType === "CRYPTO") return cryptoTicker(symbol);
   if (stock?.assetType === "FUTURES") {
     const map: Record<string, string> = {
@@ -641,6 +653,11 @@ async function fetchProviderQuote(symbol: string, stock: Stock | undefined) {
   }
 
   if ((stock?.assetType === "US_FUND" || stock?.assetType === "FUND" || stock?.assetType === "CRYPTO") && eodhdApiKey) {
+    const quote = await fetchEodhdQuote(symbol, eodhdApiKey, stock).catch(() => null);
+    if (quote) return quote;
+  }
+
+  if (stock?.assetType === "INDEX" && eodhdApiKey) {
     const quote = await fetchEodhdQuote(symbol, eodhdApiKey, stock).catch(() => null);
     if (quote) return quote;
   }
