@@ -992,12 +992,12 @@ export default function InsightsPage() {
               <div>
                 <h3 className="font-display font-extrabold text-sm text-ink flex items-center gap-1.5 uppercase tracking-wider">
                   <Zap className="h-4.5 w-4.5 text-brand" />
-                  {lang === "th" ? "1. เครื่องทดสอบการเรียกใช้ REST API" : "1. Interactive REST API Explorer"}
+                  {lang === "th" ? "1. เครื่องทดสอบการดึงข้อมูลจำลอง" : "1. Interactive Mock Data Explorer"}
                 </h3>
                 <p className="text-[10px] text-muted mt-0.5">
                   {lang === "th" 
                     ? "จำลองการขอข้อมูลประวัติหุ้น ยอดรายได้ และงบกองทุนสากลจาก Valustock Dev Engine" 
-                    : "Simulate calling native REST API endpoints from the ValuStock proprietary quantitative core."}
+                    : "Simulate calling native data services from the ValuStock proprietary quantitative core."}
                 </p>
               </div>
 
@@ -1018,7 +1018,7 @@ export default function InsightsPage() {
                   disabled={restLoading}
                   className="bg-brand text-white px-4 text-xs shrink-0 font-bold"
                 >
-                  {restLoading ? (lang === "th" ? "กำลังส่ง..." : "Sending...") : (lang === "th" ? "ส่งคำขอ" : "Send API")}
+                  {restLoading ? (lang === "th" ? "กำลังส่ง..." : "Sending...") : (lang === "th" ? "ส่งคำขอ" : "Send Request")}
                 </Button>
               </div>
 
@@ -1038,7 +1038,7 @@ export default function InsightsPage() {
                 ) : (
                   <div className="h-32 flex flex-col items-center justify-center text-xs text-muted font-mono text-center">
                     <span>📡 Waiting for trigger...</span>
-                    <span className="text-[9px] mt-1 text-muted/60">Select an endpoint above and click "Send API" to request mock data</span>
+                    <span className="text-[9px] mt-1 text-muted/60">Select an endpoint above and click "Send Request" to request mock data</span>
                   </div>
                 )}
               </div>

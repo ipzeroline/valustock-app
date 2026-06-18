@@ -105,7 +105,7 @@ export default function SectorSlug() {
       <div className="mx-auto max-w-2xl py-20 text-center animate-fade-up">
         <h1 className="font-display text-2xl font-bold">{lang === "th" ? "กำลังดึงข้อมูลตลาดล่าสุด" : "Loading live market data"}</h1>
         <p className="text-sm text-muted mt-2">
-          {lang === "th" ? "โหลดข้อมูลจาก API เพื่อจัดอันดับตามกลุ่มอุตสาหกรรม" : "Fetching API-backed market data for this sector."}
+          {lang === "th" ? "โหลดข้อมูลจากเซิร์ฟเวอร์เพื่อจัดอันดับตามกลุ่มอุตสาหกรรม" : "Fetching real-time market data for this sector."}
         </p>
       </div>
     );

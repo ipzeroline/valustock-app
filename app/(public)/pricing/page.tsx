@@ -833,11 +833,11 @@ export default function PricingPage() {
                 free={lang === "th" ? "สัญญาณพื้นฐาน (MOS)" : "Basic signal (MOS only)"}
                 pro={lang === "th" ? "สัญญาณครบ 5 ระดับ + Score" : "Full 5-level signal + Score"}
                 proStyle="brand"
-                premium={lang === "th" ? "สัญญาณครบ + API + Factor Breakdown" : "Full signal + API + Factor Breakdown"}
+                premium={lang === "th" ? "สัญญาณครบ + เชื่อมต่อข้อมูล + Factor Breakdown" : "Full signal + Data Integration + Factor Breakdown"}
                 premiumStyle="gold"
               />
               <MatrixRow
-                label={lang === "th" ? "27. ValueSignal API Endpoint" : "27. ValueSignal API Endpoint"}
+                label={lang === "th" ? "27. ValueSignal Data Endpoint" : "27. ValueSignal Data Endpoint"}
                 free="❌"
                 pro="❌"
                 proStyle="muted"

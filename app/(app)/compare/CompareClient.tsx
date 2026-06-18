@@ -641,8 +641,8 @@ export default function ComparePage({ initialMarketUniverse = [] }: CompareClien
                     className="w-full py-1.5 bg-brand/10 hover:bg-brand text-brand hover:text-ink border border-brand/20 rounded-lg text-center text-[10px] font-bold transition duration-200"
                   >
                     🚀 {lang === "th" 
-                      ? `ดึงสัญลักษณ์ "${searchQuery.toUpperCase()}" จาก API` 
-                      : `Fetch "${searchQuery.toUpperCase()}" from API`}
+                      ? `ดึงสัญลักษณ์ "${searchQuery.toUpperCase()}" จากเซิร์ฟเวอร์` 
+                      : `Fetch "${searchQuery.toUpperCase()}" from server`}
                   </button>
                 </div>
               ) : (

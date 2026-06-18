@@ -300,7 +300,7 @@ export default function AdminOverview() {
             </h3>
             <p className="mt-2 max-w-4xl text-xs font-semibold leading-relaxed text-muted">
               {dataCacheConnected
-                ? "MongoDB is connected and storing quote cache, snapshots, historical bars, API logs, external assets, and SET reference data."
+                ? "MongoDB is connected and storing quote cache, snapshots, historical bars, server request logs, external assets, and SET reference data."
                 : dataCacheConfigured
                 ? `MongoDB is configured but unavailable${dataCache?.code ? ` (${dataCache.code})` : ""}: ${dataCache?.error || "connection failed"}`
                 : "MongoDB is not configured. Market data cache and SET sync persistence are disabled."}
@@ -316,7 +316,7 @@ export default function AdminOverview() {
             ["Quote Cache", dataCacheCollections.quoteCache],
             ["Quote Snapshots", dataCacheCollections.quoteSnapshots],
             ["Historical Bars", dataCacheCollections.historicalBars],
-            ["API Events", dataCacheCollections.marketApiEvents],
+            ["Request Events", dataCacheCollections.marketApiEvents],
             ["External Assets", dataCacheCollections.externalAssets],
             ["SET Securities", dataCacheCollections.setSecurities],
             ["Market Intelligence", dataCacheCollections.marketIntelligence],
@@ -429,10 +429,10 @@ export default function AdminOverview() {
                       : `Refreshes on intelligence requests after ${secondsLabel(cachePolicy.marketIntelligence?.freshForSeconds, lang)} and is deleted by TTL after expiresAt.`,
                   ],
                   [
-                    "API Events / SET Reference",
+                    "System Events / SET Reference",
                     lang === "th"
-                      ? `API logs ลบหลัง ${cachePolicy.marketApiEvents?.deleteAfterDays || 30} วัน; SET reference อัปเดตทับเมื่อ cron sync ทำงานและไม่มี TTL อัตโนมัติ`
-                      : `API logs are deleted after ${cachePolicy.marketApiEvents?.deleteAfterDays || 30} days; SET reference is updated by cron and has no automatic TTL.`,
+                      ? `Request logs ลบหลัง ${cachePolicy.marketApiEvents?.deleteAfterDays || 30} วัน; SET reference อัปเดตทับเมื่อ cron sync ทำงานและไม่มี TTL อัตโนมัติ`
+                      : `Request logs are deleted after ${cachePolicy.marketApiEvents?.deleteAfterDays || 30} days; SET reference is updated by cron and has no automatic TTL.`,
                   ],
                 ].map(([label, detail]) => (
                   <div key={label} className="rounded-lg border border-line/70 bg-surface/50 p-3">

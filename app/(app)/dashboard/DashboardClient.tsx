@@ -317,8 +317,8 @@ export default function Dashboard({ initialMarketUniverse = null }: DashboardPro
     const weakest = [...marketSegments].sort((a, b) => a.avgChange - b.avgChange)[0];
     const highlight =
       lang === "th"
-        ? `${strongest?.label || "ตลาดหลัก"} นำตลาดที่ ${strongest?.avgChange >= 0 ? "+" : ""}${num(strongest?.avgChange || 0, 2)}% ขณะที่ ${weakest?.label || "กลุ่มอ่อนตัว"} อยู่ที่ ${weakest?.avgChange >= 0 ? "+" : ""}${num(weakest?.avgChange || 0, 2)}% ค่า breadth รวม ${num(breadthPct, 0)}% จากข้อมูล API ล่าสุด`
-        : `${strongest?.label || "Primary markets"} lead at ${strongest?.avgChange >= 0 ? "+" : ""}${num(strongest?.avgChange || 0, 2)}%, while ${weakest?.label || "laggards"} sit at ${weakest?.avgChange >= 0 ? "+" : ""}${num(weakest?.avgChange || 0, 2)}%. Total breadth is ${num(breadthPct, 0)}% from the latest API data.`;
+        ? `${strongest?.label || "ตลาดหลัก"} นำตลาดที่ ${strongest?.avgChange >= 0 ? "+" : ""}${num(strongest?.avgChange || 0, 2)}% ขณะที่ ${weakest?.label || "กลุ่มอ่อนตัว"} อยู่ที่ ${weakest?.avgChange >= 0 ? "+" : ""}${num(weakest?.avgChange || 0, 2)}% ค่า breadth รวม ${num(breadthPct, 0)}% จากข้อมูลล่าสุด`
+        : `${strongest?.label || "Primary markets"} lead at ${strongest?.avgChange >= 0 ? "+" : ""}${num(strongest?.avgChange || 0, 2)}%, while ${weakest?.label || "laggards"} sit at ${weakest?.avgChange >= 0 ? "+" : ""}${num(weakest?.avgChange || 0, 2)}%. Total breadth is ${num(breadthPct, 0)}% from the latest market data.`;
 
     return {
       score,
@@ -391,7 +391,7 @@ export default function Dashboard({ initialMarketUniverse = null }: DashboardPro
       setIsMarketLoading(true);
       fetch("/api/stocks/universe?limit=90", { signal: controller.signal })
         .then((res) => {
-          if (!res.ok) throw new Error("Market universe API unavailable");
+          if (!res.ok) throw new Error("Market universe data server unavailable");
           return res.json();
         })
         .then((payload: MarketUniversePayload) => {
@@ -402,7 +402,7 @@ export default function Dashboard({ initialMarketUniverse = null }: DashboardPro
         })
         .catch((err) => {
           if (cancelled) return;
-          setMarketError(err instanceof Error ? err.message : "Market universe API unavailable");
+          setMarketError(err instanceof Error ? err.message : "Market universe data server unavailable");
           setMarketUniverse(
             STOCKS.filter((stock) => stock.assetType !== "INDEX")
           );
@@ -589,7 +589,7 @@ export default function Dashboard({ initialMarketUniverse = null }: DashboardPro
             <div>
               <div className="inline-flex items-center gap-2 rounded-full border border-brand/25 bg-brand/10 px-2.5 py-1 text-[10px] font-black uppercase tracking-wide text-brand">
                 <Globe className="h-3.5 w-3.5" />
-                {lang === "th" ? "Live Market API" : "Live Market API"}
+                {lang === "th" ? "Live Market Data" : "Live Market Data"}
               </div>
               <h2 className="mt-2 font-display text-lg font-black text-ink">
                 {lang === "th" ? "ภาพรวมตลาดไทย สหรัฐฯ ดัชนี Bitcoin และทองคำ" : "Thai, US, Index, Bitcoin, and Gold Overview"}
@@ -1323,7 +1323,7 @@ export default function Dashboard({ initialMarketUniverse = null }: DashboardPro
               {topThai.length === 0 && (
                 <QuoteLoadingCard
                   title={lang === "th" ? "กำลังโหลดราคาหุ้นไทย" : "Loading Thai quotes"}
-                  subtitle={lang === "th" ? "รอราคาล่าสุดจาก API" : "Waiting for latest API prices"}
+                  subtitle={lang === "th" ? "รอราคาล่าสุดจากเซิร์ฟเวอร์" : "Waiting for latest prices"}
                 />
               )}
               {topThai.map((r) => (
@@ -1356,7 +1356,7 @@ export default function Dashboard({ initialMarketUniverse = null }: DashboardPro
               {topUs.length === 0 && (
                 <QuoteLoadingCard
                   title={lang === "th" ? "กำลังโหลดราคาหุ้นสหรัฐฯ" : "Loading US quotes"}
-                  subtitle={lang === "th" ? "รอราคาล่าสุดจาก API" : "Waiting for latest API prices"}
+                  subtitle={lang === "th" ? "รอราคาล่าสุดจากเซิร์ฟเวอร์" : "Waiting for latest prices"}
                 />
               )}
               {topUs.map((r) => (

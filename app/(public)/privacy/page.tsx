@@ -45,7 +45,7 @@ export default function PrivacyPage() {
           <p>
             {lang === "th"
               ? "ระบบชำระเงินสำหรับการอัปเกรดแพ็กเกจพรีเมียม ประมวลผลผ่านผู้ให้บริการทางการเงินมาตรฐานความปลอดภัยสูงสุด (Stripe) โดย ValuStock ไม่มีนโยบายจัดเก็บและไม่มีทางสืบค้นเลขบัตรเครดิตและรหัสหลังบัตรของผู้ใช้งานอย่างเด็ดขาด"
-              : "All premium plan subscription transactions are processed via secure Stripe APIs. ValuStock never accesses or stores credit card numbers, CVVs, or bank credentials. Our billing architecture complies with strict PCI-DSS regulations."}
+              : "All premium plan subscription transactions are processed via secure Stripe payment integrations. ValuStock never accesses or stores credit card numbers, CVVs, or bank credentials. Our billing architecture complies with strict PCI-DSS regulations."}
           </p>
         </div>
 

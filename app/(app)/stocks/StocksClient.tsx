@@ -127,7 +127,7 @@ export default function StocksPage({ initialMarketUniverse = null }: StocksClien
       setIsUniverseLoading(true);
       fetch("/api/stocks/universe?limit=90", { signal: controller.signal })
         .then((res) => {
-          if (!res.ok) throw new Error("Market universe API unavailable");
+          if (!res.ok) throw new Error("Market universe data server unavailable");
           return res.json();
         })
         .then((payload: MarketUniversePayload) => {
@@ -142,7 +142,7 @@ export default function StocksPage({ initialMarketUniverse = null }: StocksClien
         })
         .catch((err) => {
           if (cancelled) return;
-          setUniverseError(err instanceof Error ? err.message : "Market universe API unavailable");
+          setUniverseError(err instanceof Error ? err.message : "Market universe data server unavailable");
           setMarketUniverse(
             STOCKS.filter((stock) => stock.assetType !== "INDEX")
           );
@@ -2643,7 +2643,7 @@ export default function StocksPage({ initialMarketUniverse = null }: StocksClien
                   </h4>
                   <p className="text-xs text-muted leading-normal">
                     {lang === "th"
-                      ? "ดัชนีไม่มีงบการเงินรายบริษัท จึงแสดงระดับดัชนีและการเปลี่ยนแปลงล่าสุดจาก API แทนการคำนวณ DCF"
+                      ? "ดัชนีไม่มีงบการเงินรายบริษัท จึงแสดงระดับดัชนีและการเปลี่ยนแปลงล่าสุดแทนการคำนวณ DCF"
                       : "Indices do not have company financial statements, so the page shows live index level and movement instead of DCF."}
                   </p>
                 </div>

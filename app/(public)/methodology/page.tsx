@@ -346,7 +346,7 @@ export default function MethodologyPage() {
             <div className="p-3 bg-bg/50 border border-line rounded-xl space-y-1">
               <span className="font-bold text-ink block">🇺🇸 US SEC Filings</span>
               <span className="text-[10px] text-muted font-semibold block">
-                {lang === "th" ? "ดึงข้อมูลจากแบบแสดงงบการเงิน 10-K, 10-Q รายไตรมาสและประจำปีโดยตรง" : "SEC EDGAR API feeds compiling direct 10-K and 10-Q statements."}
+                {lang === "th" ? "ดึงข้อมูลจากแบบแสดงงบการเงิน 10-K, 10-Q รายไตรมาสและประจำปีโดยตรง" : "SEC EDGAR feeds compiling direct 10-K and 10-Q statements."}
               </span>
             </div>
             <div className="p-3 bg-bg/50 border border-line rounded-xl space-y-1">
@@ -356,7 +356,7 @@ export default function MethodologyPage() {
               </span>
             </div>
             <div className="p-3 bg-bg/50 border border-line rounded-xl space-y-1">
-              <span className="font-bold text-ink block">📈 Live Market APIs</span>
+              <span className="font-bold text-ink block">📈 Live Market Feeds</span>
               <span className="text-[10px] text-muted font-semibold block">
                 {lang === "th" ? "ราคาปิดและราคาซื้อขายระหว่างวันจากผู้ให้บริการข้อมูลชั้นนำทางการเงิน" : "Leading real-time stock ticker price updates and ETF indexing streams."}
               </span>

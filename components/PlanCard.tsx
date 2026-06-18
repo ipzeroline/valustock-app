@@ -72,7 +72,7 @@ export const PLAN_TRANS = {
         "สมมติฐาน/Scenario การประเมินขั้นสูง",
         "สนับสนุนแบบเร่งด่วน",
         "🧪 พอร์ตจำลองไม่จำกัด + ValueSignal",
-        "📊 ValueSignal API + Factor Breakdown",
+        "📊 เชื่อมต่อข้อมูล ValueSignal + Factor Breakdown",
       ]
     },
     lifetime: {
@@ -92,7 +92,7 @@ export const PLAN_TRANS = {
         "Priority warmup สำหรับหุ้นยอดนิยม",
         "เหมาะกับคนใช้ต่อเนื่องเกิน 10 เดือน",
         "🧪 พอร์ตจำลองไม่จำกัด + ValueSignal",
-        "📊 ValueSignal API + Factor Breakdown",
+        "📊 เชื่อมต่อข้อมูล ValueSignal + Factor Breakdown",
       ]
     }
   },
@@ -155,7 +155,7 @@ export const PLAN_TRANS = {
         "Advanced valuation scenario workflows",
         "Institutional priority support",
         "🧪 Unlimited Virtual Portfolio + ValueSignal",
-        "📊 ValueSignal API + Factor Breakdown",
+        "📊 ValueSignal Data Integration + Factor Breakdown",
       ]
     },
     lifetime: {
@@ -175,7 +175,7 @@ export const PLAN_TRANS = {
         "Telegram Mini App and chat replies",
         "Best if you use it beyond 10 months",
         "🧪 Unlimited Virtual Portfolio + ValueSignal",
-        "📊 ValueSignal API + Factor Breakdown",
+        "📊 ValueSignal Data Integration + Factor Breakdown",
       ]
     }
   }

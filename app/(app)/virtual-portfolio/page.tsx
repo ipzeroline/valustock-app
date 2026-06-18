@@ -46,8 +46,8 @@ export default function VirtualPortfolioPage() {
           </h3>
           <p className="mt-1 text-xs text-muted leading-relaxed">
             {lang === "th"
-              ? "ข้อมูลพอร์ตจำลองถูกเก็บใน Browser ของคุณเท่านั้น (localStorage) ไม่มีการซื้อขายจริงเกิดขึ้น ราคาหุ้นดึงจากตลาดจริงผ่าน Massive API เพื่อให้สมจริงที่สุด"
-              : "Virtual portfolio data is stored only in your browser (localStorage). No real trades are executed. Stock prices are live from the market via Massive API for realistic simulation."}
+              ? "ข้อมูลพอร์ตจำลองถูกเก็บใน Browser ของคุณเท่านั้น (localStorage) ไม่มีการซื้อขายจริงเกิดขึ้น ราคาหุ้นดึงจากตลาดจริงโดยตรงเพื่อให้สมจริงที่สุด"
+              : "Virtual portfolio data is stored only in your browser (localStorage). No real trades are executed. Stock prices are live from the market for realistic simulation."}
           </p>
         </div>
       </div>

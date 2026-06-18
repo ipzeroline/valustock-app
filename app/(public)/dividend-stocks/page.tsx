@@ -179,7 +179,7 @@ export default function DividendStocksPage() {
               {loading && list.length === 0 && (
                 <tr>
                   <td colSpan={6} className="px-5 py-8 text-center text-xs font-bold text-muted">
-                    {lang === "th" ? "กำลังดึงข้อมูลล่าสุดจาก API..." : "Loading latest API data..."}
+                    {lang === "th" ? "กำลังดึงข้อมูลล่าสุด..." : "Loading latest data..."}
                   </td>
                 </tr>
               )}
