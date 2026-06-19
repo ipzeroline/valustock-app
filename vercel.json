@@ -1,8 +1,12 @@
 {
   "crons": [
     {
-      "path": "/api/cron/calendar-sync",
+      "path": "/api/cron/economic-events",
       "schedule": "5 0 * * *"
+    },
+    {
+      "path": "/api/cron/market-calendar-sync",
+      "schedule": "20 0 * * *"
     },
     {
       "path": "/api/cron/market-warmup",
