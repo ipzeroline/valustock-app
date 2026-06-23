@@ -11,7 +11,7 @@ export const ALL_CALENDARS: { type: CalendarType; label: string }[] = [
   { type: "ipo", label: "IPO" },
 ];
 
-export const DAILY_CRON_TYPES: CalendarType[] = ["economic", "holiday", "earnings", "stock_split", "ipo"];
+export const DAILY_CRON_TYPES: CalendarType[] = ["economic", "holiday", "earnings", "dividends", "stock_split", "ipo"];
 
 export const CALENDAR_COLLECTIONS: Record<CalendarType, string> = {
   economic: "economic_events",

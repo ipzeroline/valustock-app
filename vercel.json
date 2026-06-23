@@ -5,10 +5,6 @@
       "schedule": "5 0 * * *"
     },
     {
-      "path": "/api/cron/market-calendar-sync",
-      "schedule": "20 0 * * *"
-    },
-    {
       "path": "/api/cron/market-warmup",
       "schedule": "*/30 * * * *"
     }

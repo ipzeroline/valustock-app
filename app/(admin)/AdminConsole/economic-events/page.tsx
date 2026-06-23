@@ -16,6 +16,8 @@ type FetchResultRow = {
   calendarType: CalendarType;
   fetched: number;
   upserted: number;
+  deleted?: number;
+  durationMs?: number;
   success?: boolean;
   error?: string;
 };
@@ -70,19 +72,48 @@ export default function AdminCalendarPage() {
     params.set("calendarType", activeTab);
     params.set("limit", String(limit));
     params.set("page", String(page));
+    if (page === 1) params.set("autoSync", "1");
     if (timeFilter) params.set("timeFilter", timeFilter);
 
     fetch(`/api/admin/economic-events?${params.toString()}`)
-      .then((res) => res.json())
+      .then(async (res) => {
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || "Could not load events");
+        return data;
+      })
       .then((data) => {
         if (data.error) throw new Error(data.error);
         setEvents(data.events || []);
         setSummary(data.summary || null);
         setTotal(data.total || 0);
+        if (data.autoSync) {
+          const details = (data.autoSync.results || []).map((item: any) => ({
+            calendarType: item.type,
+            fetched: item.fetched || 0,
+            upserted: item.upserted || 0,
+            deleted: item.deleted || 0,
+            durationMs: item.durationMs,
+            success: !item.error,
+            error: item.error,
+          })) as FetchResultRow[];
+          setFetchDetails(details);
+          setFetchResult(
+            lang === "th"
+              ? `ดึงอัตโนมัติแล้ว: ${data.autoSync.totalFetched || 0} รายการ, อัปเดต ${data.autoSync.totalUpserted || 0} รายการ`
+              : `Auto-synced ${data.autoSync.totalFetched || 0} events, upserted ${data.autoSync.totalUpserted || 0}`
+          );
+          if (data.autoSync.failures?.length) {
+            setError(
+              lang === "th"
+                ? `ดึงอัตโนมัติบางส่วนไม่สำเร็จ: ${data.autoSync.failures.map((item: any) => item.type).join(", ")}`
+                : `Auto-sync partially failed: ${data.autoSync.failures.map((item: any) => item.type).join(", ")}`
+            );
+          }
+        }
       })
       .catch((err) => setError(err.message || "Could not load events"))
       .finally(() => setLoading(false));
-  }, [activeTab, page, timeFilter]);
+  }, [activeTab, page, timeFilter, lang]);
 
   useEffect(() => { fetchEvents(); }, [fetchEvents]);
 

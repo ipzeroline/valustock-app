@@ -1,8 +1,8 @@
 import { NextResponse } from "next/server";
 import { requireAdmin } from "@/lib/admin-auth";
 import { getMongoDb, ensureMarketDataIndexes } from "@/lib/mongodb";
+import { syncCalendarEvents } from "@/lib/calendar-sync";
 import type { CalendarType, TimeFilter } from "@/lib/economic-calendar-types";
-import { CALENDAR_TYPES } from "@/lib/economic-calendar-types";
 
 const COLLECTIONS: Record<CalendarType, string> = {
   economic: "economic_events",
@@ -14,9 +14,19 @@ const COLLECTIONS: Record<CalendarType, string> = {
 };
 
 const ALL_CALENDARS = Object.keys(COLLECTIONS) as CalendarType[];
+const AUTO_SYNC_MAX_AGE_MS = 6 * 60 * 60 * 1000;
 
 function getCollection(calendarType: string): string {
   return COLLECTIONS[calendarType as CalendarType] || "economic_events";
+}
+
+async function getLatestFetchedAt(collection: any) {
+  const latest = await collection
+    .find({ fetchedAt: { $type: "number" } }, { projection: { fetchedAt: 1 } })
+    .sort({ fetchedAt: -1 })
+    .limit(1)
+    .next();
+  return typeof latest?.fetchedAt === "number" ? latest.fetchedAt : 0;
 }
 
 export async function GET(req: Request) {
@@ -35,6 +45,7 @@ export async function GET(req: Request) {
     const limit = Math.min(parseInt(searchParams.get("limit") || "500", 10), 2000);
     const page = Math.max(parseInt(searchParams.get("page") || "1", 10), 1);
     const timeFilter = searchParams.get("timeFilter") as TimeFilter | null;
+    const autoSync = searchParams.get("autoSync") === "1";
 
     const collectionName = getCollection(calendarType);
     const collection = db.collection(collectionName);
@@ -79,7 +90,21 @@ export async function GET(req: Request) {
       }
     }
 
-    const total = await collection.countDocuments(filter);
+    let total = await collection.countDocuments(filter);
+    let syncResult = null;
+
+    if (autoSync && page === 1) {
+      const latestFetchedAt = await getLatestFetchedAt(collection);
+      const stale = !latestFetchedAt || Date.now() - latestFetchedAt > AUTO_SYNC_MAX_AGE_MS;
+      if (stale || total === 0) {
+        syncResult = await syncCalendarEvents({
+          types: [calendarType],
+          timeFilter: timeFilter || undefined,
+        });
+        total = await collection.countDocuments(filter);
+      }
+    }
+
     const events = await collection
       .find(filter)
       .sort({ date: -1, time: 1 })
@@ -116,6 +141,7 @@ export async function GET(req: Request) {
       calendarType,
       collectionName,
       summary: summary || null,
+      autoSync: syncResult,
     });
   } catch (error: any) {
     return NextResponse.json(
@@ -124,6 +150,8 @@ export async function GET(req: Request) {
     );
   }
 }
+
+export const maxDuration = 300;
 
 export async function DELETE(req: Request) {
   const authError = await requireAdmin(req);
