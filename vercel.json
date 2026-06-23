@@ -1,10 +1,6 @@
 {
   "crons": [
     {
-      "path": "/api/cron/economic-events",
-      "schedule": "5 0 * * *"
-    },
-    {
       "path": "/api/cron/market-warmup",
       "schedule": "*/30 * * * *"
     }

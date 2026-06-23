@@ -4,8 +4,7 @@
 # ดึงข้อมูลจาก investing.com → MongoDB
 # ใช้คู่กับ cron: 0 7 * * * /path/to/scripts/run-calendar-sync-daily.sh
 #
-# Types ที่ทำงานได้: economic, holiday, earnings, stock_split, ipo
-# dividends: scraper ต้อง rewrite (investing.com เปลี่ยนโครงสร้างหน้า)
+# Types ที่ทำงานได้: economic, holiday, earnings, dividends, stock_split, ipo
 # =============================================================================
 
 set -euo pipefail
@@ -40,11 +39,10 @@ fi
 BASE_URL="${CALENDAR_SYNC_URL:-${NEXT_PUBLIC_SITE_URL:-https://valustock.com}}"
 BASE_URL="${BASE_URL%/}"
 CRON_SECRET="${CRON_SECRET:-}"
-ENDPOINT="/api/cron/calendar-sync"
+ENDPOINT="/api/cron/economic-events"
 
-# sync all working types — no replace (upsert mode = safer, no data loss)
-# dividends excluded: scraper broken (investing.com restructured page)
-TYPES="${CALENDAR_SYNC_TYPES:-economic,holiday,earnings,stock_split,ipo}"
+# sync all calendar types — no replace (upsert mode = safer, no data loss)
+TYPES="${CALENDAR_SYNC_TYPES:-economic,holiday,earnings,dividends,stock_split,ipo}"
 
 TIMEOUT=300
 RESPONSE_FILE="$(mktemp /tmp/valustock-calendar-sync.XXXXXX.json)"
