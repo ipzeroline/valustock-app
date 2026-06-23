@@ -36,15 +36,18 @@ elif [ -f "${APP_DIR}/.env" ]; then
   set +a
 fi
 
-BASE_URL="${CALENDAR_SYNC_URL:-${NEXT_PUBLIC_SITE_URL:-https://valustock.com}}"
+# Server crontab should call the local Next.js app to avoid external gateway timeouts.
+# Override CALENDAR_SYNC_URL if the app listens on a different host/port.
+BASE_URL="${CALENDAR_SYNC_URL:-http://127.0.0.1:${PORT:-7887}}"
 BASE_URL="${BASE_URL%/}"
 CRON_SECRET="${CRON_SECRET:-}"
 ENDPOINT="/api/cron/economic-events"
 
 # sync all calendar types — no replace (upsert mode = safer, no data loss)
 TYPES="${CALENDAR_SYNC_TYPES:-economic,holiday,earnings,dividends,stock_split,ipo}"
+ECONOMIC_TIME_FILTER="${ECONOMIC_TIME_FILTER:-thisWeek}"
 
-TIMEOUT=300
+TIMEOUT=180
 RESPONSE_FILE="$(mktemp /tmp/valustock-calendar-sync.XXXXXX.json)"
 
 trap 'rm -f "${RESPONSE_FILE}"' EXIT
@@ -59,6 +62,7 @@ log() {
 
 log "========================================="
 log "Calendar Sync — Starting (types: ${TYPES})"
+log "Calendar Sync — Endpoint: ${BASE_URL}${ENDPOINT}"
 log "========================================="
 
 if [ -z "${CRON_SECRET}" ]; then
@@ -67,35 +71,66 @@ if [ -z "${CRON_SECRET}" ]; then
 fi
 
 START_TS=$(date +%s)
+FAILURES=0
+TOTAL_FETCHED=0
+TOTAL_UPSERTED=0
+TOTAL_DELETED=0
 
-HTTP_CODE=$(curl -sS -w "%{http_code}" -o "${RESPONSE_FILE}" \
-  -X GET "${BASE_URL}${ENDPOINT}?types=${TYPES}" \
-  -H "x-cron-secret: ${CRON_SECRET}" \
-  --connect-timeout 30 \
-  --max-time ${TIMEOUT})
+IFS=',' read -ra TYPE_LIST <<< "${TYPES}"
+for TYPE in "${TYPE_LIST[@]}"; do
+  TYPE="$(echo "${TYPE}" | xargs)"
+  if [ -z "${TYPE}" ]; then
+    continue
+  fi
+
+  : > "${RESPONSE_FILE}"
+  TYPE_START_TS=$(date +%s)
+  log "→ Syncing ${TYPE}"
+  REQUEST_URL="${BASE_URL}${ENDPOINT}?types=${TYPE}"
+  if [ "${TYPE}" = "economic" ] && [ -n "${ECONOMIC_TIME_FILTER}" ]; then
+    REQUEST_URL="${REQUEST_URL}&timeFilter=${ECONOMIC_TIME_FILTER}"
+  fi
+
+  HTTP_CODE=$(curl -sS -w "%{http_code}" -o "${RESPONSE_FILE}" \
+    -X GET "${REQUEST_URL}" \
+    -H "x-cron-secret: ${CRON_SECRET}" \
+    --connect-timeout 30 \
+    --max-time ${TIMEOUT}) || HTTP_CODE="curl-failed"
+
+  TYPE_END_TS=$(date +%s)
+  TYPE_ELAPSED=$((TYPE_END_TS - TYPE_START_TS))
+
+  if [ "$HTTP_CODE" = "200" ]; then
+    log "✅ ${TYPE} HTTP ${HTTP_CODE} — completed in ${TYPE_ELAPSED}s"
+    if command -v jq &>/dev/null; then
+      FETCHED=$(jq -r '.totalFetched // 0' "${RESPONSE_FILE}" 2>/dev/null || echo 0)
+      UPSERTED=$(jq -r '.totalUpserted // 0' "${RESPONSE_FILE}" 2>/dev/null || echo 0)
+      DELETED=$(jq -r '.totalDeleted // 0' "${RESPONSE_FILE}" 2>/dev/null || echo 0)
+      TOTAL_FETCHED=$((TOTAL_FETCHED + FETCHED))
+      TOTAL_UPSERTED=$((TOTAL_UPSERTED + UPSERTED))
+      TOTAL_DELETED=$((TOTAL_DELETED + DELETED))
+      jq -r '.results[] | "  [\(.type)] fetched=\(.fetched) upserted=\(.upserted) deleted=\(.deleted) \(.durationMs)ms\(if .error then " ⚠️ \(.error)" else "" end)"' \
+        "${RESPONSE_FILE}" 2>/dev/null || true
+    else
+      head -c 500 "${RESPONSE_FILE}"
+      echo ""
+    fi
+  elif [ "$HTTP_CODE" = "401" ]; then
+    log "❌ ${TYPE} HTTP ${HTTP_CODE} — Unauthorized (check CRON_SECRET)"
+    exit 1
+  else
+    FAILURES=$((FAILURES + 1))
+    log "❌ ${TYPE} HTTP ${HTTP_CODE} — Failed after ${TYPE_ELAPSED}s"
+    cat "${RESPONSE_FILE}" 2>/dev/null || true
+  fi
+done
 
 END_TS=$(date +%s)
 ELAPSED=$((END_TS - START_TS))
 
-if [ "$HTTP_CODE" = "200" ]; then
-  log "✅ HTTP ${HTTP_CODE} — completed in ${ELAPSED}s"
-  # Print summary from response
-  if command -v jq &>/dev/null; then
-    jq -r '"  Calendars: \(.calendars) | Fetched: \(.totalFetched) | Upserted: \(.totalUpserted) | Deleted: \(.totalDeleted) | Duration: \(.totalDurationMs)ms"' \
-      "${RESPONSE_FILE}" 2>/dev/null || true
-    # Print per-type results
-    jq -r '.results[] | "  [\(.type)] fetched=\(.fetched) upserted=\(.upserted) \(.durationMs)ms\(if .error then " ⚠️ \(.error)" else "" end)"' \
-      "${RESPONSE_FILE}" 2>/dev/null || true
-  else
-    head -c 500 "${RESPONSE_FILE}"
-    echo ""
-  fi
-elif [ "$HTTP_CODE" = "401" ]; then
-  log "❌ HTTP ${HTTP_CODE} — Unauthorized (check CRON_SECRET)"
-  exit 1
-else
-  log "❌ HTTP ${HTTP_CODE} — Failed"
-  cat "${RESPONSE_FILE}" 2>/dev/null || true
+log "Summary: fetched=${TOTAL_FETCHED} upserted=${TOTAL_UPSERTED} deleted=${TOTAL_DELETED} failures=${FAILURES}"
+
+if [ "${FAILURES}" -gt 0 ]; then
   exit 1
 fi
 
