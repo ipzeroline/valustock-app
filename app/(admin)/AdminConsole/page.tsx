@@ -35,6 +35,7 @@ type DataCacheStatus = {
     externalAssets?: number;
     setSecurities?: number;
     marketIntelligence?: number;
+    calendarSyncEvents?: number;
   };
   latest?: {
     quoteCache?: { symbol?: string; source?: string; fetchedAt?: string | null; expiresAt?: string | null; staleUntil?: string | null } | null;
@@ -45,6 +46,20 @@ type DataCacheStatus = {
     marketApiEvent?: { provider?: string; symbol?: string; ok?: boolean; source?: string; createdAt?: string | null } | null;
     setSecurity?: { symbol?: string; market?: string; updatedAt?: string | null } | null;
     setSyncEvent?: { type?: string; ok?: boolean; count?: number; createdAt?: string | null } | null;
+    calendarSyncEvent?: {
+      source?: string;
+      authSource?: string | null;
+      ok?: boolean;
+      calendarTypes?: string[];
+      totalFetched?: number;
+      totalUpserted?: number;
+      totalDeleted?: number;
+      totalDurationMs?: number;
+      failureCount?: number;
+      replace?: boolean;
+      timeFilter?: string | null;
+      createdAt?: string | null;
+    } | null;
   };
   cachePolicy?: {
     quoteCache?: { refresh?: string; freshForSeconds?: number; staleForSeconds?: number; deleteAfter?: string };
@@ -113,6 +128,13 @@ function secondsLabel(seconds?: number, lang: "th" | "en" = "en") {
   if (seconds < 60) return lang === "th" ? `${seconds} วินาที` : `${seconds}s`;
   if (seconds < 3600) return lang === "th" ? `${Math.round(seconds / 60)} นาที` : `${Math.round(seconds / 60)} min`;
   return lang === "th" ? `${Math.round(seconds / 3600)} ชั่วโมง` : `${Math.round(seconds / 3600)} hr`;
+}
+
+function millisecondsLabel(milliseconds?: number, lang: "th" | "en" = "en") {
+  if (typeof milliseconds !== "number" || Number.isNaN(milliseconds)) return "-";
+  if (milliseconds < 1000) return `${milliseconds} ms`;
+  const seconds = Math.round(milliseconds / 1000);
+  return lang === "th" ? `${seconds} วินาที` : `${seconds}s`;
 }
 
 export default function AdminOverview() {
@@ -320,6 +342,7 @@ export default function AdminOverview() {
             ["External Assets", dataCacheCollections.externalAssets],
             ["SET Securities", dataCacheCollections.setSecurities],
             ["Market Intelligence", dataCacheCollections.marketIntelligence],
+            ["Calendar Sync Runs", dataCacheCollections.calendarSyncEvents],
           ].map(([label, value]) => (
             <div key={String(label)} className="rounded-xl border border-line bg-bg/70 p-3">
               <div className="text-[10px] font-black uppercase tracking-wide text-muted">{label}</div>
@@ -388,6 +411,27 @@ export default function AdminOverview() {
                 rows={[
                   [lang === "th" ? "หลักทรัพย์อัปเดตล่าสุด" : "Latest security update", formatCacheTime(latest.setSecurity?.updatedAt, lang)],
                   [lang === "th" ? "sync ล่าสุด" : "Latest sync", formatCacheTime(latest.setSyncEvent?.createdAt, lang)],
+                ]}
+              />
+              <CacheDetail
+                title={lang === "th" ? "Cron ดึงปฏิทินเศรษฐกิจ" : "Economic Calendar Cron"}
+                primary={
+                  latest.calendarSyncEvent?.calendarTypes?.length
+                    ? latest.calendarSyncEvent.calendarTypes.join(", ")
+                    : "-"
+                }
+                rows={[
+                  [lang === "th" ? "cronjob ทำงานล่าสุด" : "Latest cron run", formatCacheTime(latest.calendarSyncEvent?.createdAt, lang)],
+                  [
+                    lang === "th" ? "สถานะ" : "Status",
+                    latest.calendarSyncEvent
+                      ? latest.calendarSyncEvent.ok
+                        ? lang === "th" ? "สำเร็จ" : "Success"
+                        : lang === "th" ? `มีข้อผิดพลาด ${latest.calendarSyncEvent.failureCount || 0} รายการ` : `${latest.calendarSyncEvent.failureCount || 0} failures`
+                      : lang === "th" ? "ยังไม่มีข้อมูล" : "No data yet",
+                  ],
+                  [lang === "th" ? "ดึงได้ / upsert" : "Fetched / upserted", `${Number(latest.calendarSyncEvent?.totalFetched || 0).toLocaleString()} / ${Number(latest.calendarSyncEvent?.totalUpserted || 0).toLocaleString()}`],
+                  [lang === "th" ? "ระยะเวลา" : "Duration", millisecondsLabel(latest.calendarSyncEvent?.totalDurationMs, lang)],
                 ]}
               />
             </div>

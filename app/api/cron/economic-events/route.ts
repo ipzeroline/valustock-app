@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { DAILY_CRON_TYPES, parseCalendarTypes, syncCalendarEvents } from "@/lib/calendar-sync";
+import { DAILY_CRON_TYPES, logCalendarSyncRun, parseCalendarTypes, syncCalendarEvents } from "@/lib/calendar-sync";
 import type { TimeFilter } from "@/lib/economic-calendar-types";
 
 export const dynamic = "force-dynamic";
@@ -52,6 +52,15 @@ export async function GET(request: NextRequest) {
     types: calendarTypes,
     replace,
     timeFilter,
+  });
+  await logCalendarSyncRun({
+    source: "cron/economic-events",
+    authSource: auth.source,
+    result,
+    replace,
+    timeFilter: timeFilter || null,
+  }).catch((error) => {
+    console.error("[calendar-sync] Failed to log cron run:", error);
   });
 
   return NextResponse.json({

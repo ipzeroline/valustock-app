@@ -37,6 +37,34 @@ type CalendarSyncOptions = {
   timeFilter?: TimeFilter;
 };
 
+type CalendarSyncRunLog = {
+  source: string;
+  authSource?: string;
+  result: Awaited<ReturnType<typeof syncCalendarEvents>>;
+  replace?: boolean;
+  timeFilter?: TimeFilter | null;
+};
+
+export async function logCalendarSyncRun({ source, authSource, result, replace, timeFilter }: CalendarSyncRunLog) {
+  const db = await getMongoDb();
+  await ensureMarketDataIndexes();
+  await db.collection("calendar_sync_events").insertOne({
+    source,
+    authSource: authSource || null,
+    ok: result.ok,
+    calendarTypes: result.results.map((item) => item.type),
+    calendars: result.calendars,
+    totalFetched: result.totalFetched,
+    totalUpserted: result.totalUpserted,
+    totalDeleted: result.totalDeleted,
+    totalDurationMs: result.totalDurationMs,
+    failures: result.failures,
+    replace: Boolean(replace),
+    timeFilter: timeFilter || null,
+    createdAt: new Date(result.updatedAt),
+  });
+}
+
 export async function syncCalendarEvents(options: CalendarSyncOptions) {
   const startedAt = Date.now();
   const results: CalendarSyncResult[] = [];

@@ -79,6 +79,8 @@ export async function ensureMarketDataIndexes() {
           db.collection("set_sync_events").createIndex({ createdAt: 1 }, { expireAfterSeconds: 60 * 60 * 24 * 90 }),
           db.collection("market_api_events").createIndex({ createdAt: 1 }, { expireAfterSeconds: 60 * 60 * 24 * 30 }),
           db.collection("market_api_events").createIndex({ provider: 1, symbol: 1, createdAt: -1 }),
+          db.collection("calendar_sync_events").createIndex({ createdAt: 1 }, { expireAfterSeconds: 60 * 60 * 24 * 90 }),
+          db.collection("calendar_sync_events").createIndex({ source: 1, createdAt: -1 }),
           db.collection("economic_events").createIndex({ eventId: 1, date: 1 }, { unique: true }),
           db.collection("economic_events").createIndex({ fetchedAt: 1 }, { expireAfterSeconds: 60 * 60 * 24 * 14 }),
           db.collection("economic_events").createIndex({ country: 1, currency: 1 }),

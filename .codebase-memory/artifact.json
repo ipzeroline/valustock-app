@@ -1,11 +1,11 @@
 {
     "schema_version": 1,
-    "commit": "74fb72c5a32410ed36f539651bf31b6b1b034055",
-    "indexed_at": "2026-06-27T00:01:38Z",
+    "commit": "0566257b88fb6bb7606fc5392e30ff1748a1a4b3",
+    "indexed_at": "2026-06-27T13:58:31Z",
     "project": "Users-zeroline-Documents-valustock",
-    "nodes": 3212,
-    "edges": 6295,
-    "original_size": 4325376,
-    "compressed_size": 426823,
-    "compression_level": 9
+    "nodes": 3305,
+    "edges": 6378,
+    "original_size": 9502720,
+    "compressed_size": 1654957,
+    "compression_level": 3
 }

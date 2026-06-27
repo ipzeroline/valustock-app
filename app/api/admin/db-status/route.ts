@@ -31,6 +31,7 @@ async function getDataCacheStatus() {
       externalAssetsCount,
       setSecuritiesCount,
       marketIntelligenceCount,
+      calendarSyncEventsCount,
       latestQuoteCache,
       latestQuoteSnapshot,
       latestHistoricalBars,
@@ -39,6 +40,7 @@ async function getDataCacheStatus() {
       latestApiEvent,
       latestSetSecurity,
       latestSetSyncEvent,
+      latestCalendarSyncEvent,
     ] = await Promise.all([
       db.collection("quote_cache").estimatedDocumentCount(),
       db.collection("quote_snapshots").estimatedDocumentCount(),
@@ -47,6 +49,7 @@ async function getDataCacheStatus() {
       db.collection("external_assets").estimatedDocumentCount(),
       db.collection("set_securities").estimatedDocumentCount(),
       db.collection("market_intelligence_cache").estimatedDocumentCount(),
+      db.collection("calendar_sync_events").estimatedDocumentCount(),
       db.collection("quote_cache").find({}, { projection: { symbol: 1, source: 1, fetchedAt: 1, expiresAt: 1, staleUntil: 1 } }).sort({ fetchedAt: -1 }).limit(1).next(),
       db.collection("quote_snapshots").find({}, { projection: { symbol: 1, source: 1, fetchedAt: 1 } }).sort({ fetchedAt: -1 }).limit(1).next(),
       db.collection("historical_bars").find({}, { projection: { symbol: 1, range: 1, provider: 1, fetchedAt: 1, expiresAt: 1 } }).sort({ fetchedAt: -1 }).limit(1).next(),
@@ -55,6 +58,7 @@ async function getDataCacheStatus() {
       db.collection("market_api_events").find({}, { projection: { provider: 1, symbol: 1, ok: 1, source: 1, createdAt: 1 } }).sort({ createdAt: -1 }).limit(1).next(),
       db.collection("set_securities").find({}, { projection: { symbol: 1, market: 1, updatedAt: 1 } }).sort({ updatedAt: -1 }).limit(1).next(),
       db.collection("set_sync_events").find({}, { projection: { type: 1, ok: 1, count: 1, createdAt: 1 } }).sort({ createdAt: -1 }).limit(1).next(),
+      db.collection("calendar_sync_events").find({}, { projection: { source: 1, authSource: 1, ok: 1, calendarTypes: 1, totalFetched: 1, totalUpserted: 1, totalDeleted: 1, totalDurationMs: 1, failures: 1, replace: 1, timeFilter: 1, createdAt: 1 } }).sort({ createdAt: -1 }).limit(1).next(),
     ]);
 
     return {
@@ -68,6 +72,7 @@ async function getDataCacheStatus() {
         externalAssets: externalAssetsCount,
         setSecurities: setSecuritiesCount,
         marketIntelligence: marketIntelligenceCount,
+        calendarSyncEvents: calendarSyncEventsCount,
       },
       latest: {
         quoteCache: latestQuoteCache
@@ -132,6 +137,22 @@ async function getDataCacheStatus() {
               ok: latestSetSyncEvent.ok,
               count: latestSetSyncEvent.count,
               createdAt: iso(latestSetSyncEvent.createdAt),
+            }
+          : null,
+        calendarSyncEvent: latestCalendarSyncEvent
+          ? {
+              source: latestCalendarSyncEvent.source,
+              authSource: latestCalendarSyncEvent.authSource,
+              ok: latestCalendarSyncEvent.ok,
+              calendarTypes: latestCalendarSyncEvent.calendarTypes || [],
+              totalFetched: latestCalendarSyncEvent.totalFetched,
+              totalUpserted: latestCalendarSyncEvent.totalUpserted,
+              totalDeleted: latestCalendarSyncEvent.totalDeleted,
+              totalDurationMs: latestCalendarSyncEvent.totalDurationMs,
+              failureCount: Array.isArray(latestCalendarSyncEvent.failures) ? latestCalendarSyncEvent.failures.length : 0,
+              replace: latestCalendarSyncEvent.replace,
+              timeFilter: latestCalendarSyncEvent.timeFilter,
+              createdAt: iso(latestCalendarSyncEvent.createdAt),
             }
           : null,
       },
