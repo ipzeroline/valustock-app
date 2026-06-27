@@ -27,9 +27,26 @@ type CacheEntry = {
 const QUOTE_TTL_MS = 45_000;
 const QUOTE_STALE_MS = 5 * 60_000;
 const HISTORICAL_TTL_MS = 6 * 60 * 60_000;
+const QUOTE_CACHE_MAX_ENTRIES = 250;
 export const QUOTE_CACHE_VERSION = "regular-close-v2";
 const quoteCache = new Map<string, CacheEntry>();
 const pendingQuotes = new Map<string, Promise<LatestQuote | null>>();
+
+function pruneQuoteCache(now = Date.now()) {
+  for (const [symbol, entry] of quoteCache) {
+    if (entry.staleUntil <= now) quoteCache.delete(symbol);
+  }
+
+  if (quoteCache.size <= QUOTE_CACHE_MAX_ENTRIES) return;
+
+  const overflow = quoteCache.size - QUOTE_CACHE_MAX_ENTRIES;
+  let removed = 0;
+  for (const symbol of quoteCache.keys()) {
+    quoteCache.delete(symbol);
+    removed += 1;
+    if (removed >= overflow) break;
+  }
+}
 
 export function getMarketDataProviderPolicy() {
   return {
@@ -691,6 +708,7 @@ async function fetchProviderQuote(symbol: string, stock: Stock | undefined) {
 export async function getLatestQuote(symbol: string, stock?: Stock, options: { allowStale?: boolean } = {}) {
   const normalized = symbol.toUpperCase().trim();
   const now = Date.now();
+  pruneQuoteCache(now);
   const cached = quoteCache.get(normalized);
 
   if (cached && cached.expiresAt > now) return cached.quote;
@@ -712,16 +730,21 @@ export async function getLatestQuote(symbol: string, stock?: Stock, options: { a
   const pending = pendingQuotes.get(normalized);
   if (pending) return pending;
 
-  const request = fetchProviderQuote(normalized, stock).then((quote) => {
-    quoteCache.set(normalized, {
-      quote,
-      expiresAt: Date.now() + QUOTE_TTL_MS,
-      staleUntil: Date.now() + QUOTE_STALE_MS,
+  const request = fetchProviderQuote(normalized, stock)
+    .then((quote) => {
+      const fetchedAt = Date.now();
+      quoteCache.set(normalized, {
+        quote,
+        expiresAt: fetchedAt + QUOTE_TTL_MS,
+        staleUntil: fetchedAt + QUOTE_STALE_MS,
+      });
+      pruneQuoteCache(fetchedAt);
+      if (quote) saveCachedQuote(normalized, quote, QUOTE_TTL_MS, QUOTE_STALE_MS, QUOTE_CACHE_VERSION);
+      return quote;
+    })
+    .finally(() => {
+      pendingQuotes.delete(normalized);
     });
-    if (quote) saveCachedQuote(normalized, quote, QUOTE_TTL_MS, QUOTE_STALE_MS, QUOTE_CACHE_VERSION);
-    pendingQuotes.delete(normalized);
-    return quote;
-  });
 
   pendingQuotes.set(normalized, request);
   return request;

@@ -9,7 +9,10 @@ const pool = mysql.createPool({
   password: process.env.DB_PASSWORD,
   connectTimeout: 8000,
   waitForConnections: true,
-  connectionLimit: 10,
+  connectionLimit: parseInt(process.env.DB_CONNECTION_LIMIT || "5", 10),
+  maxIdle: parseInt(process.env.DB_MAX_IDLE_CONNECTIONS || "1", 10),
+  idleTimeout: parseInt(process.env.DB_IDLE_TIMEOUT_MS || "30000", 10),
+  enableKeepAlive: false,
   queueLimit: 0,
 });
 

@@ -17,11 +17,13 @@ export async function getMongoClient() {
 
   if (!global.__valustockMongoClientPromise) {
     const client = new MongoClient(uri, {
-      maxPoolSize: 10,
+      maxPoolSize: parseInt(process.env.MONGODB_MAX_POOL_SIZE || "5", 10),
       minPoolSize: 0,
+      maxIdleTimeMS: parseInt(process.env.MONGODB_MAX_IDLE_TIME_MS || "30000", 10),
       serverSelectionTimeoutMS: 2500,
       connectTimeoutMS: 2500,
       socketTimeoutMS: 5000,
+      heartbeatFrequencyMS: 10000,
       retryReads: true,
       retryWrites: true,
     });

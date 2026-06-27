@@ -4,6 +4,9 @@ import { sanitizePublicMarketPayload } from "@/lib/public-market-source";
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
 
+const STREAM_IDLE_TIMEOUT_MS = 2 * 60_000;
+const STREAM_MAX_DURATION_MS = 15 * 60_000;
+
 type LiveStreamTrade = {
   ev?: string;
   sym?: string;
@@ -56,7 +59,16 @@ export async function GET(request: NextRequest) {
       const encoder = new TextEncoder();
       let activeSocket: WebSocket | null = null;
       let heartbeat: ReturnType<typeof setInterval> | null = null;
+      let idleTimeout: ReturnType<typeof setTimeout> | null = null;
+      let maxDurationTimeout: ReturnType<typeof setTimeout> | null = null;
       let closed = false;
+      const resetIdleTimeout = () => {
+        if (idleTimeout) clearTimeout(idleTimeout);
+        idleTimeout = setTimeout(() => {
+          send("status", { status: "idle_timeout", message: "Closing inactive live quote stream" });
+          close();
+        }, STREAM_IDLE_TIMEOUT_MS);
+      };
       const send = (event: string, data: unknown) => {
         if (closed) return;
         try {
@@ -64,6 +76,8 @@ export async function GET(request: NextRequest) {
         } catch {
           closed = true;
           if (heartbeat) clearInterval(heartbeat);
+          if (idleTimeout) clearTimeout(idleTimeout);
+          if (maxDurationTimeout) clearTimeout(maxDurationTimeout);
           if (activeSocket?.readyState === WebSocket.OPEN || activeSocket?.readyState === WebSocket.CONNECTING) {
             activeSocket.close();
           }
@@ -76,6 +90,8 @@ export async function GET(request: NextRequest) {
         if (closed) return;
         closed = true;
         if (heartbeat) clearInterval(heartbeat);
+        if (idleTimeout) clearTimeout(idleTimeout);
+        if (maxDurationTimeout) clearTimeout(maxDurationTimeout);
         if (activeSocket?.readyState === WebSocket.OPEN || activeSocket?.readyState === WebSocket.CONNECTING) {
           activeSocket.close();
         }
@@ -87,6 +103,11 @@ export async function GET(request: NextRequest) {
       };
 
       request.signal.addEventListener("abort", close);
+      maxDurationTimeout = setTimeout(() => {
+        send("status", { status: "max_duration", message: "Reconnecting live quote stream" });
+        close();
+      }, STREAM_MAX_DURATION_MS);
+      resetIdleTimeout();
 
       const connect = (endpoint: string, canFallback: boolean) => {
         if (closed) return;
@@ -112,6 +133,7 @@ export async function GET(request: NextRequest) {
         socket.addEventListener("message", (event) => {
           try {
             const payload = JSON.parse(String(event.data));
+            resetIdleTimeout();
             const rows = Array.isArray(payload) ? payload : [payload];
             rows.forEach((row: LiveStreamTrade | LiveStreamStatus) => {
               if ("status" in row || "message" in row) {

@@ -98,8 +98,32 @@ function symbolBatches(symbols: string[], size = 100) {
   return batches;
 }
 
+function usePageVisible() {
+  const [isVisible, setIsVisible] = useState(() => {
+    if (typeof document === "undefined") return true;
+    return document.visibilityState === "visible";
+  });
+
+  useEffect(() => {
+    const updateVisibility = () => setIsVisible(document.visibilityState === "visible");
+    updateVisibility();
+    document.addEventListener("visibilitychange", updateVisibility);
+    window.addEventListener("focus", updateVisibility);
+    window.addEventListener("blur", updateVisibility);
+
+    return () => {
+      document.removeEventListener("visibilitychange", updateVisibility);
+      window.removeEventListener("focus", updateVisibility);
+      window.removeEventListener("blur", updateVisibility);
+    };
+  }, []);
+
+  return isVisible;
+}
+
 export function useLiveQuotes(symbols: string[], enabled = true) {
   const normalizedSymbols = useMemo(() => uniqueSymbols(symbols), [symbols.join("|")]);
+  const isPageVisible = usePageVisible();
   const [liveStocks, setLiveStocks] = useState<LiveStock[]>([]);
 
   const liveStockMap = useMemo(() => {
@@ -107,9 +131,11 @@ export function useLiveQuotes(symbols: string[], enabled = true) {
   }, [liveStocks]);
 
   useEffect(() => {
-    if (!enabled || normalizedSymbols.length === 0) return;
+    if (!enabled || !isPageVisible || normalizedSymbols.length === 0) return;
 
     let cancelled = false;
+    let timeout: number | null = null;
+    const controller = new AbortController();
     const refreshQuotes = () => {
       const knownSymbols = normalizedSymbols.filter((symbol) => getSeedStock(symbol));
       const externalSymbols = normalizedSymbols.filter((symbol) => !getSeedStock(symbol));
@@ -117,12 +143,12 @@ export function useLiveQuotes(symbols: string[], enabled = true) {
       Promise.all(
         [
           ...symbolBatches(knownSymbols).map((batch) =>
-            fetch(`/api/quotes?symbols=${encodeURIComponent(batch.join(","))}`)
+            fetch(`/api/quotes?symbols=${encodeURIComponent(batch.join(","))}`, { signal: controller.signal })
               .then((res) => (res.ok ? res.json() : null))
               .catch(() => null) as Promise<BatchQuotesResponse | null>
           ),
           ...externalSymbols.map((symbol) =>
-            fetch(`/api/stock/${encodeURIComponent(symbol)}?quote=1`)
+            fetch(`/api/stock/${encodeURIComponent(symbol)}?quote=1`, { signal: controller.signal })
               .then((res) => (res.ok ? res.json() : null))
               .then((stock) => (stock && !stock.error && stock.symbol ? ({ quotes: [stock] } as BatchQuotesResponse) : null))
               .catch(() => null)
@@ -133,19 +159,22 @@ export function useLiveQuotes(symbols: string[], enabled = true) {
         const valid = results.flatMap((result) => result?.quotes || []).filter((stock) => stock && stock.symbol) as LiveStock[];
         if (valid.length === 0) return;
         setLiveStocks((prev) => mergeStocks(prev, valid));
+      }).finally(() => {
+        if (cancelled) return;
+        timeout = window.setTimeout(refreshQuotes, REALTIME_REFRESH_MS);
       });
     };
 
     refreshQuotes();
-    const interval = window.setInterval(refreshQuotes, REALTIME_REFRESH_MS);
     return () => {
       cancelled = true;
-      window.clearInterval(interval);
+      controller.abort();
+      if (timeout) window.clearTimeout(timeout);
     };
-  }, [enabled, normalizedSymbols]);
+  }, [enabled, isPageVisible, normalizedSymbols]);
 
   useEffect(() => {
-    if (!enabled || normalizedSymbols.length === 0 || typeof EventSource === "undefined") return;
+    if (!enabled || !isPageVisible || normalizedSymbols.length === 0 || typeof EventSource === "undefined") return;
 
     const streamSymbols = normalizedSymbols.filter((symbol) => hasMassiveStream(getSeedStock(symbol), symbol));
     if (streamSymbols.length === 0) return;
@@ -155,7 +184,7 @@ export function useLiveQuotes(symbols: string[], enabled = true) {
       try {
         const status = JSON.parse((event as MessageEvent).data) as { status?: string; message?: string };
         const text = `${status.status || ""} ${status.message || ""}`.toLowerCase();
-        if (text.includes("not authorized") || text.includes("max_connections")) {
+        if (text.includes("not authorized") || text.includes("max_connections") || text.includes("idle_timeout")) {
           source.close();
         }
       } catch {
@@ -181,7 +210,7 @@ export function useLiveQuotes(symbols: string[], enabled = true) {
     });
 
     return () => source.close();
-  }, [enabled, normalizedSymbols]);
+  }, [enabled, isPageVisible, normalizedSymbols]);
 
   return {
     liveStocks,
